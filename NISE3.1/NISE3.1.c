@@ -13,6 +13,7 @@
 #include "luminescence.h"
 #include "calc_2DIR.h"
 #include "analyse.h"
+#include "calc_CD.h"
 
 /* This is the 2017 version of the NISE program
    It allow calculating linear absorption and 2D(IR) spectra
@@ -88,6 +89,7 @@ int main(int argc, char *argv[])
 
   // Call the Circular Dichroism Routine
   if(!strcmp(non->technique,"CD")){
+    calc_CD(non);
   }
 
   // Call the Raman Routine

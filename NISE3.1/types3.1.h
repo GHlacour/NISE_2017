@@ -34,6 +34,7 @@ typedef struct {
   char energyFName[256];
   char dipoleFName[256];
   char alphaFName[256];
+  char positionFName[256];
   char anharFName[256];
   char overdipFName[256];
   char technique[256];

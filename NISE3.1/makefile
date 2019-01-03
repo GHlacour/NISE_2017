@@ -1,5 +1,6 @@
 # Makefile
 MACHINE=nieuwpoort
+MACHINE=newnieuwpoortgcc
 
 ### My settings
 ifeq ($(MACHINE), mymachine)
@@ -124,6 +125,18 @@ LAPACK = -mkl -lmkl_intel_lp64 -lmkl_core -liomp5 -lmkl_intel_thread -lpthread
 #LAPACKL = -L$(LAPACK_DIR) -L$(BLASDIR)
 endif
 
+### Compiler Settings newNieuwpoort
+ifeq ($(MACHINE), newnieuwpoortgcc)
+CC = gcc
+FFTW3=-lfftw3
+#FFTW3L=-L$(FFTWDIR) -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
+FFTW3L = -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64 
+FFTW3I =
+#FFTW3I=-I$(FFTWINCLUDE) -qopenmp
+CC_FLAGS = -B -O3 -lm -fopenmp
+LAPACK = -llapack -lblas -liomp5 -lpthread
+endif
+
 
 CPPFLAGS= $(FFTW3I)
 LIBS=$(LAPACKL) $(LAPACK) $(FFTW3L) $(FFTW3)
@@ -134,8 +147,8 @@ all: echo NISE3.1 translate
 echo:
 	@echo Compiling on the machine $(MACHINE) with $(CC)
 
-NISE3.1: NISE3.1.o NISE3.1subs.o polar.o absorption.o calc_2DIR.o luminescence.o analyse.o readinput.o randomlib.o
-	$(CC) NISE3.1.o NISE3.1subs.o polar.o absorption.o calc_2DIR.o luminescence.o analyse.o readinput.o randomlib.o $(LIBS) -o NISE3.1 $(CC_FLAGS)
+NISE3.1: NISE3.1.o NISE3.1subs.o polar.o absorption.o calc_2DIR.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o
+	$(CC) NISE3.1.o NISE3.1subs.o polar.o absorption.o calc_2DIR.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o $(LIBS) -o NISE3.1 $(CC_FLAGS)
 
 NISE3.1.o: NISE3.1.c NISE3.1.h types3.1.h lapack.h
 
@@ -150,6 +163,8 @@ absorption.o: absorption.c types3.1.h lapack.h NISE3.1subs.h
 calc_2DIR.o: calc_2DIR.c types3.1.h polar.h lapack.h NISE3.1subs.h
 
 luminescence.o: luminescence.c absorption.h types3.1.h lapack.h NISE3.1subs.h
+
+calc_CD.o: calc_CD.c calc_CD.h types3.1.h lapack.h NISE3.1subs.h
 
 analyse.o: analyse.c types3.1.h lapack.h NISE3.1subs.h
 
