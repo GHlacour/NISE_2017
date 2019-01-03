@@ -1,0 +1,14 @@
+InputEnergy Energy.txt
+InputDipole Dipole.txt
+#InputAnharm Anharmonicity.bin
+#InputOverto OvertoneDipole.bin
+OutputEnergy Energy.bin
+OutputDipole Dipole.bin
+#OutputAnharm Anharmonicity.trn
+#OutputOverto OvertoneDipole.trn
+Singles 2
+Doubles 0
+Skip Doubles
+Length 100000
+InputFormat GROASC
+OutputFormat GROBIN

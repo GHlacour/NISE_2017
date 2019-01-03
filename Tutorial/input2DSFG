@@ -1,0 +1,31 @@
+Propagation Coupling
+Couplingcut 0.1
+Hamiltonianfile Energy.bin
+Dipolefile Dipole.bin
+Anharmonicfile Anharmonicity.bin
+Overtonedipolefile OvertoneDipole.bin
+Alphafile Alpha.bin
+#Length 100000
+Length 10000
+Samplerate 100
+Lifetime 1000
+Timestep 10
+TimeIncrement 1 1 1
+Threshold 0.001
+Doubles 0
+Trotter 5
+Anharmonicity 20
+Format Gnuplot
+#Format Dislin
+MinFrequencies 1300 1300 1300
+MaxFrequencies 1600 1600 1600
+Technique 2DSFG
+FFT 1028
+Timevariables 1 3
+#BeginPoint 0
+#EndPoint 1
+MinTimes 0 0 0
+RunTimes 256 20 256
+MaxTimes 256 1 256
+#MaxTimes 3 1 3
+Singles 2

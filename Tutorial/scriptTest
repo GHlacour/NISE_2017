@@ -1,0 +1,23 @@
+#!/bin/csh
+#PBS -N Test
+
+##PBS -l host=sm-node004-mgmt
+/usr/local/bin/qstat -f $PBS_JOBID | grep resources
+/usr/local/bin/qstat -f $PBS_JOBID -1 | grep exec_host
+
+setenv WD $PBS_O_WORKDIR
+
+echo $TMPDIR
+cd $TMPDIR
+
+cp $WD/run $TMPDIR
+cp $WD/inp* $TMPDIR
+cp $WD/stochastic $TMPDIR
+
+./run
+
+~/program/NISEprogram/NISE2A/translate inpTra
+time ~/program/NISEprogram/NISE2A/NISE2A input2D
+
+cp *.log $WD
+cp *.dat $WD

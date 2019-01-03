@@ -1,0 +1,25 @@
+#!/bin/csh
+#SBATCH --job-name NISE3
+#SBATCH --nodes=1
+#SBATCH --ntasks=8
+
+module restore
+setenv OMP_NUM_THREADS 8
+setenv MKL_NUM_THREADS 1
+
+setenv WD $SLURM_SUBMIT_DIR
+
+#echo $TMPDIR
+#cd $TMPDIR
+
+cp $WD/run $TMPDIR
+cp $WD/inp* $TMPDIR
+cp $WD/stochastic $TMPDIR
+
+./run
+
+~/program/NISE_2017/NISE3.1/translate inpTra
+time ~/program/NISE_2017/NISE3.1/NISE3.1 input1D
+
+#cp *.log $WD
+#cp *.dat $WD

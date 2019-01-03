@@ -1,0 +1,15 @@
+#!/bin/csh
+
+setenv WD $PBS_O_WORKDIR
+
+cd $TMPDIR
+
+cp $WD/*.bin $TMPDIR
+cp $WD/input* $TMPDIR
+
+~/program/NISEprogram/NISE2A/NISE2A input2DSFG
+
+ls
+
+cp *.log $WD
+cp *.dat $WD
