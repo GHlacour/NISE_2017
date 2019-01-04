@@ -14,9 +14,10 @@ void calc_CD(t_non *non){
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
   float *pos;
-
+  float posj;
   // Aid arrays
-  float *vecr,*veci,*vecr_old,*veci_old;
+  float *vecr,*veci;
+  //,*vecr_old,*veci_old;
 
   /* Floats */
   float shift1;
@@ -35,6 +36,7 @@ void calc_CD(t_non *non){
   int samples;
   int x,ti,tj,i;
   int y,z;
+  int j,N;
   int t1,fft;
   int elements;
   int cl,Ncl;
@@ -53,6 +55,7 @@ void calc_CD(t_non *non){
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
   im_S_1=(float *)calloc(non->tmax,sizeof(float));
   nn2=non->singles*(non->singles+1)/2;
+  N=non->singles;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
@@ -110,8 +113,8 @@ void calc_CD(t_non *non){
 
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
-  vecr_old=(float *)calloc(non->singles,sizeof(float));
-  veci_old=(float *)calloc(non->singles,sizeof(float));
+//  vecr_old=(float *)calloc(non->singles,sizeof(float));
+//  veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
   pos=(float *)calloc(non->singles,sizeof(float));
 
@@ -134,17 +137,23 @@ void calc_CD(t_non *non){
     }
     if (non->cluster==-1 || non->cluster==cl){
 
+    // Loop over initial sites
+    for (j=0;j<N;j++){ 
+
     // Loop over polarizations of the initial excitation      
     for (x=0;x<3;x++){
       // Read mu(ti)
-      if (read_mue(non,vecr,mu_traj,ti,x)!=1){
+      if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
 	printf("Dipole trajectory file to short, could not fill buffer!!!\n");
 	printf("ITIME %d %d\n",ti,x);
 	exit(1);
       }
+      // Initialize excitation on initial site
+      clearvec(vecr,non->singles);
       clearvec(veci,non->singles);
-      copyvec(vecr,vecr_old,non->singles);
-      copyvec(vecr,mu_eg,non->singles);
+      vecr[j]=mu_eg[j];
+//      copyvec(vecr,vecr_old,non->singles);
+//      copyvec(vecr,mu_eg,non->singles);
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
@@ -172,7 +181,7 @@ void calc_CD(t_non *non){
               printf("JTIME %d %d\n",tj,z);
               exit(1);
             }
-
+            posj=pos[j];
 	    // Do projection on selected sites if asked
 	    if (non->Npsites>0){
 	      projection(mu_eg,non);
@@ -180,23 +189,23 @@ void calc_CD(t_non *non){
 	
             sign=0;
             // Determine the sign
-            if (z==0 & y==1 & x==2){sign=1;}
-            if (z==0 & y==2 & x==1){sign=-1;}
-            if (z==1 & y==0 & x==2){sign=-1;}
-            if (z==2 & y==0 & x==1){sign=1;}
-            if (z==2 & y==1 & x==0){sign=-1;}
-            if (z==1 & y==2 & x==0){sign=1;}
+            if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
+            if (z==0 & y==2 & x==1){sign=-1;}//{}sign=-1;}
+            if (z==1 & y==0 & x==2){sign=-1;}//{sign=-1;}
+            if (z==2 & y==0 & x==1){sign=1;}//{sign=1;}
+            if (z==2 & y==1 & x==0){sign=-1;}//{sign=-1;}
+            if (z==1 & y==2 & x==0){sign=1;}//{sign=1;}
             if (sign==0){
               printf("Bug in CD routine.\n");
               exit(1);
             }
 
 	    // Find response
-	    calc_CD1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,pos,sign);
+	    calc_CD1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,pos,sign,posj);
 	  }
         }
 
-	// Probagate vector
+	// Propagate vector
 	if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
 	if (non->propagation==0){
 	  if (non->thres==0 || non->thres>1){
@@ -216,6 +225,7 @@ void calc_CD(t_non *non){
 	}
       }
     }
+    }
     } // Cluster loop
   
     // Log time
@@ -228,8 +238,6 @@ void calc_CD(t_non *non){
 
   free(vecr);
   free(veci);
-  free(vecr_old);
-  free(veci_old);
   free(mu_eg);
   free(Hamil_i_e);
 
@@ -301,13 +309,11 @@ void calc_CD(t_non *non){
   return;
 }	
 
-void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign){
+void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign,float posj){
   int i,j;  
   for (i=0;i<non->singles;i++){
-    for (j=0;j<non->singles;j++){
-      re_S_1[t1]+=sign*(pos[j]-pos[i])*mu[j]*cr[i];
-      im_S_1[t1]+=sign*(pos[j]-pos[i])*mu[j]*ci[i];
-    }
+    re_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*cr[i];
+    im_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*ci[i];
   }
   return;
 }
