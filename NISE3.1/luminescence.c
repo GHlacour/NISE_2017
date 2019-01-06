@@ -44,6 +44,7 @@ void luminescence(t_non *non){
   shift1=(non->max1+non->min1)/2;
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
+  printf("Temperature %f.\n",non->temperature);
 
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
@@ -175,7 +176,7 @@ void luminescence(t_non *non){
 
   fclose(mu_traj),fclose(H_traj);
 
-  outone=fopen("R1D.dat","w");
+  outone=fopen("RLum.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
   }
@@ -200,7 +201,7 @@ void luminescence(t_non *non){
   }
 
   fftw_execute(fftPlan);
-  outone=fopen("FTIR.dat","w");
+  outone=fopen("Lum.dat","w");
   for (i=fft/2;i<=fft-1;i++){
     if (-((fft-i)/non->deltat/c_v/fft-shift1)>non->min1 && -((fft-i)/non->deltat/c_v/fft-shift1)<non->max1){ 
       fprintf(outone,"%f %e %e\n",-((fft-i)/non->deltat/c_v/fft-shift1),fftOut[i][1],fftOut[i][0]*0);
@@ -216,7 +217,7 @@ void luminescence(t_non *non){
   free(re_S_1),free(im_S_1);
 
   printf("----------------------------------------------\n");
-  printf(" Absorption calculation succesfully completed\n");
+  printf(" Luminescence calculation succesfully completed\n");
   printf("----------------------------------------------\n\n");
 
   return;
@@ -245,6 +246,7 @@ void bltz_weight(float *mu_eg,float *Hamiltonian_i,t_non *non){
   crr=(float *)calloc(N*N,sizeof(float));
   int a,b,c;
   float kBT=non->temperature*0.695; // Kelvin to cm-1
+  float Q,iQ;
 
   // Build Hamiltonian
   for (a=0;a<N;a++){
@@ -259,12 +261,14 @@ void bltz_weight(float *mu_eg,float *Hamiltonian_i,t_non *non){
   // Exponentiate [U=exp(-H/kBT)]
   for (a=0;a<N;a++){
     c2[a]=exp(-e[a]/kBT);
+    Q=Q+c2[a];
   }
+  iQ=1.0/Q;
 
   // Transform to site basis
   for (a=0;a<N;a++){
     for (b=0;b<N;b++){
-      cnr[b+a*N]+=H[b+a*N]*c2[b];
+      cnr[b+a*N]+=H[b+a*N]*c2[b]*iQ;
     }
   }  
   for (a=0;a<N;a++){

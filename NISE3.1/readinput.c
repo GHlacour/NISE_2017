@@ -26,6 +26,7 @@ void readInput(int argc,char *argv[],t_non *non){
   non->ts=5;
   non->anharmonicity=0;
   non->couplingcut=0;
+  non->temperature=300;
   non->cluster=-1; // Average over all snapshots no clusters
 
   
