@@ -38,6 +38,7 @@ void luminescence(t_non *non){
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
+  fft=0; 
   /* Initialize time */
   time(&time_now);
   time(&time_0);

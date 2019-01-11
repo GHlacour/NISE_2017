@@ -1,6 +1,6 @@
 # Makefile
 MACHINE=nieuwpoort
-MACHINE=newnieuwpoortgcc
+#MACHINE=newnieuwpoortgcc
 
 ### My settings
 ifeq ($(MACHINE), mymachine)
