@@ -22,6 +22,7 @@ typedef struct {
   int k[4];
   int length;
   int sample;
+  int fft;
   int begin;
   int end;
   int is;

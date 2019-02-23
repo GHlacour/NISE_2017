@@ -8,6 +8,7 @@
 #include "types3.1.h"
 #include "NISE3.1subs.h"
 #include "absorption.h"
+#include "1DFFT.h"
 
 void absorption(t_non *non){
   // Initialize variables
@@ -220,6 +221,8 @@ void absorption(t_non *non){
   }
   fclose(outone);
 
+  do_1DFFT(non,"Absorption.dat",re_S_1,im_S_1,samples);
+  if (1==0){
   fft=0;
   if (fft<non->tmax1*2) fft=2*non->tmax1;
  
@@ -251,8 +254,11 @@ void absorption(t_non *non){
       fprintf(outone,"%f %e %e\n",-((-i)/non->deltat/c_v/fft-shift1),fftOut[i][1],fftOut[i][0]*0);
     }
   }
-    
+      
+
   fclose(outone);
+  }
+
   free(re_S_1),free(im_S_1);
 
   printf("----------------------------------------------\n");

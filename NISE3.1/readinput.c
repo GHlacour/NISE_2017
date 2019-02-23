@@ -28,7 +28,7 @@ void readInput(int argc,char *argv[],t_non *non){
   non->couplingcut=0;
   non->temperature=300;
   non->cluster=-1; // Average over all snapshots no clusters
-
+  non->fft=0;
   
   if (argc<2){
     printf("Specify input file name on command line!\n");
@@ -104,6 +104,9 @@ void readInput(int argc,char *argv[],t_non *non){
 
     // Read timestep
     if (keyWordF("Anharmonicity",Buffer,&non->anharmonicity,LabelLength)==1) continue;
+
+    // Read length for possible zeropadding
+    if (keyWordI("FFT",Buffer,&non->fft,LabelLength)==1) continue;
 
     // Read Dephasingtime
 //    if (keyWordF("DephasingTime",Buffer,&non->dephasing,LabelLength)==1) continue;

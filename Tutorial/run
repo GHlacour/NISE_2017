@@ -7,4 +7,4 @@
 # Central frequency (cm-1)
 # Coupling (cm-1)
 # Angle between dipoles 0=parallel, 90=perpendicular, 180=antiparallel
-./stochastic 100000 10 10 1000 90 0 1500 25 90
+./stochastic 100000 10 10 1000 90 0 1200 25 90
