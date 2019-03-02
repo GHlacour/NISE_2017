@@ -59,6 +59,16 @@ int Sindex(int a,int b,int N){
   return ind;
 }
 
+/* INDEXING FOR ELECTRONIC STATES */
+int Eindex(int a,int b,int N){
+  int ind;
+  if (a>b){
+    ind=a+b*(N-a-1)/2;
+  } else {
+    ind=b+a*(N-b-1)/2;
+  }
+  return ind;
+}
 /* Read Hamiltonian */
 int read_He(t_non *non,float *He,FILE *FH,int pos){
   int i,N,control,t;
