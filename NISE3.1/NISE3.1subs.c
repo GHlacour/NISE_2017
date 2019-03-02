@@ -63,9 +63,9 @@ int Sindex(int a,int b,int N){
 int Eindex(int a,int b,int N){
   int ind;
   if (a>b){
-    ind=a+b*(N-a-1)/2;
+    ind=a-1+(b-1)*(N+N-b-2)/2;
   } else {
-    ind=b+a*(N-b-1)/2;
+    ind=b-1+(a-1)*(N+N-a-2)/2;
   }
   return ind;
 }
