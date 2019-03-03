@@ -41,6 +41,8 @@ typedef struct {
   char technique[256];
   char basis[256];
   char pdbFName[256];
+  char hamiltonian[256];
+  char couplingFName[256];
   int tmax;
   int cluster;
   float shifte,shiftf;

@@ -29,6 +29,7 @@ void readInput(int argc,char *argv[],t_non *non){
   non->temperature=300;
   non->cluster=-1; // Average over all snapshots no clusters
   non->fft=0;
+//  non->hamiltonian="Full";
   
   if (argc<2){
     printf("Specify input file name on command line!\n");
@@ -80,6 +81,9 @@ void readInput(int argc,char *argv[],t_non *non){
     if (keyWordS("Positionfile",Buffer,non->positionFName,LabelLength)==1) continue;    
     // PDB file keyword
     if (keyWordS("PDBfile",Buffer,non->pdbFName,LabelLength)==1) continue;
+
+    // Coupling file keyword
+    if (keyWordS("Couplingfile",Buffer,non->couplingFName,LabelLength)==1) continue;
 
     // Read Trajectory length
     if (keyWordI("Length",Buffer,&non->length,LabelLength)==1) continue;
@@ -152,6 +156,9 @@ void readInput(int argc,char *argv[],t_non *non){
 
     // Read technique
     if (keyWordS("Technique",Buffer,non->technique,LabelLength)==1) continue;
+
+    // Read Hamiltonian Type
+    if (keyWordS("HamiltonianType",Buffer,non->hamiltonian,LabelLength)==1) continue;
 
     // Read basis (for population calculation)
     if (keyWordS("Basis",Buffer,non->basis,LabelLength)==1) continue;

@@ -9,6 +9,7 @@ time_t log_time(time_t t0,FILE *log);
 int Sindex(int a,int b,int N);
 int Eindex(int a,int b,int N);
 int read_He(t_non *non,float *He,FILE *FH,int pos);
+int read_Dia(t_non *non,float *He,FILE *FE,int pos);
 int read_A(t_non *non,float *Anh,FILE *FH,int pos);
 int read_mue(t_non *non,float *mue,FILE *FH,int pos,int x);
 int read_over(t_non *non,float *over,FILE *FH,int pos,int x);

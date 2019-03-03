@@ -69,15 +69,16 @@ int Eindex(int a,int b,int N){
   }
   return ind;
 }
+
 /* Read Hamiltonian */
 int read_He(t_non *non,float *He,FILE *FH,int pos){
   int i,N,control,t;
   N=non->singles*(non->singles+1)/2;
-  // Find position
+  /* Find position */
   fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles*(non->singles+1)/2+
                                            non->doubles*(non->doubles+1)/2)),SEEK_SET);
   /* Read time */
-  control=fread(&t,sizeof(int),1,FH); // control=1;
+  control=fread(&t,sizeof(int),1,FH); /* control=1; */
   if (control>non->length+non->begin*non->sample){
     printf("Control character error in Hamiltonian file!\n");
     printf("Control character is '%d'.\n",control);
@@ -85,13 +86,40 @@ int read_He(t_non *non,float *He,FILE *FH,int pos){
     printf("Check that the numbers of singles and doubles is correct!\n");
     exit(-1);
   }
-  // Read single excitation Hamiltonian
+  /* Read single excitation Hamiltonian */
   fread(He,sizeof(float),N,FH);
-  // Shift center
+  /* Shift center */
   for (i=0;i<non->singles;i++){
     He[i*non->singles+i-(i*(i+1))/2]-=non->shifte;
   }
 
+  return control;
+}
+
+/* Read Diagonal Hamiltonian */
+int read_Dia(t_non *non,float *He,FILE *FH,int pos){
+  int i,N,control,t;
+  float *H;
+  H=(float *)calloc(non->singles,sizeof(float));
+  // N=non->singles*(non->singles+1)/2;
+  /* Find position */
+  fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles)),SEEK_SET);
+  /* Read time */
+  control=fread(&t,sizeof(int),1,FH); /* control=1; */
+  if (control>non->length+non->begin*non->sample){
+    printf("Control character error in Hamiltonian file!\n");
+    printf("Control character is '%d'.\n",control);
+    printf("Exceeding max value of '%d'.\n",non->length+non->begin*non->sample);
+    printf("Check that the numbers of singles and doubles is correct!\n");
+    exit(-1);
+  }
+  /* Read single excitation Hamiltonian */
+  fread(H,sizeof(float),non->singles,FH);
+  /* Shift center and update full Hamiltonian */
+  for (i=0;i<non->singles;i++){
+    He[i*non->singles+i-(i*(i+1))/2]=H[i]-non->shifte;
+  }
+  free(H);
   return control;
 }
 
@@ -666,26 +694,29 @@ int control(t_non *non){
     printf("ITIME %d %d\n",0,0);
     exit(1);
   }
-  // Check last element
-  if (read_mue(non,mu_eg,mu_traj,non->length-1,2)!=1){
-    printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-    printf("ITIME %d %d\n",non->length-1,2);
-    exit(1);
-  }
-  // Read Hamiltonian
-  if (read_He(non,Hamil_i_e,H_traj,non->length-1)!=1){
-    printf("Failed initial control\n");
-    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-    printf("Real file length shorter than specified with Length keyword!\n"); 
-    exit(1);
-  }
-  // Check Hamiltonian elements
-  if (Hamil_i_e[0]+non->shifte>non->max1 || Hamil_i_e[0]+non->shifte<non->min1){
-    printf("Warning: Hamiltonian value %f outside expected range.\n",Hamil_i_e[0]+non->shifte);
-    printf("Expected frequency range: %f to %f.\n",non->min1,non->max1);
-    printf("Computation will continue, but check is the number above is realistic\n");
-    printf("You may have specified wrong number of sites!\n");
-    printf("---------------------------------------------------------------------\n");
+  if (!strcmp(non->hamiltonian,"Coupling")){
+  } else {
+    // Check last element
+    if (read_mue(non,mu_eg,mu_traj,non->length-1,2)!=1){
+      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+      printf("ITIME %d %d\n",non->length-1,2);
+      exit(1);
+    }
+    // Read Hamiltonian
+    if (read_He(non,Hamil_i_e,H_traj,non->length-1)!=1){
+      printf("Failed initial control\n");
+      printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+      printf("Real file length shorter than specified with Length keyword!\n"); 
+      exit(1);
+    }
+    // Check Hamiltonian elements
+    if (Hamil_i_e[0]+non->shifte>non->max1 || Hamil_i_e[0]+non->shifte<non->min1){
+      printf("Warning: Hamiltonian value %f outside expected range.\n",Hamil_i_e[0]+non->shifte);
+      printf("Expected frequency range: %f to %f.\n",non->min1,non->max1);
+      printf("Computation will continue, but check is the number above is realistic\n");
+      printf("You may have specified wrong number of sites!\n");
+      printf("---------------------------------------------------------------------\n");
+    }
   } 
   free(mu_eg);
   free(Hamil_i_e);

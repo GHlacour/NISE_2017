@@ -10,6 +10,7 @@
 #include "readinput.h"
 #include "NISE3.1.h"
 #include "absorption.h"
+#include "c_absorption.h"
 #include "luminescence.h"
 #include "calc_2DIR.h"
 #include "analyse.h"
@@ -75,7 +76,11 @@ int main(int argc, char *argv[])
 
   // Call the Linear Absorption Routine
   if(!strcmp(non->technique,"Absorption")){
-    absorption(non);
+    if (!strcmp(non->hamiltonian,"Coupling")){
+      c_absorption(non);
+    } else {
+      absorption(non);
+    }
   }
 
   // Call the Luminescence Routine
