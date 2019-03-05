@@ -117,8 +117,8 @@ int main(int argc, char *argv[])
 
   // Call the 2DUVvis calculation routine
   if(!strcmp(non->technique,"2DUVvis")||(!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
+    calc_2DES(non);
   }
-  calc_2DES(non);
 
   // Call the 2DFD calculation routine
   if(!strcmp(non->technique,"2DFD")){

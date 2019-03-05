@@ -182,7 +182,7 @@ void calc_2DES(t_non *non){
   }
 
   /* Open file for fluctuating anharmonicities and sequence transition dipoles if needed */
-  if (non->anharmonicity==0 && (!strcmp(non->technique,"2DIR") || (!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA")) ||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))|| (!strcmp(non->technique,"2DSFG")))){
+  if (non->anharmonicity==0 && (!strcmp(non->technique,"2DUVvis") || (!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"noEAUVvis")) ||(!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"SEUVvis")))){
     A_traj=fopen(non->anharFName,"rb");
     if (A_traj==NULL){
       printf("Anharmonicity file %s not found!\n",non->anharFName);
@@ -314,7 +314,7 @@ void calc_2DES(t_non *non){
             t3ni+=mut4[i]*mut3i[i];
           }
           /* Calculate GB contributions */
-          if ((!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"noEA"))){
+          if ((!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
 #pragma omp parallel for private(tt,polWeight)
             for (t1=0;t1<non->tmax1;t1++){
 	      tt=non->tmax1*t3+t1;
@@ -371,7 +371,7 @@ void calc_2DES(t_non *non){
         /* Read dipole for third interaction */
         mureadE(non,mut3r,tk,px[2],mu_traj,mu_xyz,pol);
 
-        if ((!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"2DIR"))){   
+        if ((!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"2DUVvis"))){   
           if (non->anharmonicity==0){
             read_over(non,over,mu2_traj,tk,px[2]);
           }
@@ -440,7 +440,7 @@ void calc_2DES(t_non *non){
 	  }
 
 	/* Calculate Response */
-          if ((!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"noEA"))){
+          if ((!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
 #pragma omp parallel for private(tt,polWeight)
             for (t1=0;t1<non->tmax1;t1++){ 
               tt=non->tmax1*t3+t1;
@@ -483,7 +483,7 @@ void calc_2DES(t_non *non){
           }
         }
 
-        if ((!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"2DIR"))){
+        if ((!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"2DUVvis"))){
 	/* Excited state absorption (EA) */
         /* Combine with evolution during t3 */
           for (t3=0;t3<non->tmax3;t3++){
@@ -614,7 +614,7 @@ void calc_2DES(t_non *non){
 
   /* Close Files */
   fclose(mu_traj),fclose(H_traj);
-  if((!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))){
+  if((!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
     if (non->anharmonicity==0){
       fclose(mu2_traj),fclose(A_traj);
     }
@@ -624,7 +624,6 @@ void calc_2DES(t_non *non){
   }
 
   /* Print 2D */
-  if(!strcmp(non->technique,"2DIR")||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))||(!strcmp(non->technique,"2DSFG"))){
     outttwo=fopen("RparI.dat","w");
     for (t1=0;t1<non->tmax1;t1+=non->dt1){
       t2=non->tmax2;
@@ -690,10 +689,8 @@ void calc_2DES(t_non *non){
         }
     }    
     fclose(outttwo);
-  }
 
   /* Free memory for 2D calculation */
-  if(!strcmp(non->technique,"2DIR")||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))||(!strcmp(non->technique,"2DSFG"))){
     free(leftrr),free(leftri),free(leftnr),free(leftni);
     free(leftrr_o),free(leftri_o),free(leftnr_o),free(leftni_o);
     free(rightrr),free(rightri),free(rightnr),free(rightni);
@@ -708,7 +705,6 @@ void calc_2DES(t_non *non){
     if (non->anharmonicity==0) {
       free(Anh),free(over);
     }
-  }
   free(rrIpar),free(riIpar);
   free(rrIIpar),free(riIIpar);
   free(rrIper),free(riIper);
