@@ -203,7 +203,7 @@ void calc_2DES(t_non *non){
       printf("Coupling file not found!\n");
       exit(1);
     }
-    if (read_He(non,Hamil_i_e,C_traj,0)!=1){
+    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
       printf("Coupling trajectory file to short, could not fill buffer!!!\n");
       exit(1);
     }

@@ -75,7 +75,7 @@ int read_He(t_non *non,float *He,FILE *FH,int pos){
   int i,N,control,t;
   float *H;
   /* Read only diagonal part */
-  if (!strcmp(non->hamiltonian,"Coupling")){
+  if (!strcmp(non->hamiltonian,"Coupling") && pos>=0 ){
     H=(float *)calloc(non->singles,sizeof(float));
     /* Find position */
     fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles)),SEEK_SET);
@@ -96,6 +96,7 @@ int read_He(t_non *non,float *He,FILE *FH,int pos){
     }
     free(H);
   } else { /* Read Full Hamiltonian */
+    if (pos==-1) {pos=0;}
     N=non->singles*(non->singles+1)/2;
     /* Find position */
     fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles*(non->singles+1)/2+
