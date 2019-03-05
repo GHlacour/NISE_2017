@@ -73,26 +73,49 @@ int Eindex(int a,int b,int N){
 /* Read Hamiltonian */
 int read_He(t_non *non,float *He,FILE *FH,int pos){
   int i,N,control,t;
-  N=non->singles*(non->singles+1)/2;
-  /* Find position */
-  fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles*(non->singles+1)/2+
+  float *H;
+  /* Read only diagonal part */
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    H=(float *)calloc(non->singles,sizeof(float));
+    /* Find position */
+    fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles)),SEEK_SET);
+    /* Read time */
+    control=fread(&t,sizeof(int),1,FH); /* control=1; */
+    if (control>non->length+non->begin*non->sample){
+      printf("Control character error in Hamiltonian file!\n");
+      printf("Control character is '%d'.\n",control);
+      printf("Exceeding max value of '%d'.\n",non->length+non->begin*non->sample);
+      printf("Check that the numbers of singles and doubles is correct!\n");
+      exit(-1);
+    }
+    /* Read single excitation Hamiltonian */
+    fread(H,sizeof(float),non->singles,FH);
+    /* Shift center and update full Hamiltonian */
+    for (i=0;i<non->singles;i++){
+      He[i*non->singles+i-(i*(i+1))/2]=H[i]-non->shifte;
+    }
+    free(H);
+  } else { /* Read Full Hamiltonian */
+    N=non->singles*(non->singles+1)/2;
+    /* Find position */
+    fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles*(non->singles+1)/2+
                                            non->doubles*(non->doubles+1)/2)),SEEK_SET);
-  /* Read time */
-  control=fread(&t,sizeof(int),1,FH); /* control=1; */
-  if (control>non->length+non->begin*non->sample){
-    printf("Control character error in Hamiltonian file!\n");
-    printf("Control character is '%d'.\n",control);
-    printf("Exceeding max value of '%d'.\n",non->length+non->begin*non->sample);
-    printf("Check that the numbers of singles and doubles is correct!\n");
-    exit(-1);
+    /* Read time */
+    control=fread(&t,sizeof(int),1,FH); /* control=1; */
+    if (control>non->length+non->begin*non->sample){
+      printf("Control character error in Hamiltonian file!\n");
+      printf("Control character is '%d'.\n",control);
+      printf("Exceeding max value of '%d'.\n",non->length+non->begin*non->sample);
+      printf("Check that the numbers of singles and doubles is correct!\n");
+      exit(-1);
+    }
+    /* Read single excitation Hamiltonian */
+    fread(He,sizeof(float),N,FH);
+    /* Shift center */
+    for (i=0;i<non->singles;i++){
+      He[i*non->singles+i-(i*(i+1))/2]-=non->shifte;
+    }
   }
-  /* Read single excitation Hamiltonian */
-  fread(He,sizeof(float),N,FH);
-  /* Shift center */
-  for (i=0;i<non->singles;i++){
-    He[i*non->singles+i-(i*(i+1))/2]-=non->shifte;
-  }
-
   return control;
 }
 
@@ -101,7 +124,7 @@ int read_Dia(t_non *non,float *He,FILE *FH,int pos){
   int i,N,control,t;
   float *H;
   H=(float *)calloc(non->singles,sizeof(float));
-  // N=non->singles*(non->singles+1)/2;
+  /* N=non->singles*(non->singles+1)/2; */
   /* Find position */
   fseek(FH,pos*(sizeof(int)+sizeof(float)*(non->singles)),SEEK_SET);
   /* Read time */
@@ -176,6 +199,19 @@ void muread(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj){
   return;
 }
 
+void mureadE(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj,float *mu,float *pol){
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    copyvec(mu+non->singles*x,leftnr,non->singles);
+  } else {
+    /* Read mu(ti) */
+    if (read_mue(non,leftnr,mu_traj,ti,x)!=1){
+      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+      printf("ITIME %d %d\n",ti,x);
+      exit(1);
+    }
+  }
+  return;
+}
 
 /* Read Cluster file */
 int read_cluster(t_non *non,int pos,int *cl,FILE *FH){
