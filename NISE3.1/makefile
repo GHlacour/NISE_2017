@@ -1,6 +1,18 @@
 # Makefile
-MACHINE=nieuwpoort
-#MACHINE=newnieuwpoortgcc
+
+### Define the variable MACHINE in your environment
+### export MACHINE=$HOSTNAME may be a good option
+### If not define the default settings below will be used
+
+### Default settings
+ifeq ($(MACHINE), )
+CC = gcc
+FFTW3=-lfftw3
+FFTW3L = -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
+FFTW3I = -fopenmp
+CC_FLAGS = -B -O3 -lm -fopenmp
+LAPACK = -llapack -lblas -lpthread
+endif
 
 ### My settings
 ifeq ($(MACHINE), mymachine)
@@ -102,37 +114,24 @@ FFTW3L=-L/software/apps/fftw/intel/3.3.3/lib -L/software/apps/intel/compiler/201
 FFTW3I=-I/software/apps/fftw/intel/3.3.3/include -qopenmp
 CC_FLAGS = -B -O3 -lm -qopenmp
 LAPACK = -mkl -lmkl_intel_lp64 -lmkl_core -liomp5 -lmkl_intel_thread -lpthread
-#LAPACKL = -L/usr/lib64/atlas
-#LAPACKL = -L$(LAPACK_DIR) -L$(BLASDIR)
 endif
 
 ### Compiler Settings Nieuwpoort
 ifeq ($(MACHINE), nieuwpoort)
 CC = icc
-#FFTWDIR=/usr/lib64/
-#FFTWDIR=/cm/shared/apps/intel/compilers_and_libraries_2017.0.098/linux/mkl/include/fftw/
-#FFTWINCLUDE=/cm/shared/apps/intel/compilers_and_libraries_2017.0.098/linux/mkl/include/fftw/
-#FFTW3INCLUDE=-I/users/lacour/fftw322/include
-#FFTWDIR=/users/lacour/fftw322/lib
 FFTW3=-lfftw3
-#FFTW3L=-L$(FFTWDIR) -L/software/apps/intel/compiler/2013/13.0.1/compiler/lib/intel64 -L/software/apps/intel/compiler/2013/13.0.1/mkl/lib/intel64 -L/cm/shared/apps/intel/compilers_and_libraries_2017.0.098/linux/compiler/lib/intel64_lin
 FFTW3L=-L$(FFTWDIR) -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
 FFTW3I=-I$(FFTWINCLUDE) -qopenmp
 CC_FLAGS = -B -O3 -lm -qopenmp
-#LAPACK = -llapack
 LAPACK = -mkl -lmkl_intel_lp64 -lmkl_core -liomp5 -lmkl_intel_thread -lpthread
-#LAPACKL = -L/usr/lib64/atlas
-#LAPACKL = -L$(LAPACK_DIR) -L$(BLASDIR)
 endif
 
 ### Compiler Settings newNieuwpoort
 ifeq ($(MACHINE), newnieuwpoortgcc)
 CC = gcc
 FFTW3=-lfftw3
-#FFTW3L=-L$(FFTWDIR) -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
 FFTW3L = -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64 
 FFTW3I =
-#FFTW3I=-I$(FFTWINCLUDE) -qopenmp
 CC_FLAGS = -B -O3 -lm -fopenmp
 LAPACK = -llapack -lblas -liomp5 -lpthread
 endif
