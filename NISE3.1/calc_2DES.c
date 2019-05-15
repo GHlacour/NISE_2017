@@ -9,6 +9,7 @@
 #include "NISE3.1subs.h"
 #include "polar.h"
 #include "calc_2DES.h"
+#include <openacc.h>
 
 void calc_2DES(t_non *non){
   /* Define arrays! */
@@ -294,6 +295,7 @@ void calc_2DES(t_non *non){
         }
 
 #pragma omp parallel for
+#pragma acc kernels
         for (t1=0;t1<non->tmax1;t1++){
           t1nr[t1]=0,t1ni[t1]=0;
           for (i=0;i<non->singles;i++){
@@ -316,6 +318,7 @@ void calc_2DES(t_non *non){
           /* Calculate GB contributions */
           if ((!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
 #pragma omp parallel for private(tt,polWeight)
+#pragma acc kernels
             for (t1=0;t1<non->tmax1;t1++){
 	      tt=non->tmax1*t3+t1;
               polWeight=polarweight(0,molPol)*lt_gb_se[t1+t3*non->tmax1];
@@ -359,6 +362,7 @@ void calc_2DES(t_non *non){
           }
 
 #pragma omp parallel for
+#pragma acc kernels
           for (t1=-1;t1<non->tmax1;t1++){
             if (t1!=-1){
 		propagate_vec_DIA(non,Hamil_i_e,leftnr+t1*non->singles,leftni+t1*non->singles,1);
@@ -377,6 +381,7 @@ void calc_2DES(t_non *non){
           }
 	/* T2 propagation ended store vectors needed for EA */
 #pragma omp parallel for
+#pragma acc kernels
           for (t1=-1;t1<non->tmax1;t1++){
             if (t1==-1){
               dipole_double(non,mut3r,leftrr,leftri,fr,fi,over);
@@ -388,6 +393,7 @@ void calc_2DES(t_non *non){
           copyvec(leftnr,rightrr,non->tmax1*non->singles);
           copyvec(leftni,rightri,non->tmax1*non->singles);
 #pragma omp parallel for
+#pragma acc kernels
           for (i=0;i<non->tmax1*non->singles;i++) rightri[i]=-rightri[i];
           copyvec(leftrr,rightnr,non->singles);
           copyvec(leftri,rightni,non->singles);
@@ -398,6 +404,7 @@ void calc_2DES(t_non *non){
 
 	/* Calculate right side of rephasing diagram */
 #pragma omp parallel for
+#pragma acc kernels
         for (t1=-1;t1<non->tmax1;t1++){
           if (t1!=-1){
             t1rr[t1]=0,t1ri[t1]=0;
@@ -421,6 +428,7 @@ void calc_2DES(t_non *non){
           mureadE(non,mut4,tl,px[3],mu_traj,mu_xyz,pol);
           
 #pragma omp parallel for
+#pragma acc kernels
           for (t1=-1;t1<non->tmax1;t1++){
             if (t1==-1){
 	/* Calculate left side of rephasing diagram */
@@ -442,6 +450,7 @@ void calc_2DES(t_non *non){
 	/* Calculate Response */
           if ((!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
 #pragma omp parallel for private(tt,polWeight)
+#pragma acc kernels
             for (t1=0;t1<non->tmax1;t1++){ 
               tt=non->tmax1*t3+t1;
               polWeight=polarweight(0,molPol)*lt_gb_se[t1+t3*non->tmax1];
@@ -470,6 +479,7 @@ void calc_2DES(t_non *non){
             exit(1);
           }
 #pragma omp parallel for shared(non,Hamil_i_e,leftnr,leftni,leftrr,leftri)
+#pragma acc kernels
           for (t1=-1;t1<non->tmax1;t1++){
             if (t1==-1){
 	    /* Propagate left side rephasing */
@@ -495,6 +505,7 @@ void calc_2DES(t_non *non){
             }
 	/* Multiply with the last dipole */
 #pragma omp parallel for shared(non,mut4,fr,fi,ft1r,ft1i,nn2,leftnr,leftni,over,leftrr,leftri) private(t1)
+#pragma acc kernels
             for (t1=-1;t1<non->tmax1;t1++){
               if (t1==-1){
                 dipole_double_last(non,mut4,fr,fi,leftrr,leftri,over);
@@ -505,6 +516,7 @@ void calc_2DES(t_non *non){
 
 	/* Calculate EA response */
 #pragma omp parallel for shared(leftrr,leftri,non,rightrr,rightri,molPol,lt_ea) private(rrI,riI,rrII,riII,i,tt,polWeight)
+#pragma acc kernels
             for (t1=0;t1<non->tmax1;t1++){
               tt=non->tmax1*t3+t1;
               rrI=0,riI=0,rrII=0,riII=0;
@@ -559,6 +571,7 @@ void calc_2DES(t_non *non){
             }
 	/* Key parallel loop one */
 #pragma omp parallel for shared(non,Hamil_i_e,fr,fi,Anh,Urs,Uis,Rs,Cs,ft1r,ft1i)
+#pragma acc kernels
             for (t1=-1;t1<non->tmax1;t1++){
               if (t1==-1){
                 if (non->propagation==1) propagate_vec_coupling_S_doubles(non,Hamil_i_e,fr,fi,non->ts,Anh);
@@ -575,6 +588,7 @@ void calc_2DES(t_non *non){
 	/* (non)-rephasing */
 	/* Key parallel loop two */
 #pragma omp parallel for shared(non,Hamil_i_e,rightnr,rightni,rightrr,rightri)
+#pragma acc kernels
             for (t1=-1;t1<non->tmax1;t1++){
               if (t1==-1){
                 if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,rightnr,rightni,non->ts,-1);

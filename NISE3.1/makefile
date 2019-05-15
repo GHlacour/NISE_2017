@@ -14,6 +14,24 @@ CC_FLAGS = -B -O3 -lm -fopenmp
 LAPACK = -llapack -lblas -lpthread
 endif
 
+ifeq ($(MACHINE), peri-gpu)
+CC = pgcc
+FFTW3=-lfftw3
+FFTW3L = -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
+FFTW3I =
+CC_FLAGS = -B -O3 -lm -tp sandybridge-64 -acc -ta=nvidia -Minfo=accel -fast -mp -Minfo
+LAPACK = -lrt -lpgftnrtl -lm -lpgc -lgcc -llapack -lblas
+endif
+
+ifeq ($(MACHINE), peri)
+CC = icc
+FFTW3=-lfftw3
+FFTW3L = -L/cm/shared/apps/intel/compilers_and_libraries/linux/lib/intel64
+FFTW3I = -qopenmp
+CC_FLAGS = -B -O3 -lm -qopenmp
+LAPACK = -llapack -lblas -lpthread
+endif
+
 ### My settings
 ifeq ($(MACHINE), mymachine)
 CC=        # Your compiler name
