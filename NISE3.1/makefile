@@ -146,8 +146,8 @@ all: echo NISE3.1 translate
 echo:
 	@echo Compiling on the machine $(MACHINE) with $(CC)
 
-NISE3.1: NISE3.1.o NISE3.1subs.o polar.o 1DFFT.o absorption.o c_absorption.o calc_2DIR.o calc_2DES.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o
-	$(CC) NISE3.1.o NISE3.1subs.o polar.o 1DFFT.o absorption.o c_absorption.o calc_2DIR.o calc_2DES.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o $(LIBS) -o NISE3.1 $(CC_FLAGS)
+NISE3.1: NISE3.1.o NISE3.1subs.o polar.o 1DFFT.o absorption.o population.o c_absorption.o calc_2DIR.o calc_2DES.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o
+	$(CC) NISE3.1.o NISE3.1subs.o polar.o 1DFFT.o absorption.o population.o c_absorption.o calc_2DIR.o calc_2DES.o luminescence.o calc_CD.o analyse.o readinput.o randomlib.o $(LIBS) -o NISE3.1 $(CC_FLAGS)
 
 NISE3.1.o: NISE3.1.c NISE3.1.h types3.1.h lapack.h
 
@@ -160,6 +160,8 @@ readinput.o: readinput.c readinput.h types3.1.h
 1DFFT.o: 1DFFT.c 1DFFT.h types3.1.h
 
 absorption.o: absorption.c types3.1.h lapack.h NISE3.1subs.h 1DFFT.h
+
+population.o: population.c types3.1.h lapack.h NISE3.1subs.h
 
 c_absorption.o: c_absorption.c types3.1.h lapack.h NISE3.1subs.h 1DFFT.h
 

@@ -16,6 +16,7 @@
 #include "calc_2DES.h"
 #include "analyse.h"
 #include "calc_CD.h"
+#include "population.h"
 
 /* This is the 2017 version of the NISE program
    It allow calculating linear absorption and 2D(IR) spectra
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 
   // Call the Population Transfer routine
   if(!strcmp(non->technique,"Pop")){
+    population(non);
   }
 
   // Call the Exciton Diffusion routine
