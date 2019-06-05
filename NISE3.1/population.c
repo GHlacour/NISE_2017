@@ -21,6 +21,7 @@ void population(t_non *non){
   /* Floats */
   float shift1;
   float x;
+  float pr,pi;
 
   /* File handles */
   FILE *H_traj;
@@ -127,17 +128,23 @@ void population(t_non *non){
         }
         build_diag_H(Hamil_i_e,H,e,non->singles);
         for (a=0;a<non->singles;a++){
+          pr=0;
+          pi=0;
           for (b=0;b<non->singles;b++){
-            Pop[t1]+=H[a+b*non->singles]*vecr[a+b*non->singles]*H[a+b*non->singles]*vecr[a+b*non->singles];
-            Pop[t1]+=H[a+b*non->singles]*veci[a+b*non->singles]*H[a+b*non->singles]*veci[a+b*non->singles];
+            pr+=H[a+b*non->singles]*vecr[a+b*non->singles];
+            pi+=H[a+b*non->singles]*veci[a+b*non->singles];
           }
+          Pop[t1]+=pr*pr+pi*pi;
         }
         for (a=0;a<non->singles;a++){
           for (b=0;b<non->singles;b++){
+            pr=0;
+            pi=0;
             for (c=0;c<non->singles;c++){
-              PopF[t1+(non->singles*b+a)*non->tmax]+=H[a+c*non->singles]*vecr[b+c*non->singles]*H[a+c*non->singles]*vecr[b+c*non->singles];
-              PopF[t1+(non->singles*b+a)*non->tmax]+=H[a+c*non->singles]*veci[b+c*non->singles]*H[a+c*non->singles]*veci[b+c*non->singles];
+              pr+=H[a+c*non->singles]*vecr[b+c*non->singles];
+              pi+=H[a+c*non->singles]*veci[b+c*non->singles];
             }
+            PopF[t1+(non->singles*b+a)*non->tmax]+=pr*pr+pi*pi;
           }
         }
 
