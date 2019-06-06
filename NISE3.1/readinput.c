@@ -29,6 +29,7 @@ void readInput(int argc,char *argv[],t_non *non){
   non->temperature=300;
   non->cluster=-1; // Average over all snapshots no clusters
   non->fft=0;
+  sprintf(non->basis,"Local");
 //  non->hamiltonian="Full";
   
   if (argc<2){

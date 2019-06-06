@@ -12,7 +12,7 @@
 void population(t_non *non){
   // Initialize variables
   float avall,flucall;
-  float *Hamil_i_e,*H,*e;
+  float *Hamil_i_e,*H,*e,*Hamil_av;
 
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
@@ -36,7 +36,7 @@ void population(t_non *non){
   int elements;
   int Nsam;
   int counts;
-  int a,b,c;
+  int a,b,c,d;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -51,6 +51,7 @@ void population(t_non *non){
   N=non->singles;
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
+  Hamil_av=(float *)calloc(nn2,sizeof(float));
   H=(float *)calloc(N*N,sizeof(float));
   e=(float *)calloc(N,sizeof(float));
   Pop=(float *)calloc(non->tmax,sizeof(float));
@@ -82,23 +83,43 @@ void population(t_non *non){
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
-  /* Loop over samples */
-  for (samples=non->begin;samples<non->end;samples++){
-    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
-    veci=(float *)calloc(non->singles*non->singles,sizeof(float));
-    /* Initialize */
-    if (!strcmp(non->basis,"Local")){ /* Local basis */
-      for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
-    } else { /* Adiabatic Eigen basis */
+  if (!strcmp(non->basis,"Local")){
+    printf("Using the local (site) basis for population transfer.\n");
+    printf("The transfer rates are between sites.\n");
+  } else if (!strcmp(non->basis,"Adiabatic")) {
+    printf("Using the adiabatic eigen basis for population transfer.\n");
+    printf("The transfer rates are between eigenstates.\n");
+  } else if (!strcmp(non->basis,"Average")) {
+    printf("Using the average eigen basis for population transfer.\n");
+    printf("The transfer rates are between eigenstates.\n");
+  }
+
+  // Find average basis
+  if (!strcmp(non->basis,"Average")){
+    for (samples=non->begin;samples<non->end;samples++){
+      ti=samples*non->sample;
       /* Read Hamiltonian */
       if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
         printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
         exit(1);
       }
-      build_diag_H(Hamil_i_e,H,e,non->singles);
-      /* Create initial population in eigenstates */
-      copyvec(H,vecr,non->singles*non->singles);
+      for (a=0;a<nn2;a++){
+        Hamil_av[a]+=Hamil_i_e[a];
+      }
     }
+    for (a=0;a<nn2;a++){
+      Hamil_av[a]=Hamil_av[a]/(samples-non->begin);
+    }
+    /* Diagonalize average Hamiltonian */
+    build_diag_H(Hamil_av,H,e,non->singles);
+  }
+
+  /* Loop over samples */
+  for (samples=non->begin;samples<non->end;samples++){
+    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
+    veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+    /* Initialize */
+      for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
 
     ti=samples*non->sample;      
     for (t1=0;t1<non->tmax;t1++){
@@ -120,31 +141,70 @@ void population(t_non *non){
             PopF[t1+(non->singles*b+a)*non->tmax]+=veci[a+b*non->singles]*veci[a+b*non->singles];
           }
         }
-      } else { /* Adiabatic eigen basis */
+      } else if (!strcmp(non->basis,"Adiabatic")) { /* Adiabatic eigen basis */
         /* Read Hamiltonian */
         if (read_He(non,Hamil_i_e,H_traj,ti+t1)!=1){
           printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
           exit(1);
         }
         build_diag_H(Hamil_i_e,H,e,non->singles);
+        /* Loop over final/initial adabatic states */
         for (a=0;a<non->singles;a++){
           pr=0;
           pi=0;
+          /* Loop over sites */
           for (b=0;b<non->singles;b++){
-            pr+=H[a+b*non->singles]*vecr[a+b*non->singles];
-            pi+=H[a+b*non->singles]*veci[a+b*non->singles];
+            /* Loop over sites */
+            for (c=0;c<non->singles;c++){
+              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
+              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+            }
           }
           Pop[t1]+=pr*pr+pi*pi;
         }
+        /* Loop over final and initial states */
         for (a=0;a<non->singles;a++){
-          for (b=0;b<non->singles;b++){
+          for (d=0;d<non->singles;d++){
             pr=0;
             pi=0;
             for (c=0;c<non->singles;c++){
-              pr+=H[a+c*non->singles]*vecr[b+c*non->singles];
-              pi+=H[a+c*non->singles]*veci[b+c*non->singles];
+            /* Loop over sites */
+              for (b=0;b<non->singles;b++){
+                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
+                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+              }
             }
-            PopF[t1+(non->singles*b+a)*non->tmax]+=pr*pr+pi*pi;
+            PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
+          }
+        }
+      } else if (!strcmp(non->basis,"Average")) { /* Average eigen basis */
+      /* Loop over final/initial adabatic states */
+        for (a=0;a<non->singles;a++){
+          pr=0;
+          pi=0;
+          /* Loop over sites */
+          for (b=0;b<non->singles;b++){
+            /* Loop over sites */
+            for (c=0;c<non->singles;c++){
+              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
+              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+            }
+          }
+          Pop[t1]+=pr*pr+pi*pi;
+        }
+        /* Loop over final and initial states */
+        for (a=0;a<non->singles;a++){
+          for (d=0;d<non->singles;d++){
+            pr=0;
+            pi=0;
+            for (c=0;c<non->singles;c++){
+            /* Loop over sites */
+              for (b=0;b<non->singles;b++){
+                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
+                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+              }
+            }
+            PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
           }
         }
 
@@ -174,7 +234,9 @@ void population(t_non *non){
     }
 
   }
-
+  /* Correct for when not starting at sample zero */
+  samples=samples-non->begin;
+  /* Write populations */
   outone=fopen("Pop.dat","w");
   if (outone==NULL){
     printf("Problem encountered opening Pop.dat for writing.\n");
@@ -192,6 +254,7 @@ void population(t_non *non){
     exit(1);
   }
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
+    fprintf(outone,"%f ",t1*non->deltat);
     for (a=0;a<non->singles;a++){
       for (b=0;b<non->singles;b++){
         fprintf(outone,"%e ",PopF[t1+(non->singles*b+a)*non->tmax]/samples);
@@ -202,6 +265,7 @@ void population(t_non *non){
   fclose(outone);
 
   free(Hamil_i_e);
+  free(Hamil_av);
   free(H);
   free(e);
   free(Pop);
