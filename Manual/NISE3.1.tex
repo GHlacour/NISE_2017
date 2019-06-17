@@ -37,6 +37,10 @@ Front cover:
 %Thomas la Cour Jansen,\\[2ex]
 \copyright \/ T.l.C. Jansen, 2017
 
+\setcounter{page}{1}
+\addcontentsline{toc}{chapter}{Contents}
+\include{tableofcontents}
+
 \chapter{Introduction}
 The NISE3 code was developed by Thomas la Cour Jansen. Please, cite the appropriate
 references \cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
@@ -278,6 +282,7 @@ of the manual is generated with this gnuplot file.
  For Matlab format only the Rw files are created. These
 then contain a matrix with the response. An additional file waxis.dat is created with the values of the
 frequencies.
+\include{techniques}
 
 \chapter{Tutorial}
 A tutorial example exists for two coupled chromophores. The program stochastic creates the input
@@ -330,7 +335,7 @@ The user is encouraged to play with the settings using the tutorial to get famil
 The simple example can also be useful for getting familiar with the basics of two-dimensional spectroscopy in particular regarding the effects of coupling, correlation, relative angles between
 coupled chromophores.
 
-The delocalization length [Thouless.1974.PR.13.93] can be calculated with the analysis option as given in 
+The delocalization length \cite{Thouless.1974.PR.13.93} can be calculated with the analysis option as given in 
 the example input file inputAnalyse. Note that for including the complete trajectory [t1 
 max] should be 1. 
 \begin{verbatim}
@@ -344,7 +349,9 @@ The angle with the other dipole can be specified in the script. The transition p
 components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation 
 parameters can be specified as in the main tutorial.
 
-\section{Acknowledgement}
+\include{developers}
+
+\chapter{Acknowledgement}
 The author wish to thank Foppe de Haan for helping with the code and Arend Dijkstra for 
 helpful discussions in particular regarding the polarization directions and the double excited 
 state propagation. Alexander Paarmann is gratefully thanked for discussions regarding the 
