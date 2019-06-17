@@ -1,0 +1,359 @@
+\documentclass[12pt]{book}
+\usepackage{a4wide}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{cite}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+%\textwidth = 6.5 in
+%\textheight = 9 in
+%\oddsidemargin = 0.0 in
+%\evensidemargin = 0.0 in
+%\topmargin = 0.0 in
+%\headheight = 0.0 in
+%\headsep = 0.0 in
+%\parskip = 0.2in
+%\parindent = 0.0in
+%\bibliographystyle{unsrt}
+\bibliographystyle{tlcpub2}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}{Definition}
+
+\title{\textsc{NISE Manual\\ Version 3.1}}
+\author{Thomas la Cour Jansen\\ University of Groningen}
+\date{\today\\ \includegraphics{2ds.pdf}}
+\begin{document}
+\maketitle
+
+\thispagestyle{empty}
+\rule{0mm}{0mm}
+%\vfill
+\noindent
+Front cover: 
+%\\[4ex]
+%Thomas la Cour Jansen,\\[2ex]
+\copyright \/ T.l.C. Jansen, 2017
+
+\chapter{Introduction}
+The NISE3 code was developed by Thomas la Cour Jansen. Please, cite the appropriate
+references \cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
+when publishing work using this code. The code allows the calculation of the linear absorption,linear dichroism, sum-frequency generation, two-dimensional spectra (IR,UVvis, and SFG), population transfer, exciton diffusion and integrated anisotropy using the full nonadiabatic semi-classical numerical integration of the Schr\"{o}dinger equation approach
+\cite{Jansen.2009.ACR.42.1405} and the sparse matrix optimization approach \cite{Liang.2012.JCTC.8.1706}. The code allows treating spectra of diverse systems involving
+intra- and intermolecular energy transfer\cite{Jansen.2006.JPCB.110.22910,Cringus.2007.JCP.127.084507,Jansen.2008.BJ.94.1818,Dijkstra.2010.JPCA.114.7315,Jansen.2010.JCP.132.224503}, non-Gaussian dynamics \cite{Jansen.2009.JPCA.113.6260,Roy.2011.JPCB.115.5431}, surfaces \cite{Liang.2013.JPCL.4.448}, and chemical exchange \cite{Jansen.2007.JCP.127.234502}. This manual is not intended as an introduction to two-dimensional
+spectroscopy. The user is directed to the references including recent reviews \cite{Hamm.1998.JPCB.102.6123,Hochstrasser.2001.CP.266.273,Cho.2008.CR.108.1331,Mukamel.2000.ARPC.51.691,Jansen.2009.ACR.42.1405} and books
+for more information \cite{Cho.2009.B01,Mukamel.1995.B01,Hamm.2011.B01}.
+
+The code use wavenumbers for frequencies and times are femtoseconds. The transition
+dipoles and transition polarizabilities may be given in any desired units.
+
+Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.nl.
+Change in the code is allowed, but on own risk, and should be reported clearly in publications. The code may not be redistributed.
+
+
+\chapter{Installation and dependencies}
+The NISE3 code require LAPACK and FFTW3 libraries, which is not included in the distribution. FFTW3
+can be downloaded from http://www.fftw.org. LAPACK is used by many other programs and frequently
+preinstalled on most scientific computer cluster. More information can be found on http://www.netlib.org/lapack/. For plotting the NISE3 code is delivered with scripts working with the DISLIN and gnuplot  plotting programs.
+More information and download of this code can be found at http://www.mps.mpg.de/dislin/. Gnuplot is frequently preinstalled on many computer  clusters. More information can be found at http://www.gnuplot.info/. 
+
+For installing NISE3 one have to adjust the makefile to match the desired compiler and the location of the LAPACK and FFTW3 libraries. The location of these libraries can be found using the locate command on most linux/unix systems. Several examples are given in the makefile. Typing make in the NISE3 directory will compile the code and leave it in that directory. The code should now be executable. The tutorial program likewise needs to be compiled in the Tutorial directory. The most significant difference between the former version NISE3 and version NISE3 is that the new version allows the use of openMP for the simulation of 2D the spectra. The code must, thus, be compiled including the -openmp compiler flag, when using icc, or -fopenmp, when compiling with gcc.
+
+\chapter{Program descriptions}
+Overview over programs for calculating spectra and analysis:\\
+\begin{description}
+\item [translate] [Convert Hamiltonian and dipole trajectory between different formats.]
+\item [NISE3.1] [General code for calculating spectra]
+\item [2DFFT] [Do the 2D Fourier transform]
+\end{description}
+
+\section{Translate}
+The Hamiltonian \textbf{must} be saved in binary format (GROBIN/SKIBIN) for use in the NISE program.
+The translate program convert between different formats. The program also allows selecting specific sites in a Hamiltonian file and modification of the fundamental frequencies corresponding to isotope labeling. The input file format is:
+\begin{description}
+\item[InputEnergy] [filename]
+\item[InputDipole] [filename (only needed for GRO/SKI formats)]
+\item[InputDipoleX] [filename (only needed for MIT format)]
+\item[InputDipoleY] [filename (only needed for MIT format)]
+\item[InputDipoleZ] [filename (only needed for MIT format)]
+\item[InputAnharm][filename (only needed for SKI format)]
+\item[InputOverto][filename (only needed for SKI format)]
+\item[InputAlpha][filename (only available for GRO format)]
+\item[OutputEnergy] [filename]
+\item[OutputDipole] [filename (only needed for GRO/SKI formats)]
+\item[OutputDipoleX] [filename (only needed for MIT format)]
+\item[OutputDipoleY] [filename (only needed for MIT format)]
+\item[OutputDipoleZ] [filename (only needed for MIT format)]
+\item[OutputAnharm][filename (only needed for SKI format)]
+\item[OutputOverto][filename (only needed for SKI format)]
+\item[OutputAlpha][filename (only available for GRO format)]
+\item[Singles] [number of oscillators]
+\item[Doubles] [number of doubly excited states]
+\item[Skip][Doubles=Neglect doubly excited states, needed for SKIBIN]
+\item[Length] [number of timesteps in the trajectory files]
+\item[Anharmonicity][A fixed anharmonicity. Only needed for generating GROBIN file from format without double excited states.]
+\item[InputFormat] [GROBIN/GROASC/MITASC/SKIBIN]
+\item[OutputFormat] [GROBIN/GROASC/MITASC/SKIBIN]
+\item[Modify][Leave this out if you do not wish to modify the Hamiltonian]
+\item[Select] [Number of amide units to include, if selected number is less than the number of units in the original a list of the units to include should be given on the following line (i.e. 0 1 2 3 5 if 6 units are in the original and we want unit 4 excluded).]
+\item[Label] [On the following line the for each selected unit the isotope labeling is given (0=native, 1=C13, 2=O18) C13 gives a 41 wavenumber frequency shift and O18 gives a 60 wavenumber shift in this implementation.]
+\item[Shift] [On the following line for each selected unit a frequency shift can be provided. This can be used for modifying proline or terminal frequencies or for isotope labeling.]   
+\end{description}
+
+\subsection{File formats}
+GROBIN is the binary format needed for use with the NISE program. This contains information on the energy of both singly and doubly excited states and allows for fluctuating anharmonicities.
+GROASC is a text readable format.
+MITASC and MITTXT are text formats used by the MIT static spectrum code.
+SKIBIN is a binary format used by the Skinner group. It contain the singly excited states and a
+separate file for fluctuating anharmonicities and a file for fluctuating overtone transition dipoles.
+SPECTRON is a text format used by the Mukamel group SPECTRON code.
+The GROBIN format is the only format that allows storing the doubly excited states Hamiltonian. This will be generated automatically using harmonic rules and the anharmonicity given by the Anharmonicity keyword.
+
+\noindent
+\underline{GROBIN and SKIBIN:}\\
+The GROBIN and SKIBIN formats are very similar.
+The energy file has the following format.
+For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
+Then the single excited Hamiltonian is given in floats as a tridiagonal upper matrix. For the GROBIN
+format the double excited Hamiltonian might be provided afterwards again in a tridiagonal upper matrix.
+
+The dipole file has the following format.
+For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
+Then the x components of the transition dipole matrix are given in floats, followed by the y and z components. For the GROBIN format the transition dipole matrix for the single to double transitions is then given, again with the x components given first.
+
+The anharmonicity file is only given in the SKIBIN format.
+For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
+Then the diagonal anharmonicities are then given in floats.
+
+The overtone file is only given in the SKIBIN format.
+For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
+Then the overtone transition dipoles are then given in floats. Only the same site overtone transition dipoles are given. Transitions like $\langle 1\mid\mu\mid 12\rangle$ are determined by the harmonic rules.
+
+The transition polarizability file which is not available in the SKIBIN format 
+has the following format. For each snapshot in the trajectory they contain first an integer 
+typically containing the number of the snapshot. This integer is not used in the calculation, 
+but can be used for control purposes. Then the xx components of the transition polarizability
+matrix are given in ﬂoats, followed by the yy and zz components. 
+
+\noindent
+\underline{GROASC:}\\
+The energy file contain one Hamiltonian snapshot for each line. The upper tridiagonal matrix is saved and each number is separated by a space. The transition dipoles are stored in one file. Each line contains one snapshot with the numbers separated by a space. All the x components for one snapshot are stored first followed by the y and z components. Only the single excitation Hamiltonian and the transition dipoles from the ground state to the singly excited state are saved.
+
+\noindent
+\underline{MITASC:}\\
+The energy file contain one Hamiltonian snapshot for each line. The whole square matrix is saved and each number is separated by a tab. The transition dipoles are stored in one file for each cartesian component. Each line contains one snapshot with the numbers separated by a tab. Only the single excitation Hamiltonian and the transition dipoles from the ground state to the singly excited state are saved.
+
+\noindent
+\underline{MITTXT:}\\
+The energy file contain one row of the Hamiltonian snapshot for each line. The whole square matrix is saved and each number is separated by a space. Snapshots are separated by an empty line. The transition dipoles are stored in one file for each cartesian component. Each line contains the cartesian coordinates of one transition dipole. The numbers separated by a space. Snapshots are separated by an empty line. Only the single excitation Hamiltonian and the transition dipoles from the ground state to the singly excited state are saved.
+
+\noindent
+\underline{SPECTRON:}\\
+In the energy file each snapshot is stored after a line containing the word SNAPSHOT and the number
+of the snapshot (starting from 1). After this the upper tridiagonal matrix of the Hamiltonian snapshot is stored with one row on each line. The numbers are separated by a space. The dipole file also contain a line with the word SNAPSHOT and the number of that snapshot. This is followed by the transition dipoles stored with the x, y and z components for each site on one line separated by a space. Only the single excitation Hamiltonian and the transition dipoles from the ground state to the singly excited state are saved.
+
+
+\subsection{Full nonadiabatic simulation}
+The nonadiabatic linear and third-order response can be simulated with the 'NISE3' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in \cite{Jansen.2010.JCP.132.224503}.
+The coupling propagation scheme is described in \cite{Liang.2012.JCTC.8.1706}.
+The program require the Hamiltonian trajectory in binary format.
+The NISE3 program use the following input:\\
+\begin{description}
+\item [Hamiltonianfile] [File name]
+\item [Dipolefile] [File name]
+\item [Alphafile] [File name] (Only needed for SFG calculations)
+\item [Anharmonicfile] [File name]
+\item [Overtonedipolefile] [File name]
+\item [PDBfile] [File name]
+\item [Length] [Number of snapshots in trajectory] 
+\item [Samplerate] [Number of snapshots between ensemble averaging]
+\item [Lifetime] [The life time in fs]
+\item [Timestep] [The length of each timestep in fs]
+\item [RunTimes] [t1 max] [t2] [t3 max, all in timesteps]
+%\item [MinTimes] [t1 min] [t2 min] [t3 min, all in timesteps, t1 min and t3 min should be 0]
+%\item [MaxTimes] [t1 max] [t2 max] [t3 max, all in timesteps, t2 max should equal t2 min+1]
+%\item [TimeIncrement] [dt1] [dt2] [dt3, all in timesteps, default 1]
+\item [Threshold][The threshold for the sparse matrix approximation, typical value 0.001]
+\item [Anharmonicity] [0 = anharmonicities from file used, all other values result in the use of a fixed anharmonicity with that value]
+\item [Singles] [Number of singly excited states]
+\item [Propagation] [Sparse/Coupling default is Sparse] (Coupling recommended for fast calculations)
+\item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme]
+\item [Trotter] [The number of trotter steps in the Paarmann approximation for double excited 
+states, 5 recommended for the Sparse propagation scheme, for the Coupling propagation scheme this is the general number of trotter steps the recommended value is then 1 ]
+\item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
+\item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
+%\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
+\item [Technique] [1D/SFG/2D/2DSFG/Pop/Dif/Ani/Analyse, for linear absorption (and linear dichroism), SFG, 2DIR or 2Dvis, 2DSFG, population transfer simulation,exciton diffusion, integrated anisotropy calculation, or Hamiltonian analysis, respectively]
+\item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used]
+%\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
+\item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
+\item [BeginPoint] [The number of the first sample calculated in this run]
+\item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
+\item [Project] (Should be followed by two new lines. The first with Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero.)
+\end{description}
+
+The minimum and maximum frequencies are used for two things. First, the average of minw1 and maxw1 are used to shift the frequencies during the simulation. By shifting all transitions by the
+average the oscillations of the time-evolution are reduced and the simulations can be performed with
+longer distance between the time points. Second, the output is reduced to frequencies within the
+min and the max which reduce file size.
+
+The lifetime is currently only applied during the coherence times ($t_1$ and $t_3$ ) according 
+to the formula in \cite{Liang.2012.JCTC.8.1706}. The waiting time dependence can trivially be accounted for by 
+multiplying the whole spectrum with $\exp( -t_2 /T_1 )$.
+
+The double excitation Hamiltonian is propagated using the Trotter formula scheme\cite{Paarmann.2008.JCP.128.191103,Jansen.2010.JCP.132.224503}.
+
+During the calculation the program will create a log file called NISE.log. This file will be updated
+every time a new sample has been calculated. The update contains timing information and
+therefore allows for the estimation of when the complete calculation finishes.
+
+For exciton diffusion calculations an additional input file containing the site positions is needed.
+This file should be named Position.bin and have the following format. The first entry should be the
+size of the box in float (all sides are assumed equally long). This is followed by the x, y, and z coordinates for each site again in floats. After the coordinates of the first snapshot the coordinates
+for the second follows directly and the coordinates for all snapshots should be stored.
+
+For SFG, 2DSFG, and linear dichroism calculations the principle axis is assumed to be the z- 
+axis. The SFG calculations only support the calculation of $\chi^{(2)}_{zzz}$ and $\chi^{(2)}_{xxz}$, which require the diagonal elements of the transition polarizability tensor (given in the alpha file). For 2DSFG $\chi^{(4)}_{zzzzz}$ and $\chi^{(2)}_{zzzxx}$ are currently calculated.
+
+\subsection{Program output}
+The 1D calculation provides the linear response function in time domain in the file R1D.dat 
+and the linear dichroism response function in time domain in the file RLD.dat. The first 
+column is the time in femto seconds. The other columns are the real and imaginary parts 
+of the response function. It is recommended to check that these have decayed to a small 
+value close to zero in the calculated time interval. If this is not the case the system has 
+not lost it’s coherence within the time determined by t1 max and the spectrum will be 
+too broad. The linear absorption is given in the file FTIR.dat and the linear dichroism in 
+the file LDIR.dat. The first line is the frequency in wavenumbers, the second line is the 
+absorption spectrum, and a third line contain zeroes. For the linear dichroism calculation 
+the z-axis is assumed to be the unique axis. 
+
+The SFG calculation provides the second order response function in time domain in 
+the files RSFG\_zzz.dat and RSFG\_xxz\_yyz.dat. The first column is the time in femto 
+seconds. The other columns are the real and imaginary parts of the response function. 
+It is recommended to check that these have decayed to a small value close to zero in the 
+calculated time interval. If this is not the case the system has not lost it’s coherence within
+the time determined by t1 max and the spectrum will be too broad. The frequency domain 
+response functions are given in the files SFG\_zzz.dat and SFG\_xxz\_yyz.dat. The first line 
+is the frequency in wavenumbers, the second line is the absorption spectrum, and a third 
+line contain zeroes. The z-axis is assumed to be the unique axis.
+
+The 2D calculation provides the files R(par/per/cro)(I/II).dat. These files contain the time domain
+third-order response functions for different polarization directions \cite{Hochstrasser.2001.CP.266.273,Zanni.2001.PNAS.98.11265}.
+The first three columns are the times t1, t2, and t2 in femtoseconds.
+The two last columns are the real and imaginary parts of the response functions. The frequency domain
+response functions are found using a double Fourier transform (see section \ref{sec:Fourier}).
+It is recommended to check that the response function has decayed within the calculated time intervals.
+
+The 2DSFG calculation stores the $\chi^{(4)}_{zzzzz}$ signal in Rpar(I/II).dat, while the  
+$\chi^{(4)}_{zzzyy}$ signal is stored in Rper(I/II).dat. The files are essentially identical to the
+normal 2D response files and are Fourier transformed in the same way (see section \ref{sec:Fourier}).
+
+The population transfer calculation provides two files. Pop.dat contain two columns. The first is the
+time in femtoseconds the second is the probability that if a site was initially excited it is still excited
+after the given time. This is averaged over all sites. The file PopF.dat contain more detailed information.
+The first column is the time. The following columns are the probability that if a particular site was excited
+initially other sites are excited later. The first N columns are the populations of the N sites following an initial excitation of the first site. Then follows the populations after excitation of the second site etc. This file might be a very large file for big systems.
+
+For the exciton diffusion the output file is Dif.dat It has three columns. The first is the time in femto seconds. The second column is the mean square displacement of the wave function assuming that
+one site is initially excited. The third column is the mean square displacement of the center of the 
+wave function assuming that one site is initially excited. The program averages over all sites as
+initial sites. One should be aware that periodic boundary conditions are applied in this calculation
+and the mean square displacements will saturate \cite{Jansen.2010.JCP.132.224503}.
+
+For the integrated anisotropy calculation the output file is Ani.dat. It has three columns. The first is the time in femtoseconds. The second is the integrated anisotropy and the last is the orientational correlation function.
+
+The Hamiltonian analysis provides the delocalization length/size according to the def- 
+inition of Thouless \cite{Thouless.1974.PR.13.93} directly in the program standard output. 
+
+\section{Fourier transform \label{sec:Fourier}}
+The 2DFFT program use the same input as the NISE3 program.
+Fourier transformed response is written in files named Rw(par/per/cro).(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2D.(par/per/cro).dat and the 'broad pump narrow probe' pump probe signal is stored in PP.(par/per/cro).dat.
+The first column is $\omega_1$, the second is $\omega_2$, the third is the dispersive signal, and the
+last column is the absorptive signal. Perl scripts connected with Dislin are available for plotting or the
+user can use his or her favorite plotting program.
+The Gunplot output is only differing from the Dislin format in an empty line following ach new value of $\omega_1$. A Gnuplot example file is included in the tutorial. The cover picture 
+of the manual is generated with this gnuplot file.
+ For Matlab format only the Rw files are created. These
+then contain a matrix with the response. An additional file waxis.dat is created with the values of the
+frequencies.
+
+\chapter{Tutorial}
+A tutorial example exists for two coupled chromophores. The program stochastic creates the input
+trajectories in GROASC format and input files can be found for converting to GROBIN and for the
+calculation of linear and two-dimensional spectra. The stochastic code allow the user to construct
+a simple trajectory for two coupled three level system. It is assumed that these levels are coupled
+to a set of overdamped Brownian oscillators \cite{Mukamel.1995.B01}.
+The user can vary the length of the trajectory, the duration of the time interval between snapshots, the 
+width of the frequency distribution, the correlation time, and the degree of correlation between the
+two three level system fundamental frequency fluctuations. The energy difference and the average frequency for the two fundamental frequencies can be adjusted as can the coupling between them.
+The angle between the assumed fixed transition dipoles can be adjusted as well. An example for
+parameters is given in the script named run. 
+
+After generating the frequency trajectory with the stochastic program one can look at the generated
+trajectories in Energy.tex and Dipole.tex. The should the be converted to binary input for the NISE3
+program. This is done with the translate program with the input given in the file inpTra.
+The command line entry:
+\begin{verbatim}
+~/NISE_2017/NISE3.1/translate inpTra
+\end{verbatim}
+will accomplish this.
+
+When the binary trajectory exist we can calculate the linear absorption using the input from the file input1D.
+\begin{verbatim}
+~/NISE_2017/NISE3.1 input1D
+\end{verbatim}
+One should plot the output in R1D.dat and FTIR.dat to get familiar with this. It is 
+important that the response function has decayed almost completely within the simulated 
+time to avoid ringing and other artifact in the spectrum. The program should finish in a 
+few seconds. The linear dichroism signal in this case found in RLD.dat and LDIR.dat is 
+not so interesting as it is simply minus half of the FTIR signal, since the dipoles are in the 
+x, y plane. 
+
+The two-dimensional spectra are calculated with the input file input2D.
+\begin{verbatim}
+~/NISE_2017/NISE3.1/NISE3.1 input2D
+\end{verbatim}
+The progress of the calculation can be followed in the NISE.log file. One should expect that the calculation of one sample point takes about 10 seconds with the given settings. For a test about 100 samples are sufficient, while for nice spectra at least 1000 samples are needed. Typically more samples are needed for two-dimensional spectra than for linear absorption spectra and the more different distinct chromophore environments are present the more samples are needed. The given example should take about 15 minutes to simulate (of course depending on the computer).
+
+The NISE3 code is natively build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can be achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
+
+The 2D simulations can be performed in parallel using openMP. The program does this by distributing the calculations for different values of t1 on different CPUs. When running parallel it is advantageous to ensure that ([t1 max]+1) divided by the number of used CPUs is an integer number or slightly smaller than an integer number. To run the code parallel the OMP\_NUM\_THREADS variable has to be set equal to the number of CPUs that one want to use in the submission script (or if not running under a queueing system the variable has to be set in the used linux shell). On most clusters one should further specify to the queuing system how many CPUs are needed when submitting the job. The user is referred to the manual of the cluster used for this kind of information as it varies from system to system. For parts of the code, where the mkl library is used for solving eigen value problems these may be run in parallel as well by setting the MKL\_NUM\_THREADS variable equal to the number of CPUs used for this task. The general experience is that for small problems running parallel is not efficient. The mkl library also does not perform well on large numbers of CPUs, however, the 2D simulations were found to scale well up to about 32 CPUs in recent simulations on 864 coupled OH-stretch oscillators \cite{Shi.2016.PCCP}.
+
+The response functions calculated in time domain can be converted to frequency domain spectra using the double Fourier transform code with the same input as for the calculation of the response function.
+\begin{verbatim}
+~/projects/NISE3/2DFFT input2D
+\end{verbatim}
+
+The user is encouraged to play with the settings using the tutorial to get familiar with the code.
+The simple example can also be useful for getting familiar with the basics of two-dimensional spectroscopy in particular regarding the effects of coupling, correlation, relative angles between
+coupled chromophores.
+
+The delocalization length [Thouless.1974.PR.13.93] can be calculated with the analysis option as given in 
+the example input file inputAnalyse. Note that for including the complete trajectory [t1 
+max] should be 1. 
+\begin{verbatim}
+~/projects/NISE3/NISE3 inputAnalyse 
+\end{verbatim}
+A separate tutorial exists for the SFG part of the code. The script for creating the 
+trajectory is called runSFG. The input files for the translate and NISE3 programs are 
+called inpTraSFG, and input(2D)SFG, respectively. In this tutorial two sites are given. The 
+transition dipole of the first is parallel to the z-axis and pointing in the positive direction. 
+The angle with the other dipole can be specified in the script. The transition polarizability 
+components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation 
+parameters can be specified as in the main tutorial.
+
+\section{Acknowledgement}
+The author wish to thank Foppe de Haan for helping with the code and Arend Dijkstra for 
+helpful discussions in particular regarding the polarization directions and the double excited 
+state propagation. Alexander Paarmann is gratefully thanked for discussions regarding the 
+double excited state propagation. Carsten Olbrich is thanked for providing a gnuplot file 
+that was adjusted to give the example provided with the tutorial. The Skinner group and 
+Carlos Baiz are gratefully acknowledged for helping making the code more user friendly 
+and with correcting minor bugs. I am grateful to Chungwen Liang for corrections of the 
+Manual and implementation of the linear SFG code. The NWO is gratefully acknowledged
+for financial support making is possible to write this code. 
+
+\bibliography{Merged2016.bib}%Rochester-9.bib}
+\end{document} 
