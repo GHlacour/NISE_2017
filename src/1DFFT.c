@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <fftw3.h>
-#include "types3.1.h"
+#include "types.h"
 #include "nrutil.h"
 
 /* Do 1D Fourier transform */

@@ -5,8 +5,8 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "analyse.h"
 
 void analyse(t_non *non){

@@ -5,20 +5,18 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
-#include "calc_CD.h"
+#include "types.h"
+#include "NISE_subs.h"
+#include "absorption.h"
 #include "1DFFT.h"
 
-void calc_CD(t_non *non){
+void absorption(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
-  float *pos;
-  float posj;
+
   // Aid arrays
-  float *vecr,*veci;
-  //,*vecr_old,*veci_old;
+  float *vecr,*veci,*vecr_old,*veci_old;
 
   /* Floats */
   float shift1;
@@ -27,7 +25,7 @@ void calc_CD(t_non *non){
   fftw_plan fftPlan;
 
   /* File handles */
-  FILE *H_traj,*mu_traj,*pos_traj;
+  FILE *H_traj,*mu_traj;
   FILE *outone,*log;
   FILE *Cfile;
 
@@ -36,12 +34,9 @@ void calc_CD(t_non *non){
   int itime,N_samples;
   int samples;
   int x,ti,tj,i;
-  int y,z;
-  int j,N;
   int t1,fft;
   int elements;
   int cl,Ncl;
-  int sign;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -56,7 +51,6 @@ void calc_CD(t_non *non){
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
   im_S_1=(float *)calloc(non->tmax,sizeof(float));
   nn2=non->singles*(non->singles+1)/2;
-  N=non->singles;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
@@ -71,13 +65,6 @@ void calc_CD(t_non *non){
     printf("Dipole file %s not found!\n",non->dipoleFName);
     exit(1);
   }
-
-  pos_traj=fopen(non->positionFName,"rb");
-  if (pos_traj==NULL){
-    printf("Position file %s not found!\n",non->positionFName);
-    exit(1);
-  }
-
 
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
@@ -114,10 +101,9 @@ void calc_CD(t_non *non){
 
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
-//  vecr_old=(float *)calloc(non->singles,sizeof(float));
-//  veci_old=(float *)calloc(non->singles,sizeof(float));
+  vecr_old=(float *)calloc(non->singles,sizeof(float));
+  veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
-  pos=(float *)calloc(non->singles,sizeof(float));
 
   // Loop over samples
   for (samples=non->begin;samples<non->end;samples++){
@@ -137,24 +123,17 @@ void calc_CD(t_non *non){
       }
     }
     if (non->cluster==-1 || non->cluster==cl){
-
-    // Loop over initial sites
-    for (j=0;j<N;j++){ 
-
-    // Loop over polarizations of the initial excitation      
+      
     for (x=0;x<3;x++){
       // Read mu(ti)
-      if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
+      if (read_mue(non,vecr,mu_traj,ti,x)!=1){
 	printf("Dipole trajectory file to short, could not fill buffer!!!\n");
 	printf("ITIME %d %d\n",ti,x);
 	exit(1);
       }
-      // Initialize excitation on initial site
-      clearvec(vecr,non->singles);
       clearvec(veci,non->singles);
-      vecr[j]=mu_eg[j];
-//      copyvec(vecr,vecr_old,non->singles);
-//      copyvec(vecr,mu_eg,non->singles);
+      copyvec(vecr,vecr_old,non->singles);
+      copyvec(vecr,mu_eg,non->singles);
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
@@ -163,50 +142,23 @@ void calc_CD(t_non *non){
 	  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
 	  exit(1);
 	}
-
-        // Loop over polarization values y for mu
-        for (y=0;y<3;y++){
-          // Exclude values taken up by the first interaction
-          if (y!=x){	
-            // Find corresponding value for the polarization used for the distance matrix
-            z=3-x-y;
-	    // Read mu(tj)
-	    if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
-	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	      printf("JTIME %d %d\n",tj,y);
-	      exit(1);
-            }
-            // Read positions
-            if (read_mue(non,pos,pos_traj,tj,z)!=1){
-              printf("Position trajectory file to short, could not fill buffer!!!\n");
-              printf("JTIME %d %d\n",tj,z);
-              exit(1);
-            }
-            posj=pos[j];
-	    // Do projection on selected sites if asked
-	    if (non->Npsites>0){
-	      projection(mu_eg,non);
-	    }
 	
-            sign=0;
-            // Determine the sign
-            if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
-            if (z==0 & y==2 & x==1){sign=-1;}//{}sign=-1;}
-            if (z==1 & y==0 & x==2){sign=-1;}//{sign=-1;}
-            if (z==2 & y==0 & x==1){sign=1;}//{sign=1;}
-            if (z==2 & y==1 & x==0){sign=-1;}//{sign=-1;}
-            if (z==1 & y==2 & x==0){sign=1;}//{sign=1;}
-            if (sign==0){
-              printf("Bug in CD routine.\n");
-              exit(1);
-            }
+	// Read mu(tj)
+	if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
+	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	  printf("JTIME %d %d\n",tj,x);
+	  exit(1);
+	}
 
-	    // Find response
-	    calc_CD1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,pos,sign,posj);
-	  }
-        }
+	// Do projection on selected sites if asked
+	if (non->Npsites>0){
+	  projection(mu_eg,non);
+	}
+	
+	// Find response
+	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
 
-	// Propagate vector
+	// Probagate vector
 	if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
 	if (non->propagation==0){
 	  if (non->thres==0 || non->thres>1){
@@ -226,7 +178,6 @@ void calc_CD(t_non *non){
 	}
       }
     }
-    }
     } // Cluster loop
   
     // Log time
@@ -239,6 +190,8 @@ void calc_CD(t_non *non){
 
   free(vecr);
   free(veci);
+  free(vecr_old);
+  free(veci_old);
   free(mu_eg);
   free(Hamil_i_e);
 
@@ -257,34 +210,35 @@ void calc_CD(t_non *non){
     }
   }
 
-  fclose(mu_traj),fclose(H_traj),fclose(pos_traj);
+  fclose(mu_traj),fclose(H_traj);
   if (non->cluster!=-1){
     fclose(Cfile);
   }
 
-  outone=fopen("TD_CD.dat","w");
+  /* Save time domain response */
+  outone=fopen("TD_Absorption.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
   }
   fclose(outone);
 
   /* Do Forier transform and save */
-  do_1DFFT(non,"CD.dat",re_S_1,im_S_1,samples);
+  do_1DFFT(non,"Absorption.dat",re_S_1,im_S_1,samples);
 
   free(re_S_1),free(im_S_1);
 
   printf("----------------------------------------------\n");
-  printf(" CD calculation succesfully completed\n");
+  printf(" Absorption calculation succesfully completed\n");
   printf("----------------------------------------------\n\n");
 
   return;
 }	
 
-void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign,float posj){
-  int i,j;  
+void calc_S1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu){
+  int i;
   for (i=0;i<non->singles;i++){
-    re_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*cr[i];
-    im_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*ci[i];
+    re_S_1[t1]+=mu[i]*cr[i];
+    im_S_1[t1]+=mu[i]*ci[i];
   }
   return;
 }

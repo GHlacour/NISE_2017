@@ -5,10 +5,10 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "readinput.h"
-#include "NISE3.1.h"
+#include "NISE.h"
 #include "absorption.h"
 #include "c_absorption.h"
 #include "luminescence.h"

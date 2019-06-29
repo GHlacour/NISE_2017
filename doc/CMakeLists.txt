@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.9)
+
+find_package(LATEX)
+if(LATEX_COMPILER AND BIBTEX_COMPILER)
+    include(UseLATEX)
+
+    add_latex_document(
+        NISE3.1.tex
+        IMAGES 2ds.pdf
+        BIBFILES Merged2016.bib
+        TARGET_NAME doc
+        EXCLUDE_FROM_ALL
+        EXCLUDE_FROM_DEFAULTS
+    )
+else()
+    message(WARNING "Docs cannot be compiled since no working LaTeX distribution could be found!")
+endif()

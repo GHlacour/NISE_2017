@@ -4,8 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include "translate.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "readinput.h"
 
 /* This code translate the Hamiltonian between different formats */

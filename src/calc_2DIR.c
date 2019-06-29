@@ -5,12 +5,12 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "polar.h"
-#include "calc_2DES.h"
+#include "calc_2DIR.h"
 
-void calc_2DES(t_non *non){
+void calc_2DIR(t_non *non){
   /* Define arrays! */
   float *rrIpar,*riIpar,*rrIIpar,*riIIpar; // 2D response function parallel
   float *rrIper,*riIper,*rrIIper,*riIIper; // 2D response function perpendic.
@@ -35,9 +35,7 @@ void calc_2DES(t_non *non){
   float *lt_gb_se,*lt_ea;
   float *Urs,*Uis;
   int *Rs,*Cs;
-  float *mu_xyz;  
-  float *pol; /* Currently dummy vector that can be used to change coordinate system in the future */
-
+  
   /* Polarization arrays */
   int px[4];
   float polWeight;
@@ -70,7 +68,6 @@ void calc_2DES(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj;
   FILE *Cfile;
-  FILE *C_traj;
   FILE *Flog;
   FILE *A_traj,*mu2_traj;
   FILE *outttwo;
@@ -149,13 +146,12 @@ void calc_2DES(t_non *non){
   ft1r=(float *)calloc(non->singles*(non->singles+1)/2*non->tmax1,sizeof(float));
   ft1i=(float *)calloc(non->singles*(non->singles+1)/2*non->tmax1,sizeof(float));
   ft1r_o=(float *)calloc(non->singles*(non->singles+1)/2*non->tmax1,sizeof(float));
-  ft1i_o=(float *)calloc(non->singles*(non->singles+1)/2*non->tmax1,sizeof(float));
+    ft1i_o=(float *)calloc(non->singles*(non->singles+1)/2*non->tmax1,sizeof(float));
   Urs=(float *)calloc(non->singles*non->singles,sizeof(float));
   Uis=(float *)calloc(non->singles*non->singles,sizeof(float));
   Rs=(int *)calloc(non->singles*non->singles,sizeof(int));
   Cs=(int *)calloc(non->singles*non->singles,sizeof(int));
-  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));  
-
+  
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
   if (H_traj==NULL){
@@ -182,7 +178,7 @@ void calc_2DES(t_non *non){
   }
 
   /* Open file for fluctuating anharmonicities and sequence transition dipoles if needed */
-  if (non->anharmonicity==0 && (!strcmp(non->technique,"2DUVvis") || (!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"noEAUVvis")) ||(!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"SEUVvis")))){
+  if (non->anharmonicity==0 && (!strcmp(non->technique,"2DIR") || (!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA")) ||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))|| (!strcmp(non->technique,"2DSFG")))){
     A_traj=fopen(non->anharFName,"rb");
     if (A_traj==NULL){
       printf("Anharmonicity file %s not found!\n",non->anharFName);
@@ -193,27 +189,6 @@ void calc_2DES(t_non *non){
     if (mu2_traj==NULL){
       printf("Overtone dipole file %s not found!\n",non->overdipFName);
       exit(1);
-    }
-  }
-
-  /* Read coupling */
-  if (!strcmp(non->hamiltonian,"Coupling")){
-    C_traj=fopen(non->couplingFName,"rb");
-    if (C_traj==NULL){
-      printf("Coupling file not found!\n");
-      exit(1);
-    }
-    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
-    }
-    fclose(C_traj);
-    for (x=0;x<3;x++){
-      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
-         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-         printf("ITIME %d %d\n",0,x);
-         exit(1);
-      }
     }
   }
 
@@ -268,13 +243,13 @@ void calc_2DES(t_non *non){
       /* Loop over Polarization componets */
       for (molPol=0;molPol<21;molPol++){
         polar(px,molPol);
-        mureadE(non,mut2,tj,px[1],mu_traj,mu_xyz,pol);      
+        muread(non,mut2,tj,px[1],mu_traj);      
 
         /* Ground state bleach (GB) kI and kII */
         for (t1=0;t1<non->tmax1;t1++){
           /* Read dipoles at time 0 */
           ti=tj-t1;
-          mureadE(non,leftnr+t1*non->singles,ti,px[0],mu_traj,mu_xyz,pol);    
+          muread(non,leftnr+t1*non->singles,ti,px[0],mu_traj);    
           clearvec(leftni+t1*non->singles,non->singles);
           clearvec(leftnr_o+t1*non->singles,non->singles);
           clearvec(leftni_o+t1*non->singles,non->singles);
@@ -303,18 +278,18 @@ void calc_2DES(t_non *non){
         }
 
         /* Combine with evolution during t3 */
-        mureadE(non,mut3r,tk,px[2],mu_traj,mu_xyz,pol);
+        muread(non,mut3r,tk,px[2],mu_traj);
         clearvec(mut3i,non->singles);
         for (t3=0;t3<non->tmax3;t3++){
           tl=tk+t3;
-          mureadE(non,mut4,tl,px[3],mu_traj,mu_xyz,pol);
+          muread(non,mut4,tl,px[3],mu_traj);
           t3nr=0,t3ni=0;
           for (i=0;i<non->singles;i++){
             t3nr+=mut4[i]*mut3r[i];
             t3ni+=mut4[i]*mut3i[i];
           }
           /* Calculate GB contributions */
-          if ((!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
+          if ((!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"noEA"))){
 #pragma omp parallel for private(tt,polWeight)
             for (t1=0;t1<non->tmax1;t1++){
 	      tt=non->tmax1*t3+t1;
@@ -349,7 +324,7 @@ void calc_2DES(t_non *non){
 
         /* Stimulated emission (SE) */
         /* Calculate evolution during t2 */  
-        mureadE(non,leftrr,tj,px[1],mu_traj,mu_xyz,pol);
+        muread(non,leftrr,tj,px[1],mu_traj);
         clearvec(leftri,non->singles);
         for (t2=0;t2<non->tmax2;t2++){
 	          tm=tj+t2;
@@ -369,9 +344,9 @@ void calc_2DES(t_non *non){
 	}
 
         /* Read dipole for third interaction */
-        mureadE(non,mut3r,tk,px[2],mu_traj,mu_xyz,pol);
+        muread(non,mut3r,tk,px[2],mu_traj);
 
-        if ((!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"2DUVvis"))){   
+        if ((!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"2DIR"))){   
           if (non->anharmonicity==0){
             read_over(non,over,mu2_traj,tk,px[2]);
           }
@@ -418,7 +393,7 @@ void calc_2DES(t_non *non){
 	/* Combine with evolution during t3 */
         for (t3=0;t3<non->tmax3;t3++){
           tl=tk+t3;
-          mureadE(non,mut4,tl,px[3],mu_traj,mu_xyz,pol);
+          muread(non,mut4,tl,px[3],mu_traj);
           
 #pragma omp parallel for
           for (t1=-1;t1<non->tmax1;t1++){
@@ -440,7 +415,7 @@ void calc_2DES(t_non *non){
 	  }
 
 	/* Calculate Response */
-          if ((!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
+          if ((!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"noEA"))){
 #pragma omp parallel for private(tt,polWeight)
             for (t1=0;t1<non->tmax1;t1++){ 
               tt=non->tmax1*t3+t1;
@@ -483,13 +458,13 @@ void calc_2DES(t_non *non){
           }
         }
 
-        if ((!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"2DUVvis"))){
+        if ((!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"2DIR"))){
 	/* Excited state absorption (EA) */
         /* Combine with evolution during t3 */
           for (t3=0;t3<non->tmax3;t3++){
             tl=tk+t3;
 	/* Read Dipole t4 */
-            mureadE(non,mut4,tl,px[3],mu_traj,mu_xyz,pol);
+            muread(non,mut4,tl,px[3],mu_traj);
             if (non->anharmonicity==0){
               read_over(non,over,mu2_traj,tl,px[3]);
             }
@@ -614,7 +589,7 @@ void calc_2DES(t_non *non){
 
   /* Close Files */
   fclose(mu_traj),fclose(H_traj);
-  if((!strcmp(non->technique,"2DUVvis"))||(!strcmp(non->technique,"GBUVvis"))||(!strcmp(non->technique,"SEUVvis"))||(!strcmp(non->technique,"EAUVvis"))||(!strcmp(non->technique,"noEAUVvis"))){
+  if((!strcmp(non->technique,"2DIR"))||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))){
     if (non->anharmonicity==0){
       fclose(mu2_traj),fclose(A_traj);
     }
@@ -624,6 +599,7 @@ void calc_2DES(t_non *non){
   }
 
   /* Print 2D */
+  if(!strcmp(non->technique,"2DIR")||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))||(!strcmp(non->technique,"2DSFG"))){
     outttwo=fopen("RparI.dat","w");
     for (t1=0;t1<non->tmax1;t1+=non->dt1){
       t2=non->tmax2;
@@ -689,8 +665,10 @@ void calc_2DES(t_non *non){
         }
     }    
     fclose(outttwo);
+  }
 
   /* Free memory for 2D calculation */
+  if(!strcmp(non->technique,"2DIR")||(!strcmp(non->technique,"GB"))||(!strcmp(non->technique,"SE"))||(!strcmp(non->technique,"EA"))||(!strcmp(non->technique,"noEA"))||(!strcmp(non->technique,"2DSFG"))){
     free(leftrr),free(leftri),free(leftnr),free(leftni);
     free(leftrr_o),free(leftri_o),free(leftnr_o),free(leftni_o);
     free(rightrr),free(rightri),free(rightnr),free(rightni);
@@ -705,6 +683,7 @@ void calc_2DES(t_non *non){
     if (non->anharmonicity==0) {
       free(Anh),free(over);
     }
+  }
   free(rrIpar),free(riIpar);
   free(rrIIpar),free(riIIpar);
   free(rrIper),free(riIper);

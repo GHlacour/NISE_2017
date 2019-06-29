@@ -5,12 +5,13 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "absorption.h"
+#include "luminescence.h"
 #include "1DFFT.h"
 
-void absorption(t_non *non){
+void luminescence(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
@@ -27,7 +28,6 @@ void absorption(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj;
   FILE *outone,*log;
-  FILE *Cfile;
 
   /* Integers */
   int nn2;
@@ -36,16 +36,17 @@ void absorption(t_non *non){
   int x,ti,tj,i;
   int t1,fft;
   int elements;
-  int cl,Ncl;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
+  fft=0; 
   /* Initialize time */
   time(&time_now);
   time(&time_0);
   shift1=(non->max1+non->min1)/2;
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
+  printf("Temperature %f.\n",non->temperature);
 
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
@@ -66,20 +67,7 @@ void absorption(t_non *non){
     exit(1);
   }
 
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
-
   // Here we want to call the routine for checking the trajectory files
-  control(non);
 
   itime=0;
   // Do calculation
@@ -110,20 +98,6 @@ void absorption(t_non *non){
 
     // Calculate linear response    
     ti=samples*non->sample;
-    if (non->cluster!=-1){
-      if (read_cluster(non,ti,&cl,Cfile)!=1){
-	printf("Cluster trajectory file to short, could not fill buffer!!!\n");
-	printf("ITIME %d\n",ti);
-	exit(1);
-      }
-      //      printf("%d\n",cl);
-      // Configuration belong to cluster
-      if (non->cluster==cl){
-	Ncl++;
-      }
-    }
-    if (non->cluster==-1 || non->cluster==cl){
-      
     for (x=0;x<3;x++){
       // Read mu(ti)
       if (read_mue(non,vecr,mu_traj,ti,x)!=1){
@@ -154,6 +128,9 @@ void absorption(t_non *non){
 	if (non->Npsites>0){
 	  projection(mu_eg,non);
 	}
+
+	// Add Boltzman weight
+	bltz_weight(mu_eg,Hamil_i_e,non);
 	
 	// Find response
 	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
@@ -178,12 +155,10 @@ void absorption(t_non *non){
 	}
       }
     }
-    } // Cluster loop
   
     // Log time
     log=fopen("NISE.log","a");
     fprintf(log,"Finished sample %d\n",samples);
-          
     time_now=log_time(time_now,log);
     fclose(log);
   }
@@ -201,44 +176,99 @@ void absorption(t_non *non){
   fprintf(log,"Writing to file!\n");  
   fclose(log);
 
-  if (non->cluster!=-1){
-    printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
-    //    printf("Changing normalization to number of samples used.");
-    //    samples=Ncl;
-    if (samples==0){ // Avoid dividing by zero
-      samples=1;
-    }
-  }
-
   fclose(mu_traj),fclose(H_traj);
-  if (non->cluster!=-1){
-    fclose(Cfile);
-  }
 
-  /* Save time domain response */
-  outone=fopen("TD_Absorption.dat","w");
+  outone=fopen("RLum.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
   }
   fclose(outone);
 
   /* Do Forier transform and save */
-  do_1DFFT(non,"Absorption.dat",re_S_1,im_S_1,samples);
+  do_1DFFT(non,"Luminescence.dat",re_S_1,im_S_1,samples);
 
   free(re_S_1),free(im_S_1);
 
   printf("----------------------------------------------\n");
-  printf(" Absorption calculation succesfully completed\n");
+  printf(" Luminescence calculation succesfully completed\n");
   printf("----------------------------------------------\n\n");
 
   return;
 }	
 
-void calc_S1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu){
+void calc_LUM(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu){
   int i;
   for (i=0;i<non->singles;i++){
     re_S_1[t1]+=mu[i]*cr[i];
     im_S_1[t1]+=mu[i]*ci[i];
   }
+  return;
+}
+
+void bltz_weight(float *mu_eg,float *Hamiltonian_i,t_non *non){
+  int index,N;
+  float *H,*e,*c2,*c1;
+  float *cnr;
+  float *crr;
+  N=non->singles;
+  H=(float *)calloc(N*N,sizeof(float));
+  e=(float *)calloc(N,sizeof(float));
+  c2=(float *)calloc(N,sizeof(float));
+  c1=(float *)calloc(N,sizeof(float));
+  cnr=(float *)calloc(N*N,sizeof(float));
+  crr=(float *)calloc(N*N,sizeof(float));
+  int a,b,c;
+  float kBT=non->temperature*0.695; // Kelvin to cm-1
+  float Q,iQ;
+
+  // Build Hamiltonian
+  for (a=0;a<N;a++){
+    H[a+N*a]=Hamiltonian_i[a+N*a-(a*(a+1))/2]; // Diagonal
+    for (b=a+1;b<N;b++){
+      H[a+N*b]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
+      H[b+N*a]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
+    }
+  }
+  diagonalizeLPD(H,e,N);
+ 
+  // Exponentiate [U=exp(-H/kBT)]
+  for (a=0;a<N;a++){
+    c2[a]=exp(-e[a]/kBT);
+    Q=Q+c2[a];
+  }
+  iQ=1.0/Q;
+
+  // Transform to site basis
+  for (a=0;a<N;a++){
+    for (b=0;b<N;b++){
+      cnr[b+a*N]+=H[b+a*N]*c2[b]*iQ;
+    }
+  }  
+  for (a=0;a<N;a++){
+    for (b=0;b<N;b++){
+      for (c=0;c<N;c++){
+        crr[a+c*N]+=H[b+a*N]*cnr[b+c*N];
+      }
+    }
+  }
+  // The weights in the site basis were calculated
+
+  // Multiply weights to dipole operator
+  for (a=0;a<N;a++){
+    for (b=0;b<N;b++){
+      c1[a]+=crr[a+b*N]*mu_eg[b];
+    }
+  }
+
+  // Update dipole operator
+  for (a=0;a<N;a++){
+    mu_eg[a]=c1[a];
+  }
+  free(H);
+  free(c2);
+  free(c1);
+  free(e);
+  free(crr);
+  free(cnr);
   return;
 }

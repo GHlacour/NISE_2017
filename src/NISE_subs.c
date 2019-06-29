@@ -4,8 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <omp.h>
-#include "types3.1.h"
-#include "NISE3.1subs.h"
+#include "types.h"
+#include "NISE_subs.h"
 #include "randomlib.h"
 
 // Subroutines for nonadiabatic code

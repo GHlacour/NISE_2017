@@ -1,26 +1,20 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.9)
 
-configure_file(findFFTW.cmake findFFTW/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-    RESULT_VARIABLE result
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/findFFTW)
-
-if(result)
-    message(FATAL_ERROR "Cmake step for findFFTW failed: ${result}")
-else()
-    message("CMake step for findFFTW completed (${result})")
+# Require out-of-source builds
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
+if(EXISTS "${LOC_PATH}")
+    message(FATAL_ERROR "You cannot build in the source directory, or any directory with a CMakeLists.txt file! Please make a subdirectory like build and run from there (cmake ..)")
 endif()
 
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-    RESULT_VARIABLE result
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/findFFTW)
+# Set up findFFTW to auto-detect the FFTW library
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-if(result)
-    message(FATAL_ERROR "Build step for findFFTW failed: ${result}")
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(findFFTW_DIR ${CMAKE_CURRENT_BINARY_DIR}/findFFTW-src)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${findFFTW_DIR}")
-
-project("NISE3.1")
-add_subdirectory("NISE3.1")
+# Project definitions
+project(NISE VERSION 3.1 LANGUAGES C)
+add_subdirectory("src")
+add_subdirectory("doc")

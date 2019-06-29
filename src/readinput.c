@@ -5,7 +5,7 @@
 #include <time.h>
 #include <fftw3.h>
 #include "omp.h"
-#include "types3.1.h"
+#include "types.h"
 #include "readinput.h"
 
 /* Read the input file */

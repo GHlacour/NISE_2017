@@ -28,7 +28,8 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
-out/
+[Oo]ut/
+[Bb]uild/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
