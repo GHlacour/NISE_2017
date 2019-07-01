@@ -12,6 +12,27 @@ float static ithirty=1.0/30;
 
 // Structures
 typedef struct {
+    int tmax1, tmax2, tmax3;
+    int tmin1, tmin2, tmin3;
+    int dt[4];
+    int d1, d2, d3;
+} t_time;
+
+typedef struct {
+    float min1, max1;
+    float min2, max2;
+    float min3, max3;
+    int k[4];
+} t_rwa;
+
+typedef struct {
+    int length;
+    int sample;
+    int begin;
+    int end;
+} t_steps;
+
+typedef struct {
   int tmax1,tmax2,tmax3;
   int tmin1,tmin2,tmin3;
   int dt1,dt2,dt3;

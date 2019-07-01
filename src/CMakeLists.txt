@@ -45,6 +45,8 @@ target_link_libraries(NISE ${FFTW_LIBRARIES})
 target_include_directories(NISE PUBLIC ${FFTW_INCLUDE_DIRS})
 target_link_libraries(translate ${FFTW_LIBRARIES})
 target_include_directories(translate PUBLIC ${FFTW_INCLUDE_DIRS})
+target_link_libraries(2DFFT ${FFTW_LIBRARIES})
+target_include_directories(2DFFT PUBLIC ${FFTW_INCLUDE_DIRS})
 
 # OpenMP
 find_package(OpenMP REQUIRED)
