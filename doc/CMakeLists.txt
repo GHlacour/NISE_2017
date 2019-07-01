@@ -1,7 +1,15 @@
 cmake_minimum_required(VERSION 3.9)
 
 find_package(LATEX)
-if(LATEX_COMPILER AND BIBTEX_COMPILER)
+if(NOT DEFINED GENERATE_DOCS)
+    if($<CONFIG:Debug>)
+        set(GENERATE_DOCS $<BOOL:false>)
+    else()
+        set(GENERATE_DOCS $<BOOL:true>)
+    endif()
+endif()
+
+if(GENERATE_DOCS AND LATEX_COMPILER AND BIBTEX_COMPILER)
     include(UseLATEX)
 
     add_latex_document(

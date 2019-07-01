@@ -15,8 +15,8 @@
 %\headsep = 0.0 in
 %\parskip = 0.2in
 %\parindent = 0.0in
-%\bibliographystyle{unsrt}
-\bibliographystyle{tlcpub2}
+\bibliographystyle{unsrt}
+%\bibliographystyle{tlcpub2}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}[theorem]{Corollary}
@@ -139,7 +139,7 @@ The transition polarizability file which is not available in the SKIBIN format
 has the following format. For each snapshot in the trajectory they contain first an integer 
 typically containing the number of the snapshot. This integer is not used in the calculation, 
 but can be used for control purposes. Then the xx components of the transition polarizability
-matrix are given in ﬂoats, followed by the yy and zz components. 
+matrix are given in floats, followed by the yy and zz components. 
 
 \noindent
 \underline{GROASC:}\\
@@ -227,7 +227,7 @@ and the linear dichroism response function in time domain in the file RLD.dat. T
 column is the time in femto seconds. The other columns are the real and imaginary parts 
 of the response function. It is recommended to check that these have decayed to a small 
 value close to zero in the calculated time interval. If this is not the case the system has 
-not lost it’s coherence within the time determined by t1 max and the spectrum will be 
+not lost its coherence within the time determined by t1 max and the spectrum will be 
 too broad. The linear absorption is given in the file FTIR.dat and the linear dichroism in 
 the file LDIR.dat. The first line is the frequency in wavenumbers, the second line is the 
 absorption spectrum, and a third line contain zeroes. For the linear dichroism calculation 
@@ -237,7 +237,7 @@ The SFG calculation provides the second order response function in time domain i
 the files RSFG\_zzz.dat and RSFG\_xxz\_yyz.dat. The first column is the time in femto 
 seconds. The other columns are the real and imaginary parts of the response function. 
 It is recommended to check that these have decayed to a small value close to zero in the 
-calculated time interval. If this is not the case the system has not lost it’s coherence within
+calculated time interval. If this is not the case the system has not lost its coherence within
 the time determined by t1 max and the spectrum will be too broad. The frequency domain 
 response functions are given in the files SFG\_zzz.dat and SFG\_xxz\_yyz.dat. The first line 
 is the frequency in wavenumbers, the second line is the absorption spectrum, and a third 
