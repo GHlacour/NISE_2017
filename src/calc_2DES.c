@@ -3,7 +3,6 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <fftw3.h>
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"

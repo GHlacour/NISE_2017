@@ -27,19 +27,14 @@ add_executable(translate
 )
 
 ### Link libraries
-# Math lib, not necessary on Windows
-if(NOT WIN32)
-    target_link_libraries(translate m)
-    target_link_libraries(NISE m)
-    target_link_libraries(2DFFT m)
-endif()
-
 # LAPACK
 find_package(LAPACK REQUIRED)
 target_link_libraries(NISE ${LAPACK_LIBRARIES})
 target_link_libraries(translate ${LAPACK_LIBRARIES})
 
 # FFTW
+# Not using the FFTW3 script, since FFTW3 installed using ./configure && make && make install
+# do not properly export those scripts. Therefore we use a custom script.
 find_package(FFTW REQUIRED)
 target_link_libraries(NISE ${FFTW_LIBRARIES})
 target_include_directories(NISE PUBLIC ${FFTW_INCLUDE_DIRS})
@@ -51,3 +46,11 @@ target_include_directories(2DFFT PUBLIC ${FFTW_INCLUDE_DIRS})
 # OpenMP
 find_package(OpenMP REQUIRED)
 target_link_libraries(NISE OpenMP::OpenMP_C)
+
+# Math lib, not necessary on Windows.
+# NOTE: Should be linked AFTER linking FFTW because the order matters!
+if(NOT WIN32)
+    target_link_libraries(translate m)
+    target_link_libraries(NISE m)
+    target_link_libraries(2DFFT m)
+endif()
