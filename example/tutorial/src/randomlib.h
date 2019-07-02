@@ -1,3 +1,6 @@
+// Just here to not confuse IDEs with the includes, the header file of the compiled
+// version in ./src is actually used.
+
 #ifndef _RANDOM_
 #define _RANDOM_
 

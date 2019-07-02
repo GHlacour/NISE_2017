@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 # Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -18,3 +18,4 @@ endif()
 project(NISE VERSION 3.1 LANGUAGES C)
 add_subdirectory("src")
 add_subdirectory("doc")
+add_subdirectory("example")

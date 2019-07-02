@@ -5,7 +5,6 @@
 #include <time.h>
 
 #include "randomlib.h"
-#include "stochastic.h"
 
 int main(int argc,char *argv[]){
   int length;
@@ -15,7 +14,7 @@ int main(int argc,char *argv[]){
   float a,b;
   float pi=3.14159265;
   int i;
-  FILE *E_FH,*mu_FH;
+  FILE *E_FH,*mu_FH,*alpha_FH;
 
   length=atoi(argv[1]);
   deltat=atof(argv[2]);
@@ -36,6 +35,7 @@ int main(int argc,char *argv[]){
 
   E_FH=fopen("Energy.txt","w");
   mu_FH=fopen("Dipole.txt","w");
+  alpha_FH=fopen("Alpha.txt","w");
 
   for(i=0;i<length;i++){
     wa=wao*a+b*RandomGaussian(0,sigma);
@@ -43,7 +43,8 @@ int main(int argc,char *argv[]){
     w1=wa;
     w2=wa*cos(angle*pi/180.0)+wb*sin(angle*pi/180.0);
     fprintf(E_FH,"%d %f %f %f\n",i,w1-deltaw/2.0+w0,J,w2+deltaw/2.0+w0);
-    fprintf(mu_FH,"%d %f %f %f %f %f %f\n",i,1.0,cos(angle2*pi/180.0),0.0,sin(angle2*pi/180.0),0.0,0.0);
+    fprintf(mu_FH,"%d %f %f %f %f %f %f\n",i,0.0,0.0,0.0,sin(angle2*pi/180.0),1.0,cos(angle2*pi/180.0));
+    fprintf(alpha_FH,"%d %f %f %f %f %f %f\n",i,1.0,1.0,1.0,1.0,10.0,10.0);
     wao=wa;
     wbo=wb;
   } 
