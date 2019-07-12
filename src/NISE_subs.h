@@ -6,6 +6,7 @@ void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
+char* time_diff(time_t t0, time_t t1);
 int Sindex(int a,int b,int N);
 int Eindex(int a,int b,int N);
 int read_He(t_non *non,float *He,FILE *FH,int pos);

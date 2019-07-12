@@ -52,3 +52,8 @@ if(NOT WIN32)
     target_link_libraries(NISE m)
     target_link_libraries(2DFFT m)
 endif()
+
+## Set features
+target_compile_features(NISE PUBLIC c_std_99)
+target_compile_features(2DFFT PUBLIC c_std_99)
+target_compile_features(translate PUBLIC c_std_99)
