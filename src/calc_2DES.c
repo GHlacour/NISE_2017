@@ -13,7 +13,7 @@
 /**
  * Method that logs a message, in which the message can be formatted like printf accepts.
  */
-void log_item(char *msgFormat, ...) {
+void log_item(char* msgFormat, ...) {
     // Parse parameters
     va_list args;
     va_start(args, msgFormat);
@@ -28,6 +28,21 @@ void log_item(char *msgFormat, ...) {
     fclose(log);
 
     va_end(args);
+}
+
+// Print results to the corresponding files
+void print2D(char* filename, float** arrR, float** arrI, t_non* non, int sampleCount) {
+    FILE* out = fopen(filename, "w");
+    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
+        const int t2 = non->tmax2;
+        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
+            arrR[t3][t1] /= sampleCount;
+            arrI[t3][t1] /= sampleCount;
+            fprintf(out, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
+                arrR[t3][t1], arrI[t3][t1]);
+        }
+    }
+    fclose(out);
 }
 
 void calc_2DES(t_non* non) {
@@ -238,11 +253,6 @@ void calc_2DES(t_non* non) {
             float* fi = calloc(nn2, sizeof(float));
             float** ft1r = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
             float** ft1i = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
-
-            float* Urs = calloc(non->singles * non->singles, sizeof(float));
-            float* Uis = calloc(non->singles * non->singles, sizeof(float));
-            int* Rs = calloc(non->singles * non->singles, sizeof(int));
-            int* Cs = calloc(non->singles * non->singles, sizeof(int));
 
             // Read information
             mureadE(non, mut2, tj, px[1], mu_traj, mu_xyz, pol);
@@ -527,13 +537,20 @@ void calc_2DES(t_non* non) {
 
                     /* Propagate */
                     if (non->propagation == 0) {
+                        float* Urs = calloc(non->singles * non->singles, sizeof(float));
+                        float* Uis = calloc(non->singles * non->singles, sizeof(float));
+
+                        int* Rs = calloc(non->singles * non->singles, sizeof(int));
+                        int* Cs = calloc(non->singles * non->singles, sizeof(int));
+
+                        // bug? Cs and Rs seems to be exchanged
                         int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
                         if (currentSample == non->begin) {
                             if (molPol == 0) {
                                 if (t3 == 0) {
-                                    printf("Sparce matrix efficiency: %f pct.\n",
+                                    printf("Sparse matrix efficiency: %f pct.\n",
                                            (1 - (1.0 * elements / (non->singles * non->singles))) * 100);
-                                    printf("Pressent tuncation %f.\n",
+                                    printf("Present truncation %f.\n",
                                            non->thres / ((non->deltat * icm2ifs * twoPi / non->ts) * (non->deltat *
                                                icm2ifs * twoPi / non->ts)));
                                     printf("Suggested truncation %f.\n", 0.001);
@@ -569,6 +586,8 @@ void calc_2DES(t_non* non) {
                                 non, Hamil_i_e, rightrr[t1], rightri[t1], -1
                             );
                         }
+
+                        free(Urs), free(Uis), free(Rs), free(Cs);
                     }
                     else if(non->propagation == 1) {
                         // Key parallel loop 1
@@ -612,7 +631,6 @@ void calc_2DES(t_non* non) {
             free(Anh), free(over);
             free(fr), free(fi);
             free2D((void**) ft1r), free2D((void**) ft1i);
-            free(Urs), free(Uis), free(Rs), free(Cs);
         }
 
         time_t timeSampleEnd;
@@ -645,77 +663,12 @@ void calc_2DES(t_non* non) {
     }
 
     /* Print 2D */
-    FILE* outttwo = fopen("RparI.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIpar[t3][t1] /= sampleCount;
-            riIpar[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIpar[t3][t1], riIpar[t3][t1]);
-        }
-    }
-    fclose(outttwo);
-
-    outttwo = fopen("RparII.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIpar[t3][t1] /= sampleCount;
-            riIIpar[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIpar[t3][t1], riIIpar[t3][t1]);
-        }
-    }
-    fclose(outttwo);
-
-    outttwo = fopen("RperI.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIper[t3][t1] /= sampleCount;
-            riIper[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIper[t3][t1], riIper[t3][t1]);
-        }
-    }
-    fclose(outttwo);
-
-    outttwo = fopen("RperII.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIper[t3][t1] /= sampleCount;
-            riIIper[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIper[t3][t1], riIIper[t3][t1]);
-        }
-    }
-    fclose(outttwo);
-
-    outttwo = fopen("RcroI.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIcro[t3][t1] /= sampleCount;
-            riIcro[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIcro[t3][t1], riIcro[t3][t1]);
-        }
-    }
-    fclose(outttwo);
-
-    outttwo = fopen("RcroII.dat", "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIcro[t3][t1] /= sampleCount;
-            riIIcro[t3][t1] /= sampleCount;
-            fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIcro[t3][t1], riIIcro[t3][t1]);
-        }
-    }
-    fclose(outttwo);
+    print2D("RparI.dat", rrIpar, riIpar, non, sampleCount);
+    print2D("RparII.dat", rrIIpar, riIIpar, non, sampleCount);
+    print2D("RperI.dat", rrIper, riIper, non, sampleCount);
+    print2D("RperII.dat", rrIIper, riIIper, non, sampleCount);
+    print2D("RcroI.dat", rrIcro, riIcro, non, sampleCount);
+    print2D("RcroII.dat", rrIIcro, riIIcro, non, sampleCount);
 
     /* Free memory for 2D calculation */
     free2D((void**) rrIpar), free2D((void**) riIpar);
