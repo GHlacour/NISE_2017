@@ -34,38 +34,16 @@ void calc_2DES(t_non* non) {
     /* Define arrays! */
 
     // Aid arrays 
-    float *leftrr, *leftri, *leftnr, *leftni;
-    float *leftrr_o, *leftri_o, *leftnr_o, *leftni_o;
-    float *rightrr, *rightri, *rightnr, *rightni;
-    float *rightrr_o, *rightri_o, *rightnr_o, *rightni_o;
-    float *t1rr, *t1ri, *t1nr, *t1ni;
-    float *Hamil_i_e;
-    float *Anh, *over;
-    float *mut2, *mut3r, *mut3i, *mut4;
-    float *mut3r_o, *mut3i_o;
-    float *fr, *fi, *fr_o, *fi_o;
-    float *ft1r, *ft1i, *ft1r_o, *ft1i_o;
-    float t3nr, t3ni, t3rr, t3ri;
-    float rrI, riI, rrII, riII;
-    float *Urs, *Uis;
-    int *Rs, *Cs;
-    float* mu_xyz;
-    float* pol = 0; /* Currently dummy vector that can be used to change coordinate system in the future */
-
-    /* Integers */
-    int cl, Ncl;
+    float* pol = 0; /* Currently dummy vector that can be used to change coordinate system in the future */ // RO
 
     /* File handles */
-    FILE *H_traj, *mu_traj;
-    FILE* Cfile;
-    FILE* C_traj;
-    FILE *A_traj, *mu2_traj;
-    FILE* outttwo;
+    FILE *H_traj, *mu_traj; // RO
+    FILE* Cfile; // RO
+    FILE *A_traj, *mu2_traj; // RO
 
     /* Time parameters */
-    time_t timeNow, timeStart;
+    time_t timeStart;
     /* Initialize time */
-    time(&timeNow);
     time(&timeStart);
 
     float shift1 = (non->max1 + non->min1) / 2;
@@ -73,80 +51,37 @@ void calc_2DES(t_non* non) {
     non->shifte = shift1;
     non->shiftf = 2 * shift1;
 
-    int maxtt = non->tmax1 * non->tmax3;
-
     // 2D response function parallel
-    float* rrIpar = calloc(maxtt, sizeof(float));
-    float* riIpar = calloc(maxtt, sizeof(float));
-    float* rrIIpar = calloc(maxtt, sizeof(float));
-    float* riIIpar = calloc(maxtt, sizeof(float));
+    float** rrIpar = (float**) calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIpar = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** rrIIpar = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIIpar = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
     // 2D response function perpendic.
-    float* rrIper = calloc(maxtt, sizeof(float));
-    float* riIper = calloc(maxtt, sizeof(float));
-    float* rrIIper = calloc(maxtt, sizeof(float));
-    float* riIIper = calloc(maxtt, sizeof(float));
+    float** rrIper = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIper = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** rrIIper = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIIper = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
     // 2D response function cross
-    float* rrIcro = calloc(maxtt, sizeof(float));
-    float* riIcro = calloc(maxtt, sizeof(float));
-    float* rrIIcro = calloc(maxtt, sizeof(float));
-    float* riIIcro = calloc(maxtt, sizeof(float));
+    float** rrIcro = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIcro = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** rrIIcro = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
+    float** riIIcro = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // REDUCE
 
-    float* lt_gb_se = calloc(non->tmax1 * non->tmax3, sizeof(float));
-    float* lt_ea = calloc(non->tmax1 * non->tmax3, sizeof(float));
+    float** lt_gb_se = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // RO
+    float** lt_ea = (float**)calloc2D(non->tmax3, non->tmax1, sizeof(float), sizeof(float*)); // RO
 
     for (int t1 = 0; t1 < non->tmax1; t1++) {
         for (int t3 = 0; t3 < non->tmax3; t3++) {
-            lt_gb_se[t1 + t3 * non->tmax1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
-            lt_ea[t1 + t3 * non->tmax1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
+            lt_gb_se[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
+            lt_ea[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
         }
     }
 
     const int nn2 = non->singles * (non->singles + 1) / 2;
 
-    Hamil_i_e = (float *)calloc(nn2, sizeof(float));
+    float* Hamil_i_e = calloc(nn2, sizeof(float));
 
     // Reserve memory for 2D calculation
-    Anh = (float *)calloc(non->singles, sizeof(float));
-    over = (float *)calloc(non->singles, sizeof(float));
-    leftrr = (float *)calloc(non->singles, sizeof(float));
-    leftri = (float *)calloc(non->singles, sizeof(float));
-    leftnr = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    leftni = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    leftrr_o = (float *)calloc(non->singles, sizeof(float));
-    leftri_o = (float *)calloc(non->singles, sizeof(float));
-    leftnr_o = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    leftni_o = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    rightrr = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    rightri = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    rightnr = (float *)calloc(non->singles, sizeof(float));
-    rightni = (float *)calloc(non->singles, sizeof(float));
-    rightrr_o = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    rightri_o = (float *)calloc(non->singles * non->tmax1, sizeof(float));
-    rightnr_o = (float *)calloc(non->singles, sizeof(float));
-    rightni_o = (float *)calloc(non->singles, sizeof(float));
-    mut2 = (float *)calloc(non->singles, sizeof(float));
-    mut3r = (float *)calloc(non->singles, sizeof(float));
-    mut3i = (float *)calloc(non->singles, sizeof(float));
-    mut3r_o = (float *)calloc(non->singles, sizeof(float));
-    mut3i_o = (float *)calloc(non->singles, sizeof(float));
-    mut4 = (float *)calloc(non->singles, sizeof(float));
-    t1rr = (float *)calloc(non->tmax1, sizeof(float));
-    t1ri = (float *)calloc(non->tmax1, sizeof(float));
-    t1nr = (float *)calloc(non->tmax1, sizeof(float));
-    t1ni = (float *)calloc(non->tmax1, sizeof(float));
-    fr = (float *)calloc(nn2, sizeof(float));
-    fi = (float *)calloc(nn2, sizeof(float));
-    fr_o = (float *)calloc(nn2, sizeof(float));
-    fi_o = (float *)calloc(nn2, sizeof(float));
-    ft1r = (float *)calloc(nn2 * non->tmax1, sizeof(float));
-    ft1i = (float *)calloc(nn2 * non->tmax1, sizeof(float));
-    ft1r_o = (float *)calloc(nn2 * non->tmax1, sizeof(float));
-    ft1i_o = (float *)calloc(nn2 * non->tmax1, sizeof(float));
-    Urs = (float *)calloc(non->singles * non->singles, sizeof(float));
-    Uis = (float *)calloc(non->singles * non->singles, sizeof(float));
-    Rs = (int *)calloc(non->singles * non->singles, sizeof(int));
-    Cs = (int *)calloc(non->singles * non->singles, sizeof(int));
-    mu_xyz = (float *)calloc(non->singles * 3, sizeof(float));
 
     /* Open Trajectory files */
     H_traj = fopen(non->energyFName, "rb");
@@ -170,8 +105,8 @@ void calc_2DES(t_non* non) {
             printf("input file.\n");
             exit(0);
         }
-        Ncl = 0; // Counter for snapshots calculated
     }
+    int clusterCount = 0;
 
     /* Open file for fluctuating anharmonicities and sequence transition dipoles if needed */
     if (non->anharmonicity == 0 && (!strcmp(non->technique, "2DUVvis") || (!strcmp(non->technique, "EAUVvis")) || (!
@@ -191,8 +126,9 @@ void calc_2DES(t_non* non) {
     }
 
     /* Read coupling */
+    float* mu_xyz = calloc(non->singles * 3, sizeof(float));
     if (!strcmp(non->hamiltonian, "Coupling")) {
-        C_traj = fopen(non->couplingFName, "rb");
+        FILE* C_traj = fopen(non->couplingFName, "rb");
         if (C_traj == NULL) {
             printf("Coupling file not found!\n");
             exit(1);
@@ -244,14 +180,10 @@ void calc_2DES(t_non* non) {
     /* Loop over samples */
 //pragma?
     for (int currentSample = non->begin; currentSample < non->end; currentSample++) {
-
         /* Log time */
-        time_t timeNew;
-        time(&timeNew);
-        char* timeText = time_diff(timeNow, timeNew);
-        log_item("Starting sample %d\n%s", currentSample, timeText);
-        free(timeText);
-        timeNow = timeNew;
+        time_t timeSampleStart;
+        time(&timeSampleStart);
+        log_item("Starting sample %d\n", currentSample);
 
         /* Calculate 2DIR response */
         int tj = currentSample * non->sample + non->tmax1;
@@ -259,16 +191,20 @@ void calc_2DES(t_non* non) {
 
         // Cluster checking if we are using it
         if (non->cluster != -1) {
-            if (read_cluster(non, tj, &cl, Cfile) != 1) {
+            int currentCluster;
+            if (read_cluster(non, tj, &currentCluster, Cfile) != 1) {
                 printf("Cluster trajectory file to short, could not fill buffer!!!\n");
                 printf("ITIME %d\n", tj);
                 exit(1);
             }
 
             // If we do not have the current cluster, skip calculation
-            if (non->cluster != cl) continue;
+            if (non->cluster != currentCluster) {
+                log_item("Skipping sample %d, incorrect cluster\n", currentSample);
+                continue;
+            }
             
-            Ncl++; // increase counter
+            clusterCount++; // increase counter
         }
 
         /* Loop over Polarization components */
@@ -279,15 +215,43 @@ void calc_2DES(t_non* non) {
         for (int molPol = 0; molPol < 21; molPol++) {
             int px[4];
             polar(px, molPol);
+
+            // Allocate arrays
+            float* Anh = calloc(non->singles, sizeof(float));
+            float* over = calloc(non->singles, sizeof(float));
+
+            float* leftrr = calloc(non->singles, sizeof(float));
+            float* leftri = calloc(non->singles, sizeof(float));
+            float** leftnr = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+            float** leftni = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+            float** rightrr = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+            float** rightri = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+            float* rightnr = calloc(non->singles, sizeof(float));
+            float* rightni = calloc(non->singles, sizeof(float));
+
+            float* mut2 = calloc(non->singles, sizeof(float));
+            float* mut3r = calloc(non->singles, sizeof(float));
+            float* mut3i = calloc(non->singles, sizeof(float));
+            float* mut4 = calloc(non->singles, sizeof(float));
+
+            float* fr = calloc(nn2, sizeof(float));
+            float* fi = calloc(nn2, sizeof(float));
+            float** ft1r = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
+            float** ft1i = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
+
+            float* Urs = calloc(non->singles * non->singles, sizeof(float));
+            float* Uis = calloc(non->singles * non->singles, sizeof(float));
+            int* Rs = calloc(non->singles * non->singles, sizeof(int));
+            int* Cs = calloc(non->singles * non->singles, sizeof(int));
+
+            // Read information
             mureadE(non, mut2, tj, px[1], mu_traj, mu_xyz, pol);
 
             /* Ground state bleach (GB) kI and kII */
             for (int t1 = 0; t1 < non->tmax1; t1++) {
                 /* Read dipoles at time 0 */
-                mureadE(non, leftnr + t1 * non->singles, tj - t1, px[0], mu_traj, mu_xyz, pol);
-                clearvec(leftni + t1 * non->singles, non->singles);
-                clearvec(leftnr_o + t1 * non->singles, non->singles);
-                clearvec(leftni_o + t1 * non->singles, non->singles);
+                mureadE(non, leftnr[t1], tj - t1, px[0], mu_traj, mu_xyz, pol);
+                clearvec(leftni[t1], non->singles);
 
                 /* Propagate */
                 for (int tm = 0; tm < t1; tm++) {
@@ -296,22 +260,30 @@ void calc_2DES(t_non* non) {
                         printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
                         exit(1);
                     }
-                    if (non->propagation == 1) propagate_vec_coupling_S(
-                        non, Hamil_i_e, leftnr + t1 * non->singles, leftni + t1 * non->singles, non->ts, 1);
-                    if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, leftnr + t1 * non->singles,
-                                                                   leftni + t1 * non->singles, 1);
+
+                    if (non->propagation == 1) {
+                        propagate_vec_coupling_S(
+                            non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
+                        );
+                    } else if (non->propagation == 0) {
+                        propagate_vec_DIA_S(non, Hamil_i_e, leftnr[t1], leftni[t1], 1);
+                    }
 
                 }
             }
 
-//#pragma omp parallel for
+            float* t1nr = calloc(non->tmax1, sizeof(float));
+            float* t1ni = calloc(non->tmax1, sizeof(float));
+
             for (int t1 = 0; t1 < non->tmax1; t1++) {
                 t1nr[t1] = 0, t1ni[t1] = 0;
                 for (int i = 0; i < non->singles; i++) {
-                    t1nr[t1] += mut2[i] * leftnr[i + t1 * non->singles];
-                    t1ni[t1] += mut2[i] * leftni[i + t1 * non->singles];
+                    t1nr[t1] += mut2[i] * leftnr[t1][i];
+                    t1ni[t1] += mut2[i] * leftni[t1][i];
                 }
             }
+
+            free(mut2);
 
             /* Combine with evolution during t3 */
             mureadE(non, mut3r, tk, px[2], mu_traj, mu_xyz, pol);
@@ -319,7 +291,7 @@ void calc_2DES(t_non* non) {
             for (int t3 = 0; t3 < non->tmax3; t3++) {
                 int tl = tk + t3;
                 mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
-                t3nr = 0, t3ni = 0;
+                float t3nr = 0, t3ni = 0;
                 for (int i = 0; i < non->singles; i++) {
                     t3nr += mut4[i] * mut3r[i];
                     t3ni += mut4[i] * mut3i[i];
@@ -327,24 +299,22 @@ void calc_2DES(t_non* non) {
                 /* Calculate GB contributions */
                 if ((!strcmp(non->technique, "GBUVvis")) || (!strcmp(non->technique, "2DUVvis")) || (!strcmp(
                     non->technique, "noEAUVvis"))) {
-//#pragma omp parallel for private(tt,polWeight)
                     for (int t1 = 0; t1 < non->tmax1; t1++) {
-                        int tt = non->tmax1 * t3 + t1;
-                        float polWeight = polarweight(0, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIpar[tt] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
-                        riIpar[tt] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
-                        rrIIpar[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIpar[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
-                        polWeight = polarweight(1, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIper[tt] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
-                        riIper[tt] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
-                        rrIIper[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIper[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
-                        polWeight = polarweight(2, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIcro[tt] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
-                        riIcro[tt] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
-                        rrIIcro[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIcro[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        float polWeight = polarweight(0, molPol) * lt_gb_se[t3][t1];
+                        rrIpar[t3][t1] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
+                        riIpar[t3][t1] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
+                        rrIIpar[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIpar[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        polWeight = polarweight(1, molPol) * lt_gb_se[t3][t1];
+                        rrIper[t3][t1] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
+                        riIper[t3][t1] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
+                        rrIIper[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIper[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        polWeight = polarweight(2, molPol) * lt_gb_se[t3][t1];
+                        rrIcro[t3][t1] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
+                        riIcro[t3][t1] -= (t3nr * t1nr[t1] + t3ni * t1ni[t1]) * polWeight;
+                        rrIIcro[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIcro[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
                     }
                 }
 
@@ -370,15 +340,12 @@ void calc_2DES(t_non* non) {
                     exit(1);
                 }
 
-//#pragma omp parallel for
-                for (int t1 = -1; t1 < non->tmax1; t1++) {
-                    if (t1 != -1) {
-                        propagate_vec_DIA(non, Hamil_i_e, leftnr + t1 * non->singles, leftni + t1 * non->singles,
-                                          1);
-                    }
-                    else {
-                        propagate_vec_DIA(non, Hamil_i_e, leftrr, leftri, 1);
-                    }
+
+                propagate_vec_DIA(non, Hamil_i_e, leftrr, leftri, 1);
+                for (int t1 = 0; t1 < non->tmax1; t1++) {
+                    propagate_vec_DIA(
+                        non, Hamil_i_e, leftnr[t1], leftni[t1], 1
+                    );
                 }
             }
 
@@ -390,45 +357,41 @@ void calc_2DES(t_non* non) {
                     read_over(non, over, mu2_traj, tk, px[2]);
                 }
                 /* T2 propagation ended store vectors needed for EA */
-//#pragma omp parallel for
-                for (int t1 = -1; t1 < non->tmax1; t1++) {
-                    if (t1 == -1) {
-                        dipole_double(non, mut3r, leftrr, leftri, fr, fi, over);
-                    }
-                    else {
-                        dipole_double(non, mut3r, leftnr + t1 * non->singles, leftni + t1 * non->singles,
-                                      ft1r + t1 * nn2, ft1i + t1 * nn2, over);
-                    }
+                dipole_double(non, mut3r, leftrr, leftri, fr, fi, over);
+                for (int t1 = 0; t1 < non->tmax1; t1++) {
+                    dipole_double(
+                        non, mut3r, leftnr[t1], leftni[t1],
+                        ft1r[t1], ft1i[t1], over
+                    );
                 }
 
-                copyvec(leftnr, rightrr, non->tmax1 * non->singles);
-                copyvec(leftni, rightri, non->tmax1 * non->singles);
-//#pragma omp parallel for
-                for (int i = 0; i < non->tmax1 * non->singles; i++) rightri[i] = -rightri[i];
-                copyvec(leftrr, rightnr, non->singles);
-                copyvec(leftri, rightni, non->singles);
+                memcpy(rightrr[0], leftnr[0], non->tmax1 * non->singles * sizeof(float));
+                memcpy(rightri[0], leftni[0], non->tmax1* non->singles * sizeof(float));
+                for (int i = 0; i < non->tmax1 * non->singles; i++) rightri[0][i] = -rightri[0][i];
+
+                memcpy(rightnr, leftrr, non->singles * sizeof(float));
+                memcpy(rightni, leftri, non->singles * sizeof(float));
                 for (int i = 0; i < non->singles; i++) rightni[i] = -rightni[i];
             }
 
             clearvec(mut3i, non->singles);
 
+            /* Calculate right side of nonrephasing diagram */
+            float t3nr = 0, t3ni = 0;
+            for (int i = 0; i < non->singles; i++) {
+                t3nr += leftrr[i] * mut3r[i];
+                t3ni -= leftri[i] * mut3r[i];
+            }
+
             /* Calculate right side of rephasing diagram */
-//#pragma omp parallel for
-            for (int t1 = -1; t1 < non->tmax1; t1++) {
-                if (t1 != -1) {
-                    t1rr[t1] = 0, t1ri[t1] = 0;
-                    for (int i = 0; i < non->singles; i++) {
-                        t1rr[t1] += leftnr[i + t1 * non->singles] * mut3r[i];
-                        t1ri[t1] -= leftni[i + t1 * non->singles] * mut3r[i];
-                    }
-                }
-                else {
-                    /* Calculate right side of nonrephasing diagram */
-                    t3nr = 0, t3ni = 0;
-                    for (int i = 0; i < non->singles; i++) {
-                        t3nr += leftrr[i] * mut3r[i];
-                        t3ni -= leftri[i] * mut3r[i];
-                    }
+            float* t1rr = calloc(non->tmax1, sizeof(float));
+            float* t1ri = calloc(non->tmax1, sizeof(float));
+
+            for (int t1 = 0; t1 < non->tmax1; t1++) {
+                t1rr[t1] = 0, t1ri[t1] = 0;
+                for (int i = 0; i < non->singles; i++) {
+                    t1rr[t1] += leftnr[t1][i] * mut3r[i];
+                    t1ri[t1] -= leftni[t1][i] * mut3r[i];
                 }
             }
 
@@ -437,47 +400,41 @@ void calc_2DES(t_non* non) {
                 int tl = tk + t3;
                 mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
 
-//#pragma omp parallel for
-                for (int t1 = -1; t1 < non->tmax1; t1++) {
-                    if (t1 == -1) {
-                        /* Calculate left side of rephasing diagram */
-                        t3rr = 0, t3ri = 0;
-                        for (int i = 0; i < non->singles; i++) {
-                            t3rr += mut4[i] * leftrr[i];
-                            t3ri += mut4[i] * leftri[i];
-                        }
-                    }
-                    else {
-                        /* Calculate left side of nonrephasing diagram */
-                        t1nr[t1] = 0, t1ni[t1] = 0;
-                        for (int i = 0; i < non->singles; i++) {
-                            t1nr[t1] += leftnr[i + t1 * non->singles] * mut4[i];
-                            t1ni[t1] += leftni[i + t1 * non->singles] * mut4[i];
-                        }
+                /* Calculate left side of nonrephasing diagram */
+                float t3rr = 0, t3ri = 0;
+                for (int i = 0; i < non->singles; i++) {
+                    t3rr += mut4[i] * leftrr[i];
+                    t3ri += mut4[i] * leftri[i];
+                }
+
+                /* Calculate left side of rephasing diagram */
+                for (int t1 = 0; t1 < non->tmax1; t1++) {
+                    t1nr[t1] = 0, t1ni[t1] = 0;
+                    for (int i = 0; i < non->singles; i++) {
+                        t1nr[t1] += leftnr[t1][i] * mut4[i];
+                        t1ni[t1] += leftni[t1][i] * mut4[i];
                     }
                 }
 
                 /* Calculate Response */
                 if ((!strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "2DUVvis")) || (!strcmp(
                     non->technique, "noEAUVvis"))) {
-//#pragma omp parallel for private(tt,polWeight)
                     for (int t1 = 0; t1 < non->tmax1; t1++) {
-                        int tt = non->tmax1 * t3 + t1;
-                        float polWeight = polarweight(0, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIpar[tt] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
-                        riIpar[tt] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
-                        rrIIpar[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIpar[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
-                        polWeight = polarweight(1, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIper[tt] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
-                        riIper[tt] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
-                        rrIIper[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIper[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
-                        polWeight = polarweight(2, molPol) * lt_gb_se[t1 + t3 * non->tmax1];
-                        rrIcro[tt] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
-                        riIcro[tt] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
-                        rrIIcro[tt] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
-                        riIIcro[tt] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        float polWeight = polarweight(0, molPol) * lt_gb_se[t3][t1];
+                        rrIpar[t3][t1] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
+                        riIpar[t3][t1] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
+                        rrIIpar[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIpar[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        polWeight = polarweight(1, molPol) * lt_gb_se[t3][t1];
+                        rrIper[t3][t1] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
+                        riIper[t3][t1] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
+                        rrIIper[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIper[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
+                        polWeight = polarweight(2, molPol) * lt_gb_se[t3][t1];
+                        rrIcro[t3][t1] -= (t3rr * t1ri[t1] + t3ri * t1rr[t1]) * polWeight;
+                        riIcro[t3][t1] -= (t3rr * t1rr[t1] - t3ri * t1ri[t1]) * polWeight;
+                        rrIIcro[t3][t1] -= (t3ni * t1nr[t1] + t3nr * t1ni[t1]) * polWeight;
+                        riIIcro[t3][t1] -= (t3nr * t1nr[t1] - t3ni * t1ni[t1]) * polWeight;
                     }
                 }
 
@@ -488,20 +445,24 @@ void calc_2DES(t_non* non) {
                     printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
                     exit(1);
                 }
-//#pragma omp parallel for shared(non,Hamil_i_e,leftnr,leftni,leftrr,leftri)
-                for (int t1 = -1; t1 < non->tmax1; t1++) {
-                    if (t1 == -1) {
-                        /* Propagate left side rephasing */
-                        if (non->propagation == 1) propagate_vec_coupling_S(
-                            non, Hamil_i_e, leftrr, leftri, non->ts, 1);
-                        if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, leftrr, leftri, 1);
-                    }
-                    else {
-                        /* Propagate left side nonrephasing */
-                        if (non->propagation == 0) propagate_vec_DIA_S(
-                            non, Hamil_i_e, leftnr + t1 * non->singles, leftni + t1 * non->singles, 1);
-                        if (non->propagation == 1) propagate_vec_coupling_S(
-                            non, Hamil_i_e, leftnr + t1 * non->singles, leftni + t1 * non->singles, non->ts, 1);
+
+                /* Propagate left side rephasing */
+                if (non->propagation == 1) {
+                    propagate_vec_coupling_S(non, Hamil_i_e, leftrr, leftri, non->ts, 1);
+                } else if (non->propagation == 0) {
+                    propagate_vec_DIA_S(non, Hamil_i_e, leftrr, leftri, 1);
+                }
+
+                /* Propagate left side nonrephasing */
+                for (int t1 = 0; t1 < non->tmax1; t1++) {
+                    if (non->propagation == 0) {
+                        propagate_vec_DIA_S(
+                            non, Hamil_i_e, leftnr[t1], leftni[t1], 1
+                        );
+                    } else if (non->propagation == 1) {
+                        propagate_vec_coupling_S(
+                            non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
+                        );
                     }
                 }
             }
@@ -516,50 +477,41 @@ void calc_2DES(t_non* non) {
                     if (non->anharmonicity == 0) {
                         read_over(non, over, mu2_traj, tl, px[3]);
                     }
+
                     /* Multiply with the last dipole */
-//#pragma omp parallel for shared(non,mut4,fr,fi,ft1r,ft1i,nn2,leftnr,leftni,over,leftrr,leftri) private(t1)
-                    for (int t1 = -1; t1 < non->tmax1; t1++) {
-                        if (t1 == -1) {
-                            dipole_double_last(non, mut4, fr, fi, leftrr, leftri, over);
-                        }
-                        else {
-                            dipole_double_last(non, mut4, ft1r + t1 * nn2, ft1i + t1 * nn2,
-                                               leftnr + t1 * non->singles, leftni + t1 * non->singles, over);
-                        }
+                    dipole_double_last(non, mut4, fr, fi, leftrr, leftri, over);
+                    for (int t1 = 0; t1 < non->tmax1; t1++) {
+                        dipole_double_last(
+                            non, mut4, ft1r[t1], ft1i[t1], leftnr[t1], leftni[t1], over
+                        );
                     }
 
                     /* Calculate EA response */
-//#pragma omp parallel for shared(leftrr,leftri,non,rightrr,rightri,molPol,lt_ea) private(rrI,riI,rrII,riII,i,tt,polWeight)
                     for (int t1 = 0; t1 < non->tmax1; t1++) {
-                        int tt = non->tmax1 * t3 + t1;
-                        rrI = 0, riI = 0, rrII = 0, riII = 0;
+                        float rrI = 0, riI = 0, rrII = 0, riII = 0;
                         for (int i = 0; i < non->singles; i++) {
-                            rrI += leftri[i] * rightrr[i + t1 * non->singles] + leftrr[i] * rightri[i + t1 * non->
-                                singles];
-                            riI += leftrr[i] * rightrr[i + t1 * non->singles] - rightri[i + t1 * non->singles] *
-                                leftri[i];
+                            rrI += leftri[i] * rightrr[t1][i] + leftrr[i] * rightri[t1][i];
+                            riI += leftrr[i] * rightrr[t1][i] - rightri[t1][i] * leftri[i];
 
-                            rrII += rightnr[i] * leftni[i + t1 * non->singles] + rightni[i] * leftnr[i + t1 * non->
-                                singles];
-                            riII += rightnr[i] * leftnr[i + t1 * non->singles] - rightni[i] * leftni[i + t1 * non->
-                                singles];
+                            rrII += rightnr[i] * leftni[t1][i] + rightni[i] * leftnr[t1][i];
+                            riII += rightnr[i] * leftnr[t1][i] - rightni[i] * leftni[t1][i];
                         }
 
-                        float polWeight = polarweight(0, molPol) * lt_ea[t1 + t3 * non->tmax1];
-                        rrIpar[tt] += rrI * polWeight;
-                        riIpar[tt] += riI * polWeight;
-                        rrIIpar[tt] += rrII * polWeight;
-                        riIIpar[tt] += riII * polWeight;
-                        polWeight = polarweight(1, molPol) * lt_ea[t1 + t3 * non->tmax1];
-                        rrIper[tt] += rrI * polWeight;
-                        riIper[tt] += riI * polWeight;
-                        rrIIper[tt] += rrII * polWeight;
-                        riIIper[tt] += riII * polWeight;
-                        polWeight = polarweight(2, molPol) * lt_ea[t1 + t3 * non->tmax1];
-                        rrIcro[tt] += rrI * polWeight;
-                        riIcro[tt] += riI * polWeight;
-                        rrIIcro[tt] += rrII * polWeight;
-                        riIIcro[tt] += riII * polWeight;
+                        float polWeight = polarweight(0, molPol) * lt_ea[t3][t1];
+                        rrIpar[t3][t1] += rrI * polWeight;
+                        riIpar[t3][t1] += riI * polWeight;
+                        rrIIpar[t3][t1] += rrII * polWeight;
+                        riIIpar[t3][t1] += riII * polWeight;
+                        polWeight = polarweight(1, molPol) * lt_ea[t3][t1];
+                        rrIper[t3][t1] += rrI * polWeight;
+                        riIper[t3][t1] += riI * polWeight;
+                        rrIIper[t3][t1] += rrII * polWeight;
+                        riIIper[t3][t1] += riII * polWeight;
+                        polWeight = polarweight(2, molPol) * lt_ea[t3][t1];
+                        rrIcro[t3][t1] += rrI * polWeight;
+                        riIcro[t3][t1] += riI * polWeight;
+                        rrIIcro[t3][t1] += rrII * polWeight;
+                        riIIcro[t3][t1] += riII * polWeight;
                     }
 
                     /* Read Hamiltonian */
@@ -595,14 +547,15 @@ void calc_2DES(t_non* non) {
                             non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts, Anh
                         );
 
+                        int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
                         #pragma omp parallel for \
                             shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
                             schedule(static, 1)
 
-                        for(int t1 = 0; t1 < non->tmax1; t1++) {
+                        for(t1 = 0; t1 < non->tmax1; t1++) {
                             propagate_double_sparce(
-                                non, Urs, Uis, Rs, Cs, ft1r + t1 * nn2,
-                                ft1i + t1 * nn2, elements, non->ts, Anh
+                                non, Urs, Uis, Rs, Cs, ft1r[t1],
+                                ft1i[t1], elements, non->ts, Anh
                             );
                         }
 
@@ -611,9 +564,9 @@ void calc_2DES(t_non* non) {
                         // Initial step
                         propagate_vec_DIA_S(non, Hamil_i_e, rightnr, rightni, -1);
 
-                        for(int t1 = 0; t1 < non->tmax1; t1++) {
+                        for(t1 = 0; t1 < non->tmax1; t1++) {
                             propagate_vec_DIA_S(
-                                non, Hamil_i_e, rightrr + t1 * non->singles, rightri + t1 * non->singles, -1
+                                non, Hamil_i_e, rightrr[t1], rightri[t1], -1
                             );
                         }
                     }
@@ -624,14 +577,14 @@ void calc_2DES(t_non* non) {
                             non, Hamil_i_e, fr, fi, non->ts, Anh
                         );
 
+                        int t1;
                         #pragma omp parallel for \
                             shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
                             schedule(static, 1)
 
-                        for (int t1 = 0; t1 < non->tmax1; t1++) {
+                        for (t1 = 0; t1 < non->tmax1; t1++) {
                             propagate_vec_coupling_S_doubles(
-                                non, Hamil_i_e, ft1r + t1 * nn2,
-                                ft1i + t1 * nn2, non->ts, Anh
+                                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts, Anh
                             );
                         }
 
@@ -641,15 +594,32 @@ void calc_2DES(t_non* non) {
                             non, Hamil_i_e, rightnr, rightni, non->ts, -1
                         );
 
-                        for (int t1 = 0; t1 < non->tmax1; t1++) {
+                        for (t1 = 0; t1 < non->tmax1; t1++) {
                             propagate_vec_coupling_S(
-                                non, Hamil_i_e, rightrr + t1 * non->singles, rightri + t1 * non->singles, non->ts, -1
+                                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
                             );
                         }
                     }
                 }
             }
+
+            free(leftrr), free(leftri), free2D((void**) leftnr), free2D((void**) leftni);
+            free2D((void**) rightrr), free2D((void**) rightri), free(rightnr), free(rightni);
+            free(t1rr), free(t1ri), free(t1nr), free(t1ni);
+            free(mut3r);
+            free(mut3i);
+            free(mut4);
+            free(Anh), free(over);
+            free(fr), free(fi);
+            free2D((void**) ft1r), free2D((void**) ft1i);
+            free(Urs), free(Uis), free(Rs), free(Cs);
         }
+
+        time_t timeSampleEnd;
+        time(&timeSampleEnd);
+        char* timeText = time_diff(timeSampleStart, timeSampleEnd);
+        log_item("Finished sample %d, %s\n", currentSample, timeText);
+        free(timeText);
     }
 
     /* The calculation is finished, lets write output */
@@ -658,7 +628,7 @@ void calc_2DES(t_non* non) {
     printf("Samples %d\n", sampleCount);
 
     if (non->cluster != -1) {
-        printf("Of %d samples %d belonged to cluster %d.\n", sampleCount, Ncl, non->cluster);
+        printf("Of %d samples %d belonged to cluster %d.\n", sampleCount, clusterCount, non->cluster);
     }
 
     /* Close Files */
@@ -675,14 +645,14 @@ void calc_2DES(t_non* non) {
     }
 
     /* Print 2D */
-    outttwo = fopen("RparI.dat", "w");
+    FILE* outttwo = fopen("RparI.dat", "w");
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIpar[non->tmax1 * t3 + t1] /= sampleCount;
-            riIpar[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIpar[t3][t1] /= sampleCount;
+            riIpar[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIpar[non->tmax1 * t3 + t1], riIpar[non->tmax1 * t3 + t1]);
+                    rrIpar[t3][t1], riIpar[t3][t1]);
         }
     }
     fclose(outttwo);
@@ -691,10 +661,10 @@ void calc_2DES(t_non* non) {
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIpar[non->tmax1 * t3 + t1] /= sampleCount;
-            riIIpar[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIIpar[t3][t1] /= sampleCount;
+            riIIpar[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIpar[non->tmax1 * t3 + t1], riIIpar[non->tmax1 * t3 + t1]);
+                    rrIIpar[t3][t1], riIIpar[t3][t1]);
         }
     }
     fclose(outttwo);
@@ -703,10 +673,10 @@ void calc_2DES(t_non* non) {
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIper[non->tmax1 * t3 + t1] /= sampleCount;
-            riIper[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIper[t3][t1] /= sampleCount;
+            riIper[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIper[non->tmax1 * t3 + t1], riIper[non->tmax1 * t3 + t1]);
+                    rrIper[t3][t1], riIper[t3][t1]);
         }
     }
     fclose(outttwo);
@@ -715,10 +685,10 @@ void calc_2DES(t_non* non) {
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIper[non->tmax1 * t3 + t1] /= sampleCount;
-            riIIper[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIIper[t3][t1] /= sampleCount;
+            riIIper[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIper[non->tmax1 * t3 + t1], riIIper[non->tmax1 * t3 + t1]);
+                    rrIIper[t3][t1], riIIper[t3][t1]);
         }
     }
     fclose(outttwo);
@@ -727,10 +697,10 @@ void calc_2DES(t_non* non) {
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIcro[non->tmax1 * t3 + t1] /= sampleCount;
-            riIcro[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIcro[t3][t1] /= sampleCount;
+            riIcro[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIcro[non->tmax1 * t3 + t1], riIcro[non->tmax1 * t3 + t1]);
+                    rrIcro[t3][t1], riIcro[t3][t1]);
         }
     }
     fclose(outttwo);
@@ -739,37 +709,24 @@ void calc_2DES(t_non* non) {
     for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
         int t2 = non->tmax2;
         for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            rrIIcro[non->tmax1 * t3 + t1] /= sampleCount;
-            riIIcro[non->tmax1 * t3 + t1] /= sampleCount;
+            rrIIcro[t3][t1] /= sampleCount;
+            riIIcro[t3][t1] /= sampleCount;
             fprintf(outttwo, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                    rrIIcro[non->tmax1 * t3 + t1], riIIcro[non->tmax1 * t3 + t1]);
+                    rrIIcro[t3][t1], riIIcro[t3][t1]);
         }
     }
     fclose(outttwo);
 
     /* Free memory for 2D calculation */
-    free(leftrr), free(leftri), free(leftnr), free(leftni);
-    free(leftrr_o), free(leftri_o), free(leftnr_o), free(leftni_o);
-    free(rightrr), free(rightri), free(rightnr), free(rightni);
-    free(rightrr_o), free(rightri_o), free(rightnr_o), free(rightni_o);
-    free(t1rr), free(t1ri), free(t1nr), free(t1ni);
-    free(mut2), free(mut3r), free(mut3i), free(mut4);
-    free(mut3r_o), free(mut3i_o);
-    free(fr), free(fi);
-    free(ft1r), free(ft1i);
-    free(fr_o), free(fi_o), free(ft1r_o), free(ft1i_o);
-    free(Urs), free(Uis), free(Rs), free(Cs);
-    if (non->anharmonicity == 0) {
-        free(Anh), free(over);
-    }
-    free(rrIpar), free(riIpar);
-    free(rrIIpar), free(riIIpar);
-    free(rrIper), free(riIper);
-    free(rrIIper), free(riIIper);
-    free(rrIcro), free(riIcro);
-    free(rrIIcro), free(riIIcro);
-    free(lt_gb_se);
-    free(lt_ea);
+    free2D((void**) rrIpar), free2D((void**) riIpar);
+    free2D((void**) rrIIpar), free2D((void**) riIIpar);
+    free2D((void**) rrIper), free2D((void**) riIper);
+    free2D((void**) rrIIper), free2D((void**) riIIper);
+    free2D((void**) rrIcro), free2D((void**) riIcro);
+    free2D((void**) rrIIcro), free2D((void**) riIIcro);
+    free(mu_xyz);
+    free2D((void**) lt_gb_se);
+    free2D((void**) lt_ea);
     printf("----------------------------------------\n");
     printf(" 2DIR calculation succesfully completed\n");
     printf("----------------------------------------\n\n");

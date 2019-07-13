@@ -11,16 +11,29 @@
 
 // Subroutines for nonadiabatic code
 
+void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP) {
+    void** result = malloc(nRows * sizeP);
+    void* data = calloc(nRows * nCols, size);
+    for(int i = 0; i < nRows; i++) {
+        result[i] = (unsigned char*) data + size * i * nCols;
+    }
+
+    return result;
+}
+
+void free2D(void** arr) {
+    free(arr[0]);
+    free(arr);
+}
+
 void copyvec(float* a, float* b, int N) {
     int i;
     for (i = 0; i < N; i++) b[i] = a[i];
-    return;
 }
 
 void clearvec(float* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
-    return;
 }
 
 // Set time and write to screen
