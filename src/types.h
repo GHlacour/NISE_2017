@@ -32,6 +32,7 @@ typedef struct {
     int end;
 } t_steps;
 
+// REMINDER Change the lengths/types for the MPI data in types_MPI.c when changing this model!
 typedef struct {
   int tmax1,tmax2,tmax3;
   int tmin1,tmin2,tmin3;

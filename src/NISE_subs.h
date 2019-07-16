@@ -6,6 +6,7 @@ void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
+void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
 char* time_diff(time_t t0, time_t t1);

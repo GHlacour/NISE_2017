@@ -36,6 +36,26 @@ void clearvec(float* a, int N) {
     for (i = 0; i < N; i++) a[i] = 0;
 }
 
+/**
+ * Method that logs a message, in which the message can be formatted like printf accepts.
+ */
+void log_item(char* msgFormat, ...) {
+    // Parse parameters
+    va_list args;
+    va_start(args, msgFormat);
+
+    // Write to log
+    FILE* log = fopen("NISE.log", "a");
+    if (log == NULL) {
+        printf("Could not open log file!");
+        exit(1);
+    }
+    vfprintf(log, msgFormat, args);
+    fclose(log);
+
+    va_end(args);
+}
+
 // Set time and write to screen
 time_t set_time(time_t t0) {
     return log_time(t0, stdout);
@@ -95,11 +115,13 @@ int Eindex(int a, int b, int N) {
 int read_He(t_non* non, float* He, FILE* FH, int pos) {
     int i, N, control, t;
     float* H;
+
     /* Read only diagonal part */
     if (!strcmp(non->hamiltonian, "Coupling") && pos >= 0) {
         H = (float *)calloc(non->singles, sizeof(float));
         /* Find position */
         fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles)),SEEK_SET);
+
         /* Read time */
         control = fread(&t, sizeof(int), 1, FH); /* control=1; */
         if (control > non->length + non->begin * non->sample) {
@@ -109,8 +131,10 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             printf("Check that the numbers of singles and doubles is correct!\n");
             exit(-1);
         }
+
         /* Read single excitation Hamiltonian */
         fread(H, sizeof(float), non->singles, FH);
+
         /* Shift center and update full Hamiltonian */
         for (i = 0; i < non->singles; i++) {
             He[i * non->singles + i - (i * (i + 1)) / 2] = H[i] - non->shifte;
@@ -739,19 +763,19 @@ int control(t_non* non) {
     H_traj = fopen(non->energyFName, "rb");
     if (H_traj == NULL) {
         printf("Hamiltonian file not found!\n");
-        exit(1);
+        return 1;
     }
     mu_traj = fopen(non->dipoleFName, "rb");
     if (mu_traj == NULL) {
         printf("Dipole file %s not found!\n", non->dipoleFName);
-        exit(1);
+        return 1;
     }
     N_samples = (non->length - non->tmax1 - 1) / non->sample + 1;
     if (N_samples < 0) {
         printf("Insufficient data to calculate spectrum.\n");
         printf("Please, lower max times or provide longer\n");
         printf("trajectory.\n");
-        exit(1);
+        return 1;
     }
 
     // Check first element
@@ -759,13 +783,13 @@ int control(t_non* non) {
     if (read_He(non, Hamil_i_e, H_traj, 0) != 1) {
         printf("Failed initial control\n");
         printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
+        return 1;
     }
     if (read_mue(non, mu_eg, mu_traj, 0, 0) != 1) {
         printf("Failed initial control\n");
         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
         printf("ITIME %d %d\n", 0, 0);
-        exit(1);
+        return 1;
     }
     if (!strcmp(non->hamiltonian, "Coupling")) { }
     else {
@@ -773,14 +797,14 @@ int control(t_non* non) {
         if (read_mue(non, mu_eg, mu_traj, non->length - 1, 2) != 1) {
             printf("Dipole trajectory file to short, could not fill buffer!!!\n");
             printf("ITIME %d %d\n", non->length - 1, 2);
-            exit(1);
+            return 1;
         }
         // Read Hamiltonian
         if (read_He(non, Hamil_i_e, H_traj, non->length - 1) != 1) {
             printf("Failed initial control\n");
             printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
             printf("Real file length shorter than specified with Length keyword!\n");
-            exit(1);
+            return 1;
         }
         // Check Hamiltonian elements
         if (Hamil_i_e[0] + non->shifte > non->max1 || Hamil_i_e[0] + non->shifte < non->min1) {
@@ -794,6 +818,7 @@ int control(t_non* non) {
     free(mu_eg);
     free(Hamil_i_e);
     fclose(mu_traj), fclose(H_traj);
+    return 0;
 }
 
 /* Multiply with double exciton dipole mu_ef on single states */
