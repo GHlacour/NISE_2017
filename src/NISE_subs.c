@@ -599,6 +599,7 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
 
             J = J * f;
             /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            // TODO speedup
             for (c = 0; c < N; c++) {
                 if (c == a || c == b) {
                     si = -sin(J * sqrt2);

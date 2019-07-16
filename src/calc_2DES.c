@@ -60,7 +60,7 @@ void calculateWorkset(t_non* non, int** workset, int* sampleCount, int* clusterC
     }
 
     // Allocate workset array
-    *workset = calloc(2 * 21 * (*sampleCount), sizeof(int)); // two integers per work item (sample + polDir), 21 polDirs per sample
+    *workset = calloc(2 * 21 * *sampleCount, sizeof(int)); // two integers per work item (sample + polDir), 21 polDirs per sample
 
     // Loop over samples, fill work set array of things to do
     int currentWorkItem = 0;
@@ -105,7 +105,7 @@ void calculateWorkset(t_non* non, int** workset, int* sampleCount, int* clusterC
 void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subSize, MPI_Comm subComm, MPI_Comm rootComm) {
     // Start by determining the work to be done, make an array of samples/poldir to simulate
     // and distribute those statically over all processors
-    int clusterCount = 0, sampleCount = 0, * workset, worksetSize = 0;
+    int clusterCount = 0, sampleCount = 0, * workset, * worksetSizes = calloc(parentSize, sizeof(int));;
     if(parentRank == 0) {
         // Master process calculates the work items to be performed
         int* fullWorkset;
@@ -117,15 +117,19 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         MPI_Bcast(&sampleCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
         int totalWorkItems = 21 * sampleCount;
-        worksetSize = (totalWorkItems - 1) / parentSize + 1; // Quick ceil
+        int baseWorksetSize = totalWorkItems / parentSize;
+        int remainder = totalWorkItems % parentSize;
 
-        // Resize the work array to be easy to distribute over all processes, fill with -1 for jobs to ignore
-        fullWorkset = realloc(fullWorkset, 2 * worksetSize * parentSize * sizeof(int));
-        for (int i = totalWorkItems * 2; i < 2 * worksetSize * parentSize; i++) fullWorkset[i] = -1;
+        // Make array of worksetsizes, since each process might have a different workset size, distribute that array to the other processes
+        int* worksetOffsets = calloc(parentSize, sizeof(int));
+        for(int i = 0; i < parentSize; i++) {
+            worksetSizes[i] = i < remainder ? (baseWorksetSize + 1) * 2 : baseWorksetSize * 2;
+            worksetOffsets[i] = i == 0 ? 0 : worksetOffsets[i - 1] + worksetSizes[i];
+        }
 
-        MPI_Bcast(&worksetSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        workset = malloc(2 * worksetSize * sizeof(int));
-        MPI_Scatter(fullWorkset, 2 * worksetSize, MPI_INT, workset, 2 * worksetSize, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(worksetSizes, parentSize, MPI_INT, 0, MPI_COMM_WORLD);
+        workset = malloc(worksetSizes[0] * sizeof(int));
+        MPI_Scatterv(fullWorkset, worksetSizes, worksetOffsets, MPI_INT, workset, worksetSizes[0], MPI_INT, 0, MPI_COMM_WORLD);
 
         free(fullWorkset);
     } else {
@@ -137,9 +141,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         MPI_Bcast(&clusterCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(&sampleCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        MPI_Bcast(&worksetSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        workset = malloc(2 * worksetSize * sizeof(int));
-        MPI_Scatter(NULL, 2 * worksetSize, MPI_INT, workset, 2 * worksetSize, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(worksetSizes, parentSize, MPI_INT, 0, MPI_COMM_WORLD);
+        workset = malloc(worksetSizes[parentRank] * sizeof(int));
+        MPI_Scatterv(NULL, NULL, NULL, MPI_INT, workset, worksetSizes[parentRank], MPI_INT, 0, MPI_COMM_WORLD);
     }
 
     // Initialize each process base variables
@@ -238,9 +242,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     }
 
     // From now on we'll do the calculations
-    for (int currentWorkItem = 0; currentWorkItem < worksetSize; currentWorkItem++) {
-        int currentSample = workset[2 * currentWorkItem];
-        int molPol = workset[2 * currentWorkItem + 1];
+    for (int currentWorkItem = 0; currentWorkItem < worksetSizes[parentRank]; currentWorkItem += 2) {
+        int currentSample = workset[currentWorkItem];
+        int molPol = workset[currentWorkItem + 1];
 
         if (currentSample == -1 || molPol == -1) continue;
 
@@ -326,14 +330,16 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         for (int t3 = 0; t3 < non->tmax3; t3++) {
             int tl = tk + t3;
             mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
-            float t3nr = 0, t3ni = 0;
-            for (int i = 0; i < non->singles; i++) {
-                t3nr += mut4[i] * mut3r[i];
-                t3ni += mut4[i] * mut3i[i];
-            }
+            
             /* Calculate GB contributions */
             if ((!strcmp(non->technique, "GBUVvis")) || (!strcmp(non->technique, "2DUVvis")) || (!strcmp(
                 non->technique, "noEAUVvis"))) {
+                float t3nr = 0, t3ni = 0;
+                for (int i = 0; i < non->singles; i++) {
+                    t3nr += mut4[i] * mut3r[i];
+                    t3ni += mut4[i] * mut3i[i];
+                }
+
                 for (int t1 = 0; t1 < non->tmax1; t1++) {
                     float polWeight = polarweight(0, molPol) * lt_gb_se[t3][t1];
                     rrIpar[t3][t1] -= (t3ni * t1nr[t1] - t3nr * t1ni[t1]) * polWeight;
