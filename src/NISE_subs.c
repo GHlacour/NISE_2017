@@ -86,15 +86,15 @@ char* time_diff(time_t t0, time_t t1) {
 }
 
 // Index triangular matrix
-int Sindex(int a, int b, int N) {
+inline int Sindex(int a, int b, int N) { // inline to make it quicker
     int ind;
     if (a > b) {
         //ind=a+N*b-(b*(b+1)/2);
-        ind = a + b * (N + N - b - 1) / 2;
+        ind = a + b * ((N << 1)  - b - 1) / 2;
     }
     else {
         //ind=b+N*a-(a*(a+1)/2);
-        ind = b + a * (N + N - a - 1) / 2;
+        ind = b + a * ((N << 1) - a - 1) / 2;
     }
     return ind;
 }
@@ -615,15 +615,6 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
                     si = -sin(J);
                     co = sqrt(1 - si * si);
                     index1=Sindex(a,c,N),index2=Sindex(c,b,N);
-                    /*if (a > c)
-                        index1 = a + c * (N + N - c - 1) / 2;
-                    else
-                        index1 = c + a * (N + N - a - 1) / 2;
-
-                    if (c > b)
-                        index2 = c + b * (N + N - b - 1) / 2;
-                    else
-                        index2 = b + c * (N + N - c - 1) / 2;*/
 
                     cr1 = co * ocr[index1] - si * oci[index2];
                     ci1 = co * oci[index1] + si * ocr[index2];

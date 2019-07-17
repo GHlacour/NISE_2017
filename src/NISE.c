@@ -214,7 +214,6 @@ int main(int argc, char* argv[]) {
     free(non->psites);
     free(non);
 
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Comm_free(&subComm);
     if(rootComm != MPI_COMM_NULL) MPI_Comm_free(&rootComm);
     MPI_Type_free(&t_non_type);

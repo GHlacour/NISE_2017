@@ -51,10 +51,17 @@ target_link_libraries(NISE MPI::MPI_C)
 
 # Math lib, not necessary on Windows.
 # NOTE: Should be linked AFTER linking FFTW because the order matters!
+# Also sets fast math
 if(NOT WIN32)
     target_link_libraries(translate m)
     target_link_libraries(NISE m)
     target_link_libraries(2DFFT m)
+endif()
+
+if(NOT WIN32 AND NOT ACCURATE_MATHS)
+    target_compile_options(NISE PUBLIC -ffast-math)
+elseif(NOT ACCURATE_MATHS)
+    target_compile_options(NISE PUBLIC /fp:fast)
 endif()
 
 ## Set features
