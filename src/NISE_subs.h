@@ -10,7 +10,6 @@ void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
 char* time_diff(time_t t0, time_t t1);
-int Sindex(int a,int b,int N);
 int Eindex(int a,int b,int N);
 int read_He(t_non *non,float *He,FILE *FH,int pos);
 int read_Dia(t_non *non,float *He,FILE *FE,int pos);
@@ -34,5 +33,20 @@ void dipole_double(t_non *non,float *dipole,float *cr,float *ci,float *fr,float 
 void dipole_double_last(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
 int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
 void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m,float *Anh);
+
+// Index triangular matrix
+// Put in the .h file to allow external referencing
+inline int Sindex(int a, int b, int N) { // inline to make it quicker
+    int ind;
+    if (a > b) {
+        //ind=a+N*b-(b*(b+1)/2);
+        ind = a + b * ((N << 1) - b - 1) / 2;
+    }
+    else {
+        //ind=b+N*a-(a*(a+1)/2);
+        ind = b + a * ((N << 1) - a - 1) / 2;
+    }
+    return ind;
+}
 
 #endif // _NONSUBS_
