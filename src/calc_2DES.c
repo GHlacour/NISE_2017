@@ -132,6 +132,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         MPI_Scatterv(fullWorkset, worksetSizes, worksetOffsets, MPI_INT, workset, worksetSizes[0], MPI_INT, 0, MPI_COMM_WORLD);
 
         free(fullWorkset);
+        free(worksetOffsets);
     } else {
         // Fix non settings
         const int totalSampleCount = (non->length - non->tmax1 - non->tmax2 - non->tmax3 - 1) / non->sample + 1;
@@ -592,9 +593,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     );
 
                     int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
-                    /*#pragma omp parallel for \
+                    #pragma omp parallel for \
                         shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
-                        schedule(static, 1)*/
+                        schedule(static, 1)
 
                     for(t1 = 0; t1 < non->tmax1; t1++) {
                         propagate_double_sparce(
@@ -624,9 +625,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     );
 
                     int t1;
-                    /*#pragma omp parallel for \
+                    #pragma omp parallel for \
                         shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
-                        schedule(static, 1)*/
+                        schedule(static, 1)
 
                     for (t1 = 0; t1 < non->tmax1; t1++) {
                         propagate_vec_coupling_S_doubles(
@@ -739,5 +740,6 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     free(mu_xyz);
     free2D((void**)lt_gb_se);
     free2D((void**)lt_ea);
-    free(workset);
+    free(workset); free(worksetSizes);
+    free(Hamil_i_e);
 }

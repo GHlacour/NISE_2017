@@ -31,9 +31,16 @@ int main(int argc, char* argv[]) {
     int parentRank, subRank, parentSize, subSize;
     MPI_Comm subComm, rootComm;
 
-    MPI_Init(&argc, &argv);
+    int threadingProvided = 0;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &threadingProvided);
     MPI_Comm_rank(MPI_COMM_WORLD, &parentRank);
     MPI_Comm_size(MPI_COMM_WORLD, &parentSize);
+
+    // We require funneled multithreading so if that is not allowed we gracefully fail
+    if(threadingProvided < MPI_THREAD_FUNNELED) {
+        printf("Error: MPI library does not support threading!\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     // We split up the processing in smaller chunks, each set of MPI processes will make shared memory
     // for the global state. Then only the master processes within each chunk will communicate among
@@ -208,6 +215,9 @@ int main(int argc, char* argv[]) {
     free(non);
 
     MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Comm_free(&subComm);
+    if(rootComm != MPI_COMM_NULL) MPI_Comm_free(&rootComm);
+    MPI_Type_free(&t_non_type);
     MPI_Finalize();
 
     return 0;
