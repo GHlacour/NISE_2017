@@ -418,22 +418,27 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         clearvec(mut3i, non->singles);
 
-        /* Calculate right side of nonrephasing diagram */
         float t3nr = 0, t3ni = 0;
-        for (int i = 0; i < non->singles; i++) {
-            t3nr += leftrr[i] * mut3r[i];
-            t3ni -= leftri[i] * mut3r[i];
-        }
-
-        /* Calculate right side of rephasing diagram */
         float* t1rr = calloc(non->tmax1, sizeof(float));
         float* t1ri = calloc(non->tmax1, sizeof(float));
 
-        for (int t1 = 0; t1 < non->tmax1; t1++) {
-            t1rr[t1] = 0, t1ri[t1] = 0;
+        #pragma omp parallel sections
+        {
+            /* Calculate right side of nonrephasing diagram */
+            #pragma omp section
             for (int i = 0; i < non->singles; i++) {
-                t1rr[t1] += leftnr[t1][i] * mut3r[i];
-                t1ri[t1] -= leftni[t1][i] * mut3r[i];
+                t3nr += leftrr[i] * mut3r[i];
+                t3ni -= leftri[i] * mut3r[i];
+            }
+
+            /* Calculate right side of rephasing diagram */
+            #pragma omp section
+            for (int t1 = 0; t1 < non->tmax1; t1++) {
+                t1rr[t1] = 0, t1ri[t1] = 0;
+                for (int i = 0; i < non->singles; i++) {
+                    t1rr[t1] += leftnr[t1][i] * mut3r[i];
+                    t1ri[t1] -= leftni[t1][i] * mut3r[i];
+                }
             }
         }
 
@@ -442,19 +447,25 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             int tl = tk + t3;
             mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
 
-            /* Calculate left side of nonrephasing diagram */
             float t3rr = 0, t3ri = 0;
-            for (int i = 0; i < non->singles; i++) {
-                t3rr += mut4[i] * leftrr[i];
-                t3ri += mut4[i] * leftri[i];
-            }
 
-            /* Calculate left side of rephasing diagram */
-            for (int t1 = 0; t1 < non->tmax1; t1++) {
-                t1nr[t1] = 0, t1ni[t1] = 0;
+            #pragma omp parallel sections
+            {
+                /* Calculate left side of nonrephasing diagram */
+                #pragma omp section
                 for (int i = 0; i < non->singles; i++) {
-                    t1nr[t1] += leftnr[t1][i] * mut4[i];
-                    t1ni[t1] += leftni[t1][i] * mut4[i];
+                    t3rr += mut4[i] * leftrr[i];
+                    t3ri += mut4[i] * leftri[i];
+                }
+
+                /* Calculate left side of rephasing diagram */
+                #pragma omp section
+                for (int t1 = 0; t1 < non->tmax1; t1++) {
+                    t1nr[t1] = 0, t1ni[t1] = 0;
+                    for (int i = 0; i < non->singles; i++) {
+                        t1nr[t1] += leftnr[t1][i] * mut4[i];
+                        t1ni[t1] += leftni[t1][i] * mut4[i];
+                    }
                 }
             }
 
@@ -496,7 +507,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
             /* Propagate left side nonrephasing */
-            for (int t1 = 0; t1 < non->tmax1; t1++) {
+            int t1;
+            #pragma omp parallel for shared(non, Hamil_i_e, leftnr, leftni)
+            for (t1 = 0; t1 < non->tmax1; t1++) {
                 if (non->propagation == 0) {
                     propagate_vec_DIA_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], 1
@@ -618,33 +631,36 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     free(Urs), free(Uis), free(Rs), free(Cs);
                 }
                 else if(non->propagation == 1) {
-                    // Key parallel loop 1
-                    // Initial step
-                    propagate_vec_coupling_S_doubles(
-                        non, Hamil_i_e, fr, fi, non->ts, Anh
-                    );
-
-                    int t1;
-                    #pragma omp parallel for \
-                        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
-                        schedule(static, 1)
-
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                    #pragma omp parallel shared(non,Hamil_i_e,Anh,fr,fi,ft1r,ft1i,rightrr, rightri,rightnr,rightni)
+                    {
+                        // Key parallel loop 1
+                        // Initial step
+                        #pragma omp single nowait
                         propagate_vec_coupling_S_doubles(
-                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts, Anh
+                            non, Hamil_i_e, fr, fi, non->ts, Anh
                         );
-                    }
 
-                    // Key parallel loop 2
-                    // Initial step
-                    propagate_vec_coupling_S(
-                        non, Hamil_i_e, rightnr, rightni, non->ts, -1
-                    );
+                        int t1;
+                        #pragma omp for nowait
+                        for (t1 = 0; t1 < non->tmax1; t1++) {
+                            propagate_vec_coupling_S_doubles(
+                                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts, Anh
+                            );
+                        }
 
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                        // Key parallel loop 2
+                        // Initial step
+                        #pragma omp single nowait
                         propagate_vec_coupling_S(
-                            non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+                            non, Hamil_i_e, rightnr, rightni, non->ts, -1
                         );
+
+                        #pragma omp for
+                        for (t1 = 0; t1 < non->tmax1; t1++) {
+                            propagate_vec_coupling_S(
+                                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+                            );
+                        }
                     }
                 }
             }
