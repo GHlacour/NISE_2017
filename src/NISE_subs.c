@@ -504,37 +504,23 @@ void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float
 
 /* Propagate doubles using diagonal vs. coupling sparce algorithm */
 void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* cr, float* ci, int m, float* Anh) {
-    float f;
-    int index, N, N2;
-    float *H1, *H0, *re_U, *im_U;
-    int *col, *row;
-    float *ocr, *oci;
-    int a, b, c;
-    float J;
-    int index1, index2, indexa, indexb;
-    float co, si;
-    float cr1, cr2, ci1, ci2;
-    float sign = 1;
-    float norm;
-    int i, k, kmax;
-
-    N = non->singles;
-    N2 = N * (N + 1) / 2;
-    f = non->deltat * icm2ifs * twoPi * sign / m;
-    H0 = (float *)calloc(N2, sizeof(float));
-    H1 = (float *)calloc(N * N / 2, sizeof(float));
-    col = (int *)calloc(N * N / 2, sizeof(int));
-    row = (int *)calloc(N * N / 2, sizeof(int));
-    re_U = (float *)calloc(N2, sizeof(float));
-    im_U = (float *)calloc(N2, sizeof(float));
-    ocr = (float *)calloc(N2, sizeof(float));
-    oci = (float *)calloc(N2, sizeof(float));
+    int N = non->singles;
+    int N2 = N * (N + 1) / 2;
+    const float f = non->deltat * icm2ifs * twoPi / m;
+    float* H0 = calloc(N2, sizeof(float));
+    float* H1 = calloc(N * N / 2, sizeof(float));
+    int* col = calloc(N * N / 2, sizeof(int));
+    int* row = calloc(N * N / 2, sizeof(int));
+    float* re_U = calloc(N2, sizeof(float));
+    float* im_U = calloc(N2, sizeof(float));
+    float* ocr = calloc(N2, sizeof(float));
+    float* oci = calloc(N2, sizeof(float));
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
-    for (a = 0; a < N; a++) {
-        indexa = Sindex(a, a, N);
-        for (b = a; b < N; b++) {
-            index = Sindex(a, b, N);
+    for (int a = 0; a < N; a++) {
+        const int indexa = Sindex(a, a, N);
+        for (int b = a; b < N; b++) {
+            int index = Sindex(a, b, N);
             H0[index] = Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]; // Diagonal
             if (a == b) {
                 if (non->anharmonicity == 0) {
@@ -548,71 +534,57 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
     }
 
     /* Build Hamiltonian H1 (coupling) */
-    k = 0;
-    for (a = 0; a < N; a++) {
-        for (b = a + 1; b < N; b++) {
-            index = Sindex(a, b, N);
-            if (fabs(Hamiltonian_i[index]) > non->couplingcut) {
-                H1[k] = Hamiltonian_i[index];
-                col[k] = a, row[k] = b;
-                k++;
+    int kmax = 0;
+    for (int a = 0; a < N; a++) {
+        for (int b = a + 1; b < N; b++) {
+            int index = b + a * ((N << 1) - a - 1) / 2; // Part of Sindex, but b > a is always true here
+
+            if (fabsf(Hamiltonian_i[index]) > non->couplingcut) {
+                H1[kmax] = Hamiltonian_i[index];
+                col[kmax] = a, row[kmax] = b;
+                kmax++;
             }
         }
     }
-    kmax = k;
 
     /* Exponentiate diagonal [U=exp(-i/2h H0 dt)] */
-    for (a = 0; a < N2; a++) {
-        re_U[a] = cos(0.5 * H0[a] * f);
-        im_U[a] = -sin(0.5 * H0[a] * f);
+    for (int a = 0; a < N2; a++) {
+        re_U[a] = cosf(0.5f * H0[a] * f);
+        im_U[a] = -sinf(0.5f * H0[a] * f);
     }
 
-    for (i = 0; i < m; i++) {
+    for (int i = 0; i < m; i++) {
 
         /* Multiply on vector first time */
-        for (a = 0; a < N2; a++) {
+        for (int a = 0; a < N2; a++) {
             ocr[a] = cr[a] * re_U[a] - ci[a] * im_U[a];
             oci[a] = cr[a] * im_U[a] + ci[a] * re_U[a];
         }
 
         /* Account for couplings */
         /* Loop over couplings */
-        for (k = 0; k < kmax; k++) {
-            a = col[k];
-            b = row[k];
-            index = Sindex(a, b, N);
-            J = H1[k];
+        for (int k = 0; k < kmax; k++) {
+            int a = col[k];
+            int b = row[k];
+            float J = H1[k] * f;
 
-            J = J * f;
             /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
             // TODO speedup
-            for (c = 0; c < N; c++) {
-                if (c == a || c == b) {
-                    si = -sin(J * sqrt2);
-                    co = sqrt(1 - si * si);
-                    index1 = Sindex(a, c, N), index2 = Sindex(c, b, N);
-                    cr1 = co * ocr[index1] - si * oci[index2];
-                    ci1 = co * oci[index1] + si * ocr[index2];
-                    cr2 = co * ocr[index2] - si * oci[index1];
-                    ci2 = co * oci[index2] + si * ocr[index1];
-                    ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
-                }
-                else {
-                    si = -sin(J);
-                    co = sqrt(1 - si * si);
-                    index1=Sindex(a,c,N),index2=Sindex(c,b,N);
+            for (int c = 0; c < N; c++) {
+                float si = (c == a || c == b) ? -sinf(J * sqrt2) : -sinf(J);
 
-                    cr1 = co * ocr[index1] - si * oci[index2];
-                    ci1 = co * oci[index1] + si * ocr[index2];
-                    cr2 = co * ocr[index2] - si * oci[index1];
-                    ci2 = co * oci[index2] + si * ocr[index1];
-                    ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
-                }
+                float co = sqrtf(1 - si * si);
+                int index1 = Sindex(a, c, N), index2 = Sindex(c, b, N);
+                float cr1 = co * ocr[index1] - si * oci[index2];
+                float ci1 = co * oci[index1] + si * ocr[index2];
+                float cr2 = co * ocr[index2] - si * oci[index1];
+                float ci2 = co * oci[index2] + si * ocr[index1];
+                ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
             }
         }
 
         /* Multiply on vector second time */
-        for (a = 0; a < N2; a++) {
+        for (int a = 0; a < N2; a++) {
             cr[a] = ocr[a] * re_U[a] - oci[a] * im_U[a];
             ci[a] = ocr[a] * im_U[a] + oci[a] * re_U[a];
         }
