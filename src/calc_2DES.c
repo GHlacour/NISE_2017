@@ -3,6 +3,11 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#ifdef _WIN32
+    #include <Windows.h>
+#else
+    #include <unistd.h>
+#endif
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
@@ -99,6 +104,24 @@ void calculateWorkset(t_non* non, int** workset, int* sampleCount, int* clusterC
 
     if (non->cluster != -1) {
         fclose(Cfile);
+    }
+}
+
+// Function to wait until all MPI requests in the given array have finished
+void asyncWaitForMPI(MPI_Request requests[], int requestCount, int initialWaitingTime, int maxWaitingTime) {
+    int waitingTime = initialWaitingTime;
+    int finished = 0;
+    MPI_Testall(requestCount, requests, &finished, MPI_STATUSES_IGNORE);
+    while(!finished) {
+        #ifdef _WIN32
+            Sleep(waitingTime);
+        #else
+            nanosleep((const struct timespec[]){{0, waitingTime * 1000000L}}, NULL);
+        #endif
+
+        if(waitingTime < maxWaitingTime) waitingTime *= 2;
+
+        MPI_Testall(requestCount, requests, &finished, MPI_STATUSES_IGNORE);
     }
 }
 
@@ -673,29 +696,37 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     float** reductionArrays[12] = {
         rrIpar, riIpar, rrIIpar, riIIpar, rrIper, riIper, rrIIper, riIIper, rrIcro, riIcro, rrIIcro, riIIcro
     };
+    MPI_Request reductions[2][12];
 
     // Reduce at small scope
     if(subRank == 0) { // parent will do in-place reduce to save memory
         for (int i = 0; i < 12; i++) {
-            MPI_Reduce(MPI_IN_PLACE, reductionArrays[i][0], reduceArraySize, MPI_FLOAT, MPI_SUM, 0, subComm);
+            MPI_Ireduce(MPI_IN_PLACE, reductionArrays[i][0], reduceArraySize, MPI_FLOAT, MPI_SUM, 0, subComm, &(reductions[0][i]));
         }
     } else {
         for (int i = 0; i < 12; i++) {
-            MPI_Reduce(reductionArrays[i][0], NULL, reduceArraySize, MPI_FLOAT, MPI_SUM, 0, subComm);
+            MPI_Ireduce(reductionArrays[i][0], NULL, reduceArraySize, MPI_FLOAT, MPI_SUM, 0, subComm, &(reductions[0][i]));
         }
     }
+
+    // Wait for the small-scope reduction to finish
+    asyncWaitForMPI(reductions[0], 12, 1, 5000);
 
     // Reduce at global scope
     if (parentRank == 0) { // parent will do in-place reduce to save memory
         for (int i = 0; i < 12; i++) {
-            MPI_Reduce(MPI_IN_PLACE, reductionArrays[i][0], reduceArraySize, MPI_FLOAT, MPI_SUM, 0, rootComm);
+            MPI_Ireduce(MPI_IN_PLACE, reductionArrays[i][0], reduceArraySize, MPI_FLOAT, MPI_SUM, 0, rootComm, &(reductions[1][i]));
         }
     }
     else if(subRank == 0) {
         for (int i = 0; i < 12; i++) {
-            MPI_Reduce(reductionArrays[i][0], NULL, reduceArraySize, MPI_FLOAT, MPI_SUM, 0, rootComm);
+            MPI_Ireduce(reductionArrays[i][0], NULL, reduceArraySize, MPI_FLOAT, MPI_SUM, 0, rootComm, &(reductions[1][i]));
         }
     }
+
+    // Wait for the global scope reduction to finish
+    if(parentRank == 0 || subRank == 0)
+        asyncWaitForMPI(reductions[1], 12, 1, 5000);
 
     /* The calculation is finished, lets write output */
     if (parentRank == 0) {
@@ -742,4 +773,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     free2D((void**)lt_ea);
     free(workset); free(worksetSizes);
     free(Hamil_i_e);
+
+    // Barrier to gather all threads and exit simultaneously
+    MPI_Request barrierRequest[1];
+    MPI_Ibarrier(MPI_COMM_WORLD, &(barrierRequest[0]));
+    asyncWaitForMPI(barrierRequest, 1, 1, 5000);
 }
