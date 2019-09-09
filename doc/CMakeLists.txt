@@ -11,7 +11,7 @@ if(GENERATE_DOCS AND LATEX_COMPILER AND BIBTEX_COMPILER)
     include(UseLATEX)
 
     add_latex_document(
-        NISE3.1.tex
+        NISE.tex
         IMAGES 2ds.pdf
         BIBFILES Merged2016.bib
         TARGET_NAME doc

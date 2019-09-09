@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{epstopdf}
+\usepackage{hyperref}
 \usepackage{cite}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
@@ -22,7 +23,7 @@
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{definition}{Definition}
 
-\title{\textsc{NISE Manual\\ Version 3.1}}
+\title{\textsc{NISE Manual\\ Version 3.2}}
 \author{Thomas la Cour Jansen\\ University of Groningen}
 \date{\today\\ \includegraphics{2ds.pdf}}
 \begin{document}
@@ -57,19 +58,86 @@ Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.
 Change in the code is allowed, but on own risk, and should be reported clearly in publications. The code may not be redistributed.
 
 
-\chapter{Installation and dependencies}
-The NISE3 code require LAPACK and FFTW3 libraries, which is not included in the distribution. FFTW3
-can be downloaded from http://www.fftw.org. LAPACK is used by many other programs and frequently
-preinstalled on most scientific computer cluster. More information can be found on http://www.netlib.org/lapack/. For plotting the NISE3 code is delivered with scripts working with the DISLIN and gnuplot  plotting programs.
-More information and download of this code can be found at http://www.mps.mpg.de/dislin/. Gnuplot is frequently preinstalled on many computer  clusters. More information can be found at http://www.gnuplot.info/. 
+\chapter{Installation and options}
+NISE has a number of dependencies:
+\begin{itemize}
+\item FFTW3 library, possibly with OpenMP/MPI support. See \url{http://www.fftw.org/}.
+\item LAPACK library, often preinstalled. See \url{http://www.netlib.org/lapack/}.
+\item CMake v3.10 or higher
+\item MPI v3 implementation, such as OpenMPI, MPICH (Unix) or MS-MPI (Windows)
+\item Modern C compiler, implementing a recent OpenMP version
+\item LaTeX + BibTex distribution if you want to build the documentation. Not required
+\item DISLIN or gnuplot, for plotting the results using the included scripts
+\end{itemize}
+As some FFTW3 installations do not come with the correct CMake compatibility, it might be useful to use \href{https://github.com/microsoft/vcpkg}{vcpkg} as package manager for C++ libraries. This package manager is cross-platform compatible.
 
-For installing NISE3 one have to adjust the makefile to match the desired compiler and the location of the LAPACK and FFTW3 libraries. The location of these libraries can be found using the locate command on most linux/unix systems. Several examples are given in the makefile. Typing make in the NISE3 directory will compile the code and leave it in that directory. The code should now be executable. The tutorial program likewise needs to be compiled in the Tutorial directory. The most significant difference between the former version NISE3 and version NISE3 is that the new version allows the use of openMP for the simulation of 2D the spectra. The code must, thus, be compiled including the -openmp compiler flag, when using icc, or -fopenmp, when compiling with gcc.
+\section{Building}
+In order to build and compile the NISE software, it is recommended to use the CMake build system. This will try to automatically link the libraries and pick the correct compiler settings.
+\begin{enumerate}
+\item Extract the source code files
+\item Create a \texttt{build} directory in the main folder
+\item Run \texttt{cmake ..} inside this new {\tt build} directory.
+\item If {\tt cmake} was successful, run {\tt make} in the same directory to start compilation.
+\item All executables should be available in a new {\tt bin} directory in the main folder.
+\end{enumerate}
+
+There are several options you can provide to the {\tt cmake} command in order to customize your build:
+\begin{itemize}
+\item {\tt -DCMAKE\_BUILD\_TYPE}: By default, this is set to {\tt RelWithDebInfo}. Other options include {\tt Debug}, {\tt Release} and {\tt MinSizeRel}. Refer to the CMake documentation for more information
+\item {\tt -DGENERATE\_DOCS}: When not set, CMake will attempt to compile this documentation only when building a Release build. You can override this by setting this variable to {\tt true} or {\tt false}.
+\item {\tt -DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option ({\tt -ffast-math}, {\tt /fp:fast} or equivalent) which yields a 2x speed-up at the cost of some accuracy.
+\end{itemize}
+
+After running CMake, the following build targets will have been provided for {\tt make}:
+\begin{itemize}
+\item {\tt all}: Same as not providing a build target, will build all source code for the program, but will skip the documentation and the examples
+\item {\tt 2DFFT}: Will build the 2DFFT executable, used to process results
+\item {\tt translate}: Will build the translation utility, used to convert between input formats
+\item {\tt NISE}: Will build the main NISE executable
+\item {\tt doc}: Will build this documentation from scratch
+\item {\tt examples}: Will build the code necessary for the examples, used later in this document.
+\end{itemize}
+
+\section{Parallelization}
+NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, only the *UVvis techniques support MPI, others may only support OpenMP, or do not have a parallel implementation at all.
+
+For the *UVvis programs, it is recommended to understand the implemented approach for parallelization in order to achieve good performance. Each run will calculate a specified number of samples, each for 21 different polarization directions. The calculation time for each polarization direction is determined by the chosen values for `t1 max', `t2 max' and `t3 max'.
+
+All polarization directions are calculated in parallel using MPI, distributed over all registered tasks (more explanation follows later). As long as you have sufficiently many samples, this will scale very well. In general, it is recommended to have a fraction or multiple of 21 as number of tasks, in order to make sure that no cores are simply waiting around after completing their part of the calculations.
+
+Within each polarization direction, some loops are parallelized using OpenMP. Due to communication overhead and data sharing difficulties, this does not scale as well as the MPI parallelization. If possible, it is recommended to overprovision your cores, i.e. to make the system spawn more threads than there are cores available. The larger the computation per polarization direction (so higher t1, t2 and t3), the better this part will scale.
+
+For example, to run 4 tasks with each 12 threads with OpenMPI, use the following command:\\
+{\tt mpirun -np 4 -x OMP\_NUM\_THREADS=12 --bind-to socket ~/pathToNISE inputFile}
+
+\subsection{Efficiency considerations}
+Some considerations and examples to achieve higher performance:
+\begin{itemize}
+\item As OpenMP parallelization uses shared memory, it is necessary to limit each task to one node. If possible, it is recommended to limit a task even to one socket, or in case of more modern chips, 1 NUMA node. However, this might make the runtime for one polarization direction too high, so it might be worthwhile to trade some efficiency for shorter runtimes.
+\item It is recommended to overprovision your OpenMP threads by a factor of 2-3. So if a NUMA node has 12 cores, you could pin the threads of this task to this NUMA node and tell OpenMP to create 24-36 threads. Thread pinning differs per OS and more details can be found online. Many popular workload schedulers like SLURM, and some MPI implementations, offer this built-in (for example, {\tt --bind-to socket} in the command above).
+\item The most efficient workload division also depends on the problem size, for larger problems with fewer samples, the OpenMP scaling is more efficient than for smaller problems with more samples.
+\item For example, on a machine with 2 12-core Xeon processors (single NUMA node per socket), it is most efficient to run 4 tasks, with 12 threads assigned to each task (overprovisioning). However, for very large problems with only 2 or 3 samples, it might be better to scale down to 2 tasks, each with 24 threads. For smaller problems with many samples, 8 tasks with 6 threads might be better. In general, it is good to do some quick performance tests beforehand.
+\end{itemize}
+
+\section{Changelog}
+\subsection{Version 3.2}
+{\small Work by Floris Westerman}
+\begin{itemize}
+\item Added CMake build system and improved cross-platform compatibility
+\item Added MPI support to offer significantly better scaling across multiple nodes, instead of just a single one
+\item Improved code efficiency, around 4x speed-up of main algorithm code of *UVvis techniques
+\end{itemize}
+
+\subsection{Version 3.1}
+\begin{itemize}
+\item Included OpenMP support for some calculations
+\end{itemize}
 
 \chapter{Program descriptions}
 Overview over programs for calculating spectra and analysis:\\
 \begin{description}
 \item [translate] [Convert Hamiltonian and dipole trajectory between different formats.]
-\item [NISE3.1] [General code for calculating spectra]
+\item [NISE] [General code for calculating spectra]
 \item [2DFFT] [Do the 2D Fourier transform]
 \end{description}
 
@@ -160,10 +228,10 @@ of the snapshot (starting from 1). After this the upper tridiagonal matrix of th
 
 
 \subsection{Full nonadiabatic simulation}
-The nonadiabatic linear and third-order response can be simulated with the 'NISE3' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in \cite{Jansen.2010.JCP.132.224503}.
+The nonadiabatic linear and third-order response can be simulated with the 'NISE' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in \cite{Jansen.2010.JCP.132.224503}.
 The coupling propagation scheme is described in \cite{Liang.2012.JCTC.8.1706}.
 The program require the Hamiltonian trajectory in binary format.
-The NISE3 program use the following input:\\
+The NISE program use the following input:\\
 \begin{description}
 \item [Hamiltonianfile] [File name]
 \item [Dipolefile] [File name]
@@ -272,7 +340,7 @@ The Hamiltonian analysis provides the delocalization length/size according to th
 inition of Thouless \cite{Thouless.1974.PR.13.93} directly in the program standard output. 
 
 \section{Fourier transform \label{sec:Fourier}}
-The 2DFFT program use the same input as the NISE3 program.
+The 2DFFT program use the same input as the NISE program.
 Fourier transformed response is written in files named Rw(par/per/cro).(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2D.(par/per/cro).dat and the 'broad pump narrow probe' pump probe signal is stored in PP.(par/per/cro).dat.
 The first column is $\omega_1$, the second is $\omega_2$, the third is the dispersive signal, and the
 last column is the absorptive signal. Perl scripts connected with Dislin are available for plotting or the
