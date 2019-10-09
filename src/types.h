@@ -77,6 +77,7 @@ typedef struct {
   float temperature;
   float anharmonicity;
   int Npsites;
+  int printLevel;
   int *psites;
 } t_non;
 

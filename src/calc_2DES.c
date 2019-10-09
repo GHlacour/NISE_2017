@@ -177,7 +177,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
     // Frequency shifts
     float shift1 = (non->max1 + non->min1) / 2;
-    if(parentRank == 0) printf("Frequency shift %f.\n", shift1);
+    if(parentRank == 0) printf("Rotating Wave Frequency shift %f.\n", shift1);
     non->shifte = shift1;
     non->shiftf = 2 * shift1;
 
@@ -276,7 +276,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         time_t timeSampleStart;
         time(&timeSampleStart);
         //log_item("Starting sample %d\n", currentSample); TODO fix the logging in parallel
-        printf("Starting sample %d, molPol %d\n", currentSample, molPol);
+        if (non->printLevel>0) printf("Starting sample %d, molPol %d\n", currentSample, molPol);
 
         /* Calculate 2DIR response */
         int tj = currentSample * non->sample + non->tmax1;
@@ -693,7 +693,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         time(&timeSampleEnd);
         char* timeText = time_diff(timeSampleStart, timeSampleEnd);
         //log_item("Finished sample %d, %s\n", currentSample, timeText);
-        printf("Finished sample %d, molPol %d in %s", currentSample, molPol, timeText);
+        if (molPol == 0 || non->printLevel>0 ){
+          printf("Finished sample %d, molPol %d in %s", currentSample, molPol, timeText);
+        }
         free(timeText);
     }
 

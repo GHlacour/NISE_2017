@@ -29,6 +29,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->temperature = 300;
     non->cluster = -1; // Average over all snapshots no clusters
     non->fft = 0;
+    non->printLevel = 0; // Set to standard print level
     sprintf(non->basis, "Local");
     //  non->hamiltonian="Full";
 
@@ -168,6 +169,10 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Read projection (for calculating spectra from selected sites)
         if (keyWordProject("Projection", Buffer, LabelLength, &non->Npsites, inputFile, non->singles, non) == 1)
             continue;
+
+        // Read double excited states
+        if (keyWordI("PrintLevel", Buffer, &non->printLevel, LabelLength) == 1) continue;
+       
 
     }
     while (1 == 1);

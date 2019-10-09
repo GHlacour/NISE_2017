@@ -1,7 +1,7 @@
 #include "types_MPI.h"
 
 const t_non_datatype T_NON_TYPE = {
-    59,
+    60,
     {
         1, 1, 1,
         1, 1, 1,
@@ -23,6 +23,7 @@ const t_non_datatype T_NON_TYPE = {
         1, 1, 1,
         1,
         1, 1, 1, 1,
+        1,
         1
     },
 {
@@ -46,6 +47,7 @@ const t_non_datatype T_NON_TYPE = {
         MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
         MPI_INT,
         MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
+        MPI_INT,
         MPI_INT
     },
 {
@@ -73,6 +75,7 @@ const t_non_datatype T_NON_TYPE = {
         offsetof(t_non, statstart), offsetof(t_non, statend), offsetof(t_non, statstep),
         offsetof(t_non, statsteps),
         offsetof(t_non, thres), offsetof(t_non, couplingcut), offsetof(t_non, temperature), offsetof(t_non, anharmonicity),
-        offsetof(t_non, Npsites)
+        offsetof(t_non, Npsites),
+        offsetof(t_non, printLevel)
     }
 };
