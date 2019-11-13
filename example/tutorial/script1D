@@ -16,10 +16,10 @@ cp $WD/run $TMPDIR
 cp $WD/inp* $TMPDIR
 cp $WD/stochastic $TMPDIR
 
-./run
+./run.sh
 
-~/git/NISE_2017/NISE3.1/translate inpTra
-time ~/git/NISE_2017/NISE3.1/NISE3.1 input1D
+~/NISE/NISE_2017/bin/translate inpTra
+time ~/NISE/NISE_2017/bin/NISE input1D
 
 #cp *.log $WD
 #cp *.dat $WD
