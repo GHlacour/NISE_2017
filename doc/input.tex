@@ -130,7 +130,7 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
 %\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
-\item [Technique] [1D/2DIR/2DUVvis/Pop/Dif/Ani/Analyse, for linear absorption (and linear dichroism), 2DIR or 2DUVvis, 2DSFG, population transfer simulation,exciton diffusion, integrated anisotropy calculation, or Hamiltonian analysis, respectively]
+\item [Technique] [Absorption/Luminescence/CD/2DIR/GB/SE/EA/noEA/2DUVvis/GBUVvis/SEUVvis/EAUVvis/noEAUVvis/Pop/Dif/Ani/Analyse, these techniques are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
 \item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
@@ -159,17 +159,16 @@ This file should be named Position.bin and have the following format. The first 
 size of the box in float (all sides are assumed equally long). This is followed by the x, y, and z coordinates for each site again in floats. After the coordinates of the first snapshot the coordinates
 for the second follows directly and the coordinates for all snapshots should be stored.
 
-For SFG, 2DSFG, and linear dichroism calculations the principle axis is assumed to be the z- 
-axis. The SFG calculations only support the calculation of $\chi^{(2)}_{zzz}$ and $\chi^{(2)}_{xxz}$, which require the diagonal elements of the transition polarizability tensor (given in the alpha file). For 2DSFG $\chi^{(4)}_{zzzzz}$ and $\chi^{(2)}_{zzzxx}$ are currently calculated.
+%For SFG, 2DSFG, and linear dichroism calculations the principle axis is assumed to be the z-axis. The SFG calculations only support the calculation of $\chi^{(2)}_{zzz}$ and $\chi^{(2)}_{xxz}$, which require the diagonal elements of the transition polarizability tensor (given in the alpha file). For 2DSFG $\chi^{(4)}_{zzzzz}$ and $\chi^{(2)}_{zzzxx}$ are currently calculated.
 
 \subsection{Program output}
-The 1D calculation provides the linear response function in time domain in the file R1D.dat 
+The linear absorption calculation provides the linear response function in time domain in the file TD\_Absorption.dat 
 and the linear dichroism response function in time domain in the file RLD.dat. The first 
 column is the time in femto seconds. The other columns are the real and imaginary parts 
 of the response function. It is recommended to check that these have decayed to a small 
 value close to zero in the calculated time interval. If this is not the case the system has 
 not lost its coherence within the time determined by t1 max and the spectrum will be 
-too broad. The linear absorption is given in the file FTIR.dat and the linear dichroism in 
+too broad. The linear absorption is given in the file Absorption.dat and the linear dichroism in 
 the file LDIR.dat. The first line is the frequency in wavenumbers, the second line is the 
 absorption spectrum, and a third line contain zeroes. For the linear dichroism calculation 
 the z-axis is assumed to be the unique axis. 
@@ -231,34 +230,34 @@ trajectories in Energy.tex and Dipole.tex. The should the be converted to binary
 program. This is done with the translate program with the input given in the file inpTra.
 The command line entry:
 \begin{verbatim}
-~/NISE_2017/NISE3.1/translate inpTra
+~/NISE_2017/bin/translate inpTra
 \end{verbatim}
 will accomplish this.
 
 When the binary trajectory exist we can calculate the linear absorption using the input from the file input1D.
 \begin{verbatim}
-~/NISE_2017/NISE3.1 input1D
+~/NISE_2017/bin/NISE input1D
 \end{verbatim}
-One should plot the output in R1D.dat and FTIR.dat to get familiar with this. It is 
+One should plot the output in TD\_Absorption.dat and Absorption.dat to get familiar with this. It is 
 important that the response function has decayed almost completely within the simulated 
 time to avoid ringing and other artifact in the spectrum. The program should finish in a 
 few seconds. The linear dichroism signal in this case found in RLD.dat and LDIR.dat is 
-not so interesting as it is simply minus half of the FTIR signal, since the dipoles are in the 
+not so interesting as it is simply minus half of the absorption signal, since the dipoles are in the 
 x, y plane. 
 
 The two-dimensional spectra are calculated with the input file input2D.
 \begin{verbatim}
-~/NISE_2017/NISE3.1/NISE3.1 input2D
+~/NISE_2017/bin/NISE input2D
 \end{verbatim}
 The progress of the calculation can be followed in the NISE.log file. One should expect that the calculation of one sample point takes about 10 seconds with the given settings. For a test about 100 samples are sufficient, while for nice spectra at least 1000 samples are needed. Typically more samples are needed for two-dimensional spectra than for linear absorption spectra and the more different distinct chromophore environments are present the more samples are needed. The given example should take about 15 minutes to simulate (of course depending on the computer).
 
-The NISE3 code is natively build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can be achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
+The NISE code is natively build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can be achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
 
 The 2D simulations can be performed in parallel using openMP. The program does this by distributing the calculations for different values of t1 on different CPUs. When running parallel it is advantageous to ensure that ([t1 max]+1) divided by the number of used CPUs is an integer number or slightly smaller than an integer number. To run the code parallel the OMP\_NUM\_THREADS variable has to be set equal to the number of CPUs that one want to use in the submission script (or if not running under a queueing system the variable has to be set in the used linux shell). On most clusters one should further specify to the queuing system how many CPUs are needed when submitting the job. The user is referred to the manual of the cluster used for this kind of information as it varies from system to system. For parts of the code, where the mkl library is used for solving eigen value problems these may be run in parallel as well by setting the MKL\_NUM\_THREADS variable equal to the number of CPUs used for this task. The general experience is that for small problems running parallel is not efficient. The mkl library also does not perform well on large numbers of CPUs, however, the 2D simulations were found to scale well up to about 32 CPUs in recent simulations on 864 coupled OH-stretch oscillators \cite{Shi.2016.PCCP}.
 
 The response functions calculated in time domain can be converted to frequency domain spectra using the double Fourier transform code with the same input as for the calculation of the response function.
 \begin{verbatim}
-~/projects/NISE3/2DFFT input2D
+~/NISE_2017/bin/2DFFT input2D
 \end{verbatim}
 
 The user is encouraged to play with the settings using the tutorial to get familiar with the code.
@@ -269,13 +268,7 @@ The delocalization length \cite{Thouless.1974.PR.13.93} can be calculated with t
 the example input file inputAnalyse. Note that for including the complete trajectory [t1 
 max] should be 1. 
 \begin{verbatim}
-~/projects/NISE3/NISE3 inputAnalyse 
+~/NISE_2017/bin/NISE inputAnalyse 
 \end{verbatim}
-A separate tutorial exists for the SFG part of the code. The script for creating the 
-trajectory is called runSFG. The input files for the translate and NISE3 programs are 
-called inpTraSFG, and input(2D)SFG, respectively. In this tutorial two sites are given. The 
-transition dipole of the first is parallel to the z-axis and pointing in the positive direction. 
-The angle with the other dipole can be specified in the script. The transition polarizability 
-components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation 
-parameters can be specified as in the main tutorial.
+%A separate tutorial exists for the SFG part of the code. The script for creating the  trajectory is called runSFG. The input files for the translate and NISE3 programs are  called inpTraSFG, and input(2D)SFG, respectively. In this tutorial two sites are given. The  transition dipole of the first is parallel to the z-axis and pointing in the positive direction. The angle with the other dipole can be specified in the script. The transition polarizability components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation parameters can be specified as in the main tutorial.
 

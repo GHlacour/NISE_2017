@@ -1,6 +1,7 @@
-\chapter{Details on the available techniques}
+\chapter{\label{chap:techniques}Details on the available techniques}
 In this Chapter, more details on special options and the theory behind each technique is given.
 \section{Analyse}
+The Hamiltonian is analysed and different statistical properties are provided including the average delocalization size (Thouless).
 \section{Pop (population transfer)}
 \section{Dif (diffusion)}
 Not implemented yet (check NISE\_2015)
@@ -11,13 +12,15 @@ Not implemented yet (check NISE\_2015)
 \section{LD (linear dichroism)}
 Not implemented yet (check NISE\_2015)
 \section{CD (circular dichroism)}
- Not implemented yet
 \section{Raman}
+Not implemented yet
 \section{SFG (sum-frequency generation)}
 Not implemented yet (check NISE\_2015)
 \section{2DIR (two-dimensional infrared)}
+This calculates the two-dimensional infrared spectra assuming coupled three level systems. The techniques GB (ground state bleach), SE (stimulated emission), and EA (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEA technique keyword. 
 \section{2DSFG (two-dimensional sum-frequency generation)}
  Not implemented yet (check NISE\_2015)
 \section{2DUVvis (two-dimensional electronic spectroscopy)}
+This calculates the two-dimensional infrared spectra assuming coupled two level systems. The techniques GBUVvis (ground state bleach), SEUVvis (stimulated emission), and EAUVvis (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEAUVvis technique keyword.
 \section{2DFD (fluorescence detected two-dimensional spectroscopy)}
- Not implemented yet
+ Not implemented yet. The 2DFD spectrum can be calculated in the approximation that all exciton pairs annihilate to produce a single exciton long before fluorescence occur with the noEAUVvis technique.
