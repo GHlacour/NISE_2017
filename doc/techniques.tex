@@ -1,14 +1,29 @@
 \chapter{\label{chap:techniques}Details on the available techniques}
-In this Chapter, more details on special options and the theory behind each technique is given.
+In this Chapter, more details on special options and the theory behind each technique is given. The techniques marked with a star (*) are implemented with OpenMP and MPI options, while techniques implemented with OpenMP options are marked with a plus (+). All other techniques are implemented as single CPU. 
 \section{Analyse}
 The Hamiltonian is analysed and different statistical properties are provided including the average delocalization size (Thouless).
 \section{Pop (population transfer)}
+The population transfer is calculated between sites. In general, this is governed by the equation:
+\begin{equation}
+P_{fi}(t)=\langle |U_{fi}(t,0)|^2 \rangle
+\end{equation}
+Here $f$ and $i$ are the final and initial sites. Generally two files are generated. In Pop.dat average of the population remaining on the initial site ($P_{ii}$) is calculated resulting in a value starting at 1 (all popiulation is on the initial state) and decaying to the equilibrium value 1/N (equal population on all states). In the PopF.dat file a full matrix op all combinations of initial and final states is given. The columns start start with the first initial state and all possible final states continuing to the second possible initial state and all possible final states. This file may be very large for large system sizes!
 \section{Dif (diffusion)}
 Not implemented yet (check NISE\_2015)
 \section{Ani (anisotropy)}
 Not implemented yet (check NISE\_2015)
 \section{Absorption}
+The linear absorption is calculated using the first-order response function
+\begin{equation}
+I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}U(t,0)\mu_{\alpha}\rangle\exp(-t/T_1).
+\end{equation}
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. 
 \section{Luminescence}
+The luminescence is calculated using the first-order response function
+\begin{equation}
+I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}U(t,0)\exp(H/k_BT)\mu_{\alpha}\rangle\exp(-t/T_1).
+\end{equation}
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. 
 \section{LD (linear dichroism)}
 Not implemented yet (check NISE\_2015)
 \section{CD (circular dichroism)}
@@ -16,11 +31,11 @@ Not implemented yet (check NISE\_2015)
 Not implemented yet
 \section{SFG (sum-frequency generation)}
 Not implemented yet (check NISE\_2015)
-\section{2DIR (two-dimensional infrared)}
+\section{2DIR$^{+}$ (two-dimensional infrared)}
 This calculates the two-dimensional infrared spectra assuming coupled three level systems. The techniques GB (ground state bleach), SE (stimulated emission), and EA (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEA technique keyword. 
 \section{2DSFG (two-dimensional sum-frequency generation)}
  Not implemented yet (check NISE\_2015)
-\section{2DUVvis (two-dimensional electronic spectroscopy)}
-This calculates the two-dimensional infrared spectra assuming coupled two level systems. The techniques GBUVvis (ground state bleach), SEUVvis (stimulated emission), and EAUVvis (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEAUVvis technique keyword.
+\section{2DUVvis$^{*}$ (two-dimensional electronic spectroscopy)}
+This calculates the two-dimensional infrared spectra assuming coupled two level systems. The techniques GBUVvis (ground state bleach), SEUVvis (stimulated emission), and EAUVvis (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEAUVvis technique keyword. 
 \section{2DFD (fluorescence detected two-dimensional spectroscopy)}
  Not implemented yet. The 2DFD spectrum can be calculated in the approximation that all exciton pairs annihilate to produce a single exciton long before fluorescence occur with the noEAUVvis technique.
