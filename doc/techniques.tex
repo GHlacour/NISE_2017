@@ -1,7 +1,10 @@
 \chapter{\label{chap:techniques}Details on the available techniques}
 In this Chapter, more details on special options and the theory behind each technique is given. The techniques marked with a star (*) are implemented with OpenMP and MPI options, while techniques implemented with OpenMP options are marked with a plus (+). All other techniques are implemented as single CPU. 
 \section{Analyse}
-The Hamiltonian is analysed and different statistical properties are provided including the average delocalization size (Thouless).
+The Hamiltonian is analysed and different statistical properties are provided including the average delocalization size of Thouless \cite{Thouless.1974.PR.13.93}. This inverse participation ratio (IPR) is expressed as:
+\begin{equation}
+	D_{IPR}=\left\langle\left(\sum_j |c_{ij}|^{4}\right)^{-1}\right \rangle.
+\end{equation}
 \section{Pop (population transfer)}
 The population transfer is calculated between sites. In general, this is governed by the equation:
 \begin{equation}

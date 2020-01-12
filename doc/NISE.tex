@@ -92,7 +92,7 @@ There are several options you can provide to the {\tt cmake} command in order to
 \begin{itemize}
 \item {\tt -DCMAKE\_BUILD\_TYPE}: By default, this is set to {\tt RelWithDebInfo}. Other options include {\tt Debug}, {\tt Release} and {\tt MinSizeRel}. Refer to the CMake documentation for more information
 \item {\tt -DGENERATE\_DOCS}: When not set, CMake will attempt to compile this documentation only when building a Release build. You can override this by setting this variable to {\tt true} or {\tt false}.
-\item {\tt -DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option ({\tt -ffast-math}, {\tt /fp:fast} or equivalent) which yields a 2x speed-up at the cost of some accuracy.
+\item {\tt -DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option ({\tt -ffast-math}, {\tt /fp:fast} or equivalent) which may yield upto 2x speed-up at the minor cost of numerical accuracy.
 \end{itemize}
 
 After running CMake, the following build targets will have been provided for {\tt make}:
@@ -125,6 +125,8 @@ The program can also be installed on the Mac OSX system. However, the standard c
  -I/usr/local/opt/include"
 \end{verbatim}
 Here, the location of the installed cmake version and the libomp version may have to be changed to match the location when these were installed by homebrew.
+
+Alternatively macports can be used in a very similar way to homebrew. Install libomp with \texttt{sudo port install libomp}. The location of omp.h may be different than expected by CMake, which may be fixed with \texttt{sudo ln -s /opt/local/include/libomp/omp.h /opt/local/include/omp.h}. or \texttt{sudo port install libomp +top\_level}.
 
 \section{Parallelization}
 NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, only the *UVvis techniques support MPI. Other 2D techniques only support OpenMP, while linear techniques do not have a parallel implementation as they are generally fast.
