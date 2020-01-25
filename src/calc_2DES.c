@@ -765,7 +765,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         print2D("RcroII.dat", rrIIcro, riIIcro, non, sampleCount);
 
         printf("----------------------------------------\n");
-        printf(" 2DIR calculation succesfully completed\n");
+        printf(" 2DES calculation succesfully completed\n");
         printf("----------------------------------------\n\n");
     }
 

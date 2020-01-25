@@ -58,7 +58,7 @@ intra- and intermolecular energy transfer\cite{Jansen.2006.JPCB.110.22910,Cringu
 spectroscopy. The user is directed to the references including recent reviews \cite{Hamm.1998.JPCB.102.6123,Hochstrasser.2001.CP.266.273,Cho.2008.CR.108.1331,Mukamel.2000.ARPC.51.691,Jansen.2009.ACR.42.1405} and books
 for more information \cite{Cho.2009.B01,Mukamel.1995.B01,Hamm.2011.B01}.
 
-The code is made available as open source on github via the link {\tt github.com/GHlacour/NISE\_2017}. The version available is intended to be friendly for developers to contribute improvements. Changes in the code are at own risk and should be reported clearly in publications. Developers wanting to contribute to the official version of the code are suggested to contact the main developer in advance to ensure that the contribution is not conflicting with that of other developers. More information for developers is given in Chapter \ref{chap:developers}. Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.nl. 
+The code is made available as open source on github.com as link {\tt GHlacour/NISE\_2017}. The version available is intended to be friendly for developers to contribute improvements. Changes in the code are at own risk and should be reported clearly in publications. Developers wanting to contribute to the official version of the code are suggested to contact the main developer in advance to ensure that the contribution is not conflicting with that of other developers. More information for developers is given in Chapter \ref{chap:developers}. Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.nl. 
 
 Current developers include: Thomas la Cour Jansen (main developer), Floris Westerman (cmake and MPI implementation).
 
@@ -92,7 +92,7 @@ There are several options you can provide to the {\tt cmake} command in order to
 \begin{itemize}
 \item {\tt -DCMAKE\_BUILD\_TYPE}: By default, this is set to {\tt RelWithDebInfo}. Other options include {\tt Debug}, {\tt Release} and {\tt MinSizeRel}. Refer to the CMake documentation for more information
 \item {\tt -DGENERATE\_DOCS}: When not set, CMake will attempt to compile this documentation only when building a Release build. You can override this by setting this variable to {\tt true} or {\tt false}.
-\item {\tt -DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option ({\tt -ffast-math}, {\tt /fp:fast} or equivalent) which yields a 2x speed-up at the cost of some accuracy.
+\item {\tt -DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option ({\tt -ffast-math}, {\tt /fp:fast} or equivalent) which may yield upto 2x speed-up at the minor cost of numerical accuracy.
 \end{itemize}
 
 After running CMake, the following build targets will have been provided for {\tt make}:
@@ -125,6 +125,8 @@ The program can also be installed on the Mac OSX system. However, the standard c
  -I/usr/local/opt/include"
 \end{verbatim}
 Here, the location of the installed cmake version and the libomp version may have to be changed to match the location when these were installed by homebrew.
+
+Alternatively macports can be used in a very similar way to homebrew. Install libomp with \texttt{sudo port install libomp}. The location of omp.h may be different than expected by CMake, which may be fixed with \texttt{sudo ln -s /opt/local/include/libomp/omp.h /opt/local/include/omp.h}. or \texttt{sudo port install libomp +top\_level}.
 
 \section{Parallelization}
 NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, only the *UVvis techniques support MPI. Other 2D techniques only support OpenMP, while linear techniques do not have a parallel implementation as they are generally fast.
