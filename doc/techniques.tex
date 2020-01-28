@@ -18,27 +18,32 @@ Not implemented yet (check NISE\_2015)
 \section{Absorption}
 The linear absorption is calculated using the first-order response function
 \begin{equation}
-I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}U(t,0)\mu_{\alpha}\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. 
 \section{Luminescence}
 The luminescence is calculated using the first-order response function
 \begin{equation}
-I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}U(t,0)\exp(H/k_BT)\mu_{\alpha}\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{xyz}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
 \end{equation}
-Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. 
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function. 
 \section{LD (linear dichroism)}
-Not implemented yet (check NISE\_2015)
+The linear dichroism is calculated identically to the linear absorption except the absorption in the x and y directions are subtracted from the absorption in the z direction. This corresponds to a perfect linear dichroism setup, where the molecules are aligned along the z-axis.
 \section{CD (circular dichroism)}
+The circular dichroism is calculated using the first-order response function
+\begin{equation}
+	I(t)=\sum_{\alpha}^{xyz}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/T_1).
+\end{equation}
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
 \section{Raman}
 Not implemented yet
 \section{SFG (sum-frequency generation)}
 Not implemented yet (check NISE\_2015)
-\section{2DIR$^{+}$ (two-dimensional infrared)}
-This calculates the two-dimensional infrared spectra assuming coupled three level systems. The techniques GB (ground state bleach), SE (stimulated emission), and EA (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEA technique keyword. The expressions for the response functions are given in ref. \cite{Jansen.2006.JPCB.110.22910}.
-\section{2DSFG (two-dimensional sum-frequency generation)}
+\section{2DIR$^{*}$ (two-dimensional infrared)}
+This calculates the two-dimensional infrared spectra assuming coupled three level systems. The techniques GBIR (ground state bleach), SEIR (stimulated emission), and EAIR (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEA technique keyword. The expressions for the response functions are given in ref. \cite{Jansen.2006.JPCB.110.22910}.
+\section{2DSFG (two-dimensional sum-frequency\\ generation)}
  Not implemented yet (check NISE\_2015)
-\section{2DUVvis$^{*}$ (two-dimensional electronic spectroscopy)}
+\section{2DUVvis$^{*}$ (two-dimensional electronic\\ spectroscopy)}
 This calculates the two-dimensional infrared spectra assuming coupled two level systems. The techniques GBUVvis (ground state bleach), SEUVvis (stimulated emission), and EAUVvis (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEAUVvis technique keyword. 
-\section{2DFD (fluorescence detected two-dimensional spectroscopy)}
- Not implemented yet. The 2DFD spectrum can be calculated in the approximation that all exciton pairs annihilate to produce a single exciton long before fluorescence occur with the noEAUVvis technique. The response functions governing this technique are provided in ref. \cite{Kunsel_2018}.
+\section{2DFD (fluorescence detected two-dimensional\\ spectroscopy)}
+ The 2DFD spectrum can be calculated in the approximation that all exciton pairs annihilate to produce a single exciton long before fluorescence occur with the noEAUVvis technique. The response functions governing this technique are provided in ref. \cite{Kunsel_2018}.

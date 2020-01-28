@@ -17,7 +17,8 @@ void luminescence(t_non *non){
   float *mu_eg,*Hamil_i_e;
 
   // Aid arrays
-  float *vecr,*veci,*vecr_old,*veci_old;
+  float *vecr,*veci;
+  //,*vecr_old,*veci_old;
 
   /* Floats */
   float shift1;
@@ -89,8 +90,8 @@ void luminescence(t_non *non){
 
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
-  vecr_old=(float *)calloc(non->singles,sizeof(float));
-  veci_old=(float *)calloc(non->singles,sizeof(float));
+//  vecr_old=(float *)calloc(non->singles,sizeof(float));
+//  veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
 
   // Loop over samples
@@ -106,8 +107,12 @@ void luminescence(t_non *non){
 	exit(1);
       }
       clearvec(veci,non->singles);
-      copyvec(vecr,vecr_old,non->singles);
+//      copyvec(vecr,vecr_old,non->singles);
       copyvec(vecr,mu_eg,non->singles);
+
+      // Add Boltzman weight
+      bltz_weight(mu_eg,Hamil_i_e,non);
+
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
@@ -165,8 +170,8 @@ void luminescence(t_non *non){
 
   free(vecr);
   free(veci);
-  free(vecr_old);
-  free(veci_old);
+//  free(vecr_old);
+//  free(veci_old);
   free(mu_eg);
   free(Hamil_i_e);
 

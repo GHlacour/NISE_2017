@@ -122,7 +122,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     }
 
     /* Open file for fluctuating anharmonicities and sequence transition dipoles if needed */
-    FILE* A_traj, *mu2_traj;
+    /*FILE* A_traj, *mu2_traj;
     if (non->anharmonicity == 0 && (!strcmp(non->technique, "2DUVvis") || (!strcmp(non->technique, "EAUVvis")) || (!
             strcmp(non->technique, "noEAUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!strcmp(
             non->technique, "SEUVvis")))) {
@@ -137,7 +137,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             if (parentRank == 0) printf("Overtone dipole file %s not found!\n", non->overdipFName);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-    }
+    }*/
 
     /* Read coupling */
     float* mu_xyz = calloc(3 * non->singles, sizeof(float)); // This is readonly inside the loops
@@ -187,8 +187,8 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         polar(px, molPol);
 
         // Allocate arrays
-        float* Anh = calloc(non->singles, sizeof(float));
-        float* over = calloc(non->singles, sizeof(float));
+        //float* Anh = calloc(non->singles, sizeof(float));
+        //float* over = calloc(non->singles, sizeof(float));
 
         float* leftrr = calloc(non->singles, sizeof(float));
         float* leftri = calloc(non->singles, sizeof(float));
@@ -325,9 +325,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         mureadE(non, mut3r, tk, px[2], mu_traj, mu_xyz, pol);
 
         if ((!strcmp(non->technique, "EAUVvis")) || (!strcmp(non->technique, "2DUVvis"))) {
-            if (non->anharmonicity == 0) {
-                read_over(non, over, mu2_traj, tk, px[2]);
-            }
+            //if (non->anharmonicity == 0) {
+            //    read_over(non, over, mu2_traj, tk, px[2]);
+            //}
             /* T2 propagation ended store vectors needed for EA */
             dipole_double_ES(non, mut3r, leftrr, leftri, fr, fi);
             for (int t1 = 0; t1 < non->tmax1; t1++) {
@@ -443,9 +443,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 int tl = tk + t3;
                 /* Read Dipole t4 */
                 mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
-                if (non->anharmonicity == 0) {
-                    read_over(non, over, mu2_traj, tl, px[3]);
-                }
+                //if (non->anharmonicity == 0) {
+                //    read_over(non, over, mu2_traj, tl, px[3]);
+                //}
 
                 /* Multiply with the last dipole */
                 dipole_double_last_ES(non, mut4, fr, fi, leftrr, leftri);
@@ -513,20 +513,18 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
                     // Key parallel loop 1
                     // Initial step, former t1=-1
-                    propagate_double_sparce(
-                        non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts, Anh
-                    );
+                    propagate_double_sparce_ES(
+                        non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts);
 
                     int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
                     #pragma omp parallel for \
-                        shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
+                        shared(non, Urs, Uis, Rs, Cs, ft1r, ft1i) \
                         schedule(static, 1)
 
                     for(t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_double_sparce(
+                        propagate_double_sparce_ES(
                             non, Urs, Uis, Rs, Cs, ft1r[t1],
-                            ft1i[t1], elements, non->ts, Anh
-                        );
+                            ft1i[t1], elements, non->ts);
                     }
 
                     // Propagate vectors right
@@ -550,7 +548,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
                     int t1;
                     #pragma omp parallel for \
-                        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
+                        shared(non,Hamil_i_e,ft1r,ft1i) \
                         schedule(static, 1)
 
                     for (t1 = 0; t1 < non->tmax1; t1++) {
@@ -579,7 +577,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         free(mut3r);
         free(mut3i);
         free(mut4);
-        free(Anh), free(over);
+        //free(Anh), free(over);
         free(fr), free(fi);
         free2D((void**) ft1r), free2D((void**) ft1i);
 
@@ -657,13 +655,13 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         /* Close Files */
         fclose(mu_traj), fclose(H_traj);
-        if ((!strcmp(non->technique, "2DUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!
+/*        if ((!strcmp(non->technique, "2DUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!
             strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "EAUVvis")) || (!strcmp(
                 non->technique, "noEAUVvis"))) {
             if (non->anharmonicity == 0) {
                 fclose(mu2_traj), fclose(A_traj);
             }
-        }
+        }*/
 
         /* Print 2D */
         print2D("RparI.dat", rrIpar, riIpar, non, sampleCount);

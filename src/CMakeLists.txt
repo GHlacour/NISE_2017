@@ -11,7 +11,7 @@ add_executable(NISE
     NISE.c NISE.h types.h lapack.h polar.c polar.h NISE_subs.c NISE_subs.h
     MPI_subs.c MPI_subs.h 1DFFT.c 1DFFT.h absorption.h absorption.c
     population.c c_absorption.c calc_2DIR.c calc_2DES.c luminescence.c
-    calc_CD.c calc_CD.h analyse.c readinput.c readinput.h
+    calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c readinput.c readinput.h
     types_MPI.h types_MPI.c
     $<TARGET_OBJECTS:random_lib>
 )

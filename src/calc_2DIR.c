@@ -656,9 +656,9 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         /* Close Files */
         fclose(mu_traj), fclose(H_traj);
-        if ((!strcmp(non->technique, "2DUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!
-            strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "EAUVvis")) || (!strcmp(
-                non->technique, "noEAUVvis"))) {
+        if ((!strcmp(non->technique, "2DIR")) || (!strcmp(non->technique, "GBIR")) || (!
+            strcmp(non->technique, "SEIR")) || (!strcmp(non->technique, "EAIR")) || (!strcmp(
+                non->technique, "noEAIR"))) {
             if (non->anharmonicity == 0) {
                 fclose(mu2_traj), fclose(A_traj);
             }

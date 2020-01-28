@@ -130,13 +130,14 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
 %\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
-\item [Technique] [Absorption / Luminescence / CD / 2DIR / GB / SE / EA / noEA / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
+\item [Technique] [Absorption / Luminescence / CD / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
 \item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
 \item [Project] (Should be followed by two new lines. The first with Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero.)
+\item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.
 \end{description}
 
 The minimum and maximum frequencies are used for two things. First, the average of minw1 and maxw1 are used to shift the frequencies during the simulation. By shifting all transitions by the
@@ -150,9 +151,8 @@ multiplying the whole spectrum with $\exp( -t_2 /T_1 )$.
 
 The double excitation Hamiltonian is propagated using the Trotter formula scheme\cite{Paarmann.2008.JCP.128.191103,Jansen.2010.JCP.132.224503}.
 
-During the calculation the program will create a log file called NISE.log. This file will be updated
-every time a new sample has been calculated. The update contains timing information and
-therefore allows for the estimation of when the complete calculation finishes.
+During the calculation the program will create a log file called NISE.log. For linear techniques this file will be updated every time a new sample has been calculated. The update contains timing information and
+therefore allows for the estimation of when the complete calculation finishes. For 2D techniques the timing information will given directly in the output file tracking the progress percentage.
 
 For exciton diffusion calculations an additional input file containing the site positions is needed.
 This file should be named Position.bin and have the following format. The first entry should be the

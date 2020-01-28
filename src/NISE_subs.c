@@ -1112,3 +1112,79 @@ void propagate_double_sparce(t_non* non, float* Ur, float* Ui, int* R, int* C, f
     free(vr);
     free(vi);
 }
+
+void propagate_double_sparce_ES(t_non* non, float* Ur, float* Ui, int* R, int* C, float* fr, float* fi, int elements,int m) {
+    int a, b, indexA, indexB;
+    int N, Nf, s, t, u, v;
+    float g, sqrt12;
+    float *vr, *vi;
+    float Uar, Ubr, Uai, Ubi;
+    float f;
+    float norm1, norm2;
+    float fm;
+    int i;
+
+    sqrt12 = 1.0 / sqrt2;
+    f = non->deltat * icm2ifs * twoPi;
+    fm = f * 0.5 / m;
+    N = non->singles;
+    Nf = non->singles * (non->singles + 1) / 2;
+    vr = (float *)calloc(Nf, sizeof(float));
+    vi = (float *)calloc(Nf, sizeof(float));
+
+        /* Repeat m times */
+    for (i = 0; i < m; i++) {
+
+        /* Copy */
+        for (a = 0; a < N; a++) {
+            for (b = 0; b <= a; b++) {
+                indexA = Sindex(a, b, N);
+                vr[indexA] = fr[indexA];
+                vi[indexA] = fi[indexA];
+            }
+        }
+        for (a = 0; a < N; a++) {
+            indexA = Sindex(a, a, N);
+            fr[indexA] = vr[indexA] ;
+            fi[indexA] = vi[indexA] ;
+        }
+        for (a = 0; a < N; a++) {
+            for (b = 0; b <= a; b++) {
+                indexA = Sindex(a, b, N);
+                vr[indexA] = 0;
+                vi[indexA] = 0;
+            }
+        }
+
+        for (a = 0; a < elements; a++) {
+            s = R[a], t = C[a], Uar = Ur[a], Uai = Ui[a];
+            for (b = 0; b <= a; b++) {
+                u = R[b], v = C[b], Ubr = Ur[b], Ubi = Ui[b];
+                g = 1;
+                indexA = Sindex(s, u, N), indexB = Sindex(t, v, N);
+                if (s != u) g = 0; // No coupling to double excited states
+                if (v != t) g = 0;
+                if (s != u && v != t) g = 1;
+                vr[indexA] += (Uar * Ubr - Uai * Ubi) * fr[indexB] * g;
+                vr[indexA] -= (Uai * Ubr + Uar * Ubi) * fi[indexB] * g;
+                vi[indexA] += (Uar * Ubr - Uai * Ubi) * fi[indexB] * g;
+                vi[indexA] += (Uai * Ubr + Uar * Ubi) * fr[indexB] * g;
+            }
+	            }
+        /* Copy */
+        for (a = 0; a < N; a++) {
+            for (b = 0; b <= a; b++) {
+                indexA = Sindex(a, b, N);
+                fr[indexA] = vr[indexA];
+                fi[indexA] = vi[indexA];
+            }
+        }
+        for (a = 0; a < N; a++) {
+            indexA = Sindex(a, a, N);
+            fr[indexA] = vr[indexA] ;
+            fi[indexA] = vi[indexA] ;
+        }
+    }
+    free(vr);
+    free(vi);
+}
