@@ -11,6 +11,7 @@
 
 // Subroutines for nonadiabatic code
 
+// Allocate 2D memory blocks
 void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP) {
     void** result = malloc(nRows * sizeP);
     void* data = calloc(nRows * nCols, size);
@@ -21,16 +22,19 @@ void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP) {
     return result;
 }
 
+// Free 2D memory blocks
 void free2D(void** arr) {
     free(arr[0]);
     free(arr);
 }
 
+// Copy a vector 
 void copyvec(float* a, float* b, int N) {
     int i;
     for (i = 0; i < N; i++) b[i] = a[i];
 }
 
+// Set all elements of a vector to zero
 void clearvec(float* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
@@ -89,11 +93,12 @@ char* time_diff(time_t t0, time_t t1) {
 int Eindex(int a, int b, int N) {
     int ind;
     if (a > b) {
-        ind = a - 1 + (b - 1) * (N + N - b - 2) / 2;
+        ind = a  + (b - 1) * (N + N - b - 2) / 2;
     }
     else {
-        ind = b - 1 + (a - 1) * (N + N - a - 2) / 2;
+        ind = b  + (a - 1) * (N + N - a - 2) / 2;
     }
+//    printf("%d %d %d %d\n",a,b,ind,N);
     return ind;
 }
 
@@ -209,7 +214,7 @@ int read_mue(t_non* non, float* mue, FILE* FH, int pos, int x) {
     return control;
 }
 
-/* Read Dipole */
+/* Read Dipole for Sequence Transtions */
 int read_over(t_non* non, float* over, FILE* FH, int pos, int x) {
     int control;
     int t;
@@ -224,6 +229,7 @@ int read_over(t_non* non, float* over, FILE* FH, int pos, int x) {
     return control;
 }
 
+// Read transition dipole 
 void muread(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj) {
     /* Read mu(ti) */
     if (read_mue(non, leftnr, mu_traj, ti, x) != 1) {
@@ -234,6 +240,7 @@ void muread(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj) {
     return;
 }
 
+// Read transition dipole (including option for Coupling storrage) 
 void mureadE(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj, float* mu, float* pol) {
     if (!strcmp(non->hamiltonian, "Coupling")) {
         copyvec(mu + non->singles * x, leftnr, non->singles);
@@ -593,6 +600,97 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
     free(col), free(row);
 }
 
+/* Propagate doubles using diagonal vs. coupling sparce algorithm */
+void propagate_vec_coupling_S_doubles_ES(t_non* non, float* Hamiltonian_i, float* cr, float* ci, int m) {
+    int N = non->singles;
+    int N2 = N * (N + 1) / 2;
+    int N2old= N * ( N + 1 ) / 2;
+    const float f = non->deltat * icm2ifs * twoPi / m;
+    float* H0 = calloc(N2, sizeof(float));
+    float* H1 = calloc(N * N / 2, sizeof(float));
+    int* col = calloc(N * N / 2, sizeof(int));
+    int* row = calloc(N * N / 2, sizeof(int));
+    float* re_U = calloc(N2, sizeof(float));
+    float* im_U = calloc(N2, sizeof(float));
+    float* ocr = calloc(N2, sizeof(float));
+    float* oci = calloc(N2, sizeof(float));
+
+    /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
+    for (int a = 0; a < N; a++) {
+        const int indexa = Sindex(a, a, N);
+        for (int b = a; b < N; b++) {
+            int index = Sindex(a, b, N);
+            H0[index] = Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]; // Diagonal
+        }
+    }
+
+    /* Build Hamiltonian H1 (coupling) */
+    int kmax = 0;
+    for (int a = 0; a < N; a++) {
+        for (int b = a + 1; b < N; b++) {
+            int index = b + a * ((N << 1) - a - 1) / 2; // Part of Sindex, but b > a is always true here
+
+            if (fabsf(Hamiltonian_i[index]) > non->couplingcut) {
+                H1[kmax] = Hamiltonian_i[index];
+                col[kmax] = a, row[kmax] = b;
+                kmax++;
+            }
+        }
+    }
+
+    /* Exponentiate diagonal [U=exp(-i/2h H0 dt)] */
+    for (int a = 0; a < N2; a++) {
+        re_U[a] = cosf(0.5f * H0[a] * f);
+        im_U[a] = -sinf(0.5f * H0[a] * f);
+    }
+
+    // Loop over Trotter steps
+    for (int i = 0; i < m; i++) {
+
+        // Multiply on vector first time
+        for (int a = 0; a < N2; a++) {
+            ocr[a] = cr[a] * re_U[a] - ci[a] * im_U[a];
+            oci[a] = cr[a] * im_U[a] + ci[a] * re_U[a];
+        }
+        
+        // Account for couplings 
+        // Loop over couplings 
+        for (int k = 0; k < kmax; k++) {
+            int a = col[k];
+            int b = row[k];
+            float J = H1[k] * f;
+
+            // Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> 
+            // TODO speedup
+            for (int c = 0; c < N; c++) {
+		if (c!=a){
+		    if (c!=b){                       			
+                        float si = (c == a || c == b) ? -sinf(J * sqrt2) : -sinf(J);
+                        float co = sqrtf(1 - si * si);
+                        int index1 = Sindex(a, c, N), index2 = Sindex(c, b, N);
+			// printf("%d %d\n",index1,index2);
+                        float cr1 = co * ocr[index1] - si * oci[index2];
+                        float ci1 = co * oci[index1] + si * ocr[index2];
+                        float cr2 = co * ocr[index2] - si * oci[index1];
+                        float ci2 = co * oci[index2] + si * ocr[index1];
+                        ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
+		    }
+		}
+            }
+        }
+	
+        // Multiply on vector second time 
+        for (int a = 0; a < N2; a++) {
+            cr[a] = ocr[a] * re_U[a] - oci[a] * im_U[a];
+            ci[a] = ocr[a] * im_U[a] + oci[a] * re_U[a];
+        }
+    }
+    
+    free(ocr), free(oci), free(re_U), free(im_U), free(H1), free(H0);
+    free(col), free(row);
+}
+
+
 
 // Diagonalize with LAPACK (destructive version)
 void diagonalizeLPD(float* H, float* v, int N) {
@@ -798,6 +896,25 @@ void dipole_double(t_non* non, float* dipole, float* cr, float* ci, float* fr, f
     return;
 }
 
+/* Multiply with double exciton dipole mu_ef on single states */
+void dipole_double_ES(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi) {
+    int N;
+    int i, j, k, index;
+    N = non->singles * (non->singles + 1) / 2;
+    for (i = 0; i < N; i++) fr[i] = 0, fi[i] = 0;
+
+    for (i = 0; i < non->singles; i++) {
+        for (j = i + 1; j < non->singles; j++) {
+            index = Sindex(i, j, non->singles);
+            fr[index] += dipole[i] * cr[j];
+            fi[index] += dipole[i] * ci[j];
+            fr[index] += dipole[j] * cr[i];
+            fi[index] += dipole[j] * ci[i];
+        }
+    }
+    return;
+}
+
 /* Multiply with double exciton dipole mu_ef on double states */
 void dipole_double_last(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi, float* over) {
     int N;
@@ -813,6 +930,24 @@ void dipole_double_last(t_non* non, float* dipole, float* cr, float* ci, float* 
         index = Sindex(i, i, non->singles);
         fr[i] += over[i] * cr[index];
         fi[i] += over[i] * ci[index];
+        for (j = i + 1; j < non->singles; j++) {
+            index = Sindex(i, j, non->singles);
+            fr[j] += dipole[i] * cr[index];
+            fi[j] += dipole[i] * ci[index];
+            fr[i] += dipole[j] * cr[index];
+            fi[i] += dipole[j] * ci[index];
+        }
+    }
+    return;
+}
+
+/* Multiply with double exciton dipole mu_ef on double states */
+void dipole_double_last_ES(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi) {
+    int N;
+    int i, j, k, index;
+    N = non->singles * (non->singles + 1) / 2;
+    for (i = 0; i < non->singles; i++) fr[i] = 0, fi[i] = 0;
+    for (i = 0; i < non->singles; i++) {
         for (j = i + 1; j < non->singles; j++) {
             index = Sindex(i, j, non->singles);
             fr[j] += dipole[i] * cr[index];

@@ -176,9 +176,8 @@ int main(int argc, char* argv[]) {
     // Call the 2DIR calculation routine
     if (!strcmp(non->technique, "2DIR") || (!strcmp(non->technique, "GB")) || (!strcmp(non->technique, "SE")) || (!
         strcmp(non->technique, "EA")) || (!strcmp(non->technique, "noEA"))) {
-        // Does not support MPI
-        if (parentRank == 0)
-            calc_2DIR(non);
+        // Does support MPI
+        calc_2DIR(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
     // Call the 2DSFG calculation routine
