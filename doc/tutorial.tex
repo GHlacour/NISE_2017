@@ -26,7 +26,7 @@ When the binary trajectory exist we can calculate the linear absorption using th
 One should plot the output in TD\_Absorption.dat and Absorption.dat to get familiar with this. It is 
 important that the response function has decayed almost completely within the simulated 
 time to avoid ringing and other artifact in the spectrum. The program should finish in a 
-about 10 seconds. The python script plot.py will plot both the response function and the absorption spectrum.
+about 10 seconds. The python script plot.py will plot both the response function and the absorption spectrum. Simply type {\tt python plot.py} assuming that python 3 is installed. Alternatively, you can plot the two first columns of each file with your own favourite plotting programme.
 
 The linear dichroism signal can be calculated by changing the the {\tt Technique} to {\tt LD} which generate corresponding files with the names TD\_LD.dat and LD.dat. In the turotial this is 
 not so interesting as it is simply minus half of the absorption signal, since the dipoles are in the 
@@ -37,8 +37,13 @@ The two-dimensional infrared spectra are calculated with the input file input2D.
 ~/NISE_2017/bin/NISE input2D
 \end{verbatim}
 The percentage wise progress of the calculation can be followed in the output. One should expect that the calculation of one sample point takes about 10 seconds with the given settings. For a test about 100 samples are sufficient, while for nice spectra at least 1000 samples are needed. Typically more samples are needed for two-dimensional spectra than for linear absorption spectra and the more different distinct chromophore environments are present the more samples are needed. The given example should take about 15 minutes to simulate (of course depending on the computer).
+If you have multiple cores on your computer you can run the MPI parallel version typing:
+\begin{verbatim}
+mpirun -n 4 ~/NISE_2017/bin/NISE input2D
+\end{verbatim}
+The number 4 tells mpi that the job should be split in 4. For this small system mpi is likely more efficient then OpenMP on typical computer architectures. The output of the NISE programme is the time domain response functions. To get the frequency domain spectra the 2DFFT program must be executed as described below.
 
-The NISE code is natively build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can be achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
+The NISE code was originally build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can now be achieved with the 2DUVvis technique. Previously this was achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
 
 The 2D simulations can be performed in parallel using openMP. The program does this by distributing the calculations for different values of t1 on different CPUs. When running parallel it is advantageous to ensure that ([t1 max]+1) divided by the number of used CPUs is an integer number or slightly smaller than an integer number. To run the code parallel the OMP\_NUM\_THREADS variable has to be set equal to the number of CPUs that one want to use in the submission script (or if not running under a queueing system the variable has to be set in the used linux shell). On most clusters one should further specify to the queuing system how many CPUs are needed when submitting the job. The user is referred to the manual of the cluster used for this kind of information as it varies from system to system. For parts of the code, where the mkl library is used for solving eigen value problems these may be run in parallel as well by setting the MKL\_NUM\_THREADS variable equal to the number of CPUs used for this task. The general experience is that for small problems running parallel is not efficient. The mkl library also does not perform well on large numbers of CPUs, however, the 2D simulations were found to scale well up to about 32 CPUs in recent simulations on 864 coupled OH-stretch oscillators \cite{Shi.2016.PCCP}. For large problems the calculation of polarization contributions and samples can efficiently be spread over different CPUs and/or nodes for efficent massively parallel calculations.
 
@@ -46,8 +51,9 @@ The response functions calculated in time domain can be converted to frequency d
 \begin{verbatim}
 ~/NISE_2017/bin/2DFFT input2D
 \end{verbatim}
+The output can be visualized with one of the plotting scripts provided with the tutorial. The recommended metod is using the {\tt plot2D.py} python script, which is written to plot the parallel polarization spectra. The line {\tt Data = np.loadtxt('2D.par.dat')} in the beginning of the script can be changed to load and plot one of the other data files (perpendicular spectrum {\tt 2D.per.dat} or cross polarization {\tt 2D.cro.dat'}. The plot at the cover of the manual is the parallel polarization 2DIR spectrum obtained from the tutorial.
 
-The user is encouraged to play with the settings using the tutorial to get familiar with the code.
+The user is encouraged to play with the settings of the run script in the tutorial to get familiar with the code.
 The simple example can also be useful for getting familiar with the basics of two-dimensional spectroscopy in particular regarding the effects of coupling, correlation, relative angles between
 coupled chromophores.
 
