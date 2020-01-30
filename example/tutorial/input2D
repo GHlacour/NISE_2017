@@ -1,5 +1,6 @@
 Propagation Coupling
 Couplingcut 0.1
+Threshold 0.001
 Hamiltonianfile Energy.bin
 Dipolefile Dipole.bin
 Anharmonicfile Anharmonicity.bin
@@ -9,9 +10,6 @@ Length 100000
 Samplerate 1000
 Lifetime 1000
 Timestep 10
-TimeIncrement 1 1 1
-Threshold 0.001
-Doubles 0
 Trotter 5
 Anharmonicity 20
 Format Gnuplot
@@ -20,8 +18,8 @@ MinFrequencies 1100 1100 1100
 MaxFrequencies 1300 1300 1300
 Technique 2DIR
 FFT 1028
-Timevariables 1 3
 #BeginPoint 0
 #EndPoint 1
 RunTimes 256 0 256
 Singles 2
+PrintLevel 1

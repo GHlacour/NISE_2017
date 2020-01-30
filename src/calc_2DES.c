@@ -15,120 +15,16 @@
 #include "calc_2DES.h"
 #include <stdarg.h>
 #include "mpi.h"
-
-// Print results to the corresponding files
-void print2D(char* filename, float** arrR, float** arrI, t_non* non, int sampleCount) {
-    FILE* out = fopen(filename, "w");
-    for (int t1 = 0; t1 < non->tmax1; t1 += non->dt1) {
-        const int t2 = non->tmax2;
-        for (int t3 = 0; t3 < non->tmax3; t3 += non->dt3) {
-            arrR[t3][t1] /= sampleCount;
-            arrI[t3][t1] /= sampleCount;
-            fprintf(out, "%f %f %f %e %e\n", t1 * non->deltat, t2 * non->deltat, t3 * non->deltat,
-                arrR[t3][t1], arrI[t3][t1]);
-        }
-    }
-    fclose(out);
-}
-
-void calculateWorkset(t_non* non, int** workset, int* sampleCount, int* clusterCount) {
-    // Open clustering file if necessary
-    FILE* Cfile;
-    if (non->cluster != -1) {
-        Cfile = fopen("Cluster.bin", "rb");
-        if (Cfile == NULL) {
-            printf("Cluster option was activated but no Cluster.bin file provided.\n");
-            printf("Please, provide cluster file or remove Cluster keyword from\n");
-            printf("input file.\n");
-            exit(0);
-        }
-    }
-    *clusterCount = 0;
-
-    // Determine number of samples
-    const int totalSampleCount = (non->length - non->tmax1 - non->tmax2 - non->tmax3 - 1) / non->sample + 1;
-    if (totalSampleCount > 0) {
-        printf("Making %d samples!\n", totalSampleCount);
-    }
-    else {
-        printf("Insufficient data to calculate spectrum.\n");
-        printf("Please, lower max times or provide longer\n");
-        printf("trajectory.\n");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    if (non->end == 0) non->end = totalSampleCount;
-    *sampleCount = non->end - non->begin;
-    if (*sampleCount == 0) {
-        // Avoid dividing by zero
-        *sampleCount = 1;
-    }
-
-    // Allocate workset array
-    *workset = calloc(2 * 21 * *sampleCount, sizeof(int)); // two integers per work item (sample + polDir), 21 polDirs per sample
-
-    // Loop over samples, fill work set array of things to do
-    int currentWorkItem = 0;
-    for(int currentSample = non->begin; currentSample < non->end; currentSample++) {
-        // Check clustering
-        if(non->cluster != -1) {
-            int tj = currentSample * non->sample + non->tmax1;
-
-            int currentCluster;
-            if (read_cluster(non, tj, &currentCluster, Cfile) != -1) {
-                printf("Cluster trajectory file to short, could not fill buffer!!!\n");
-                printf("ITIME %d\n", tj);
-                MPI_Abort(MPI_COMM_WORLD, 1);
-            }
-
-            // If we do not need to consider current cluster, skip calculation
-            if(non->cluster != currentCluster) {
-                log_item("Skipping sample %d, incorrect cluster!\n", currentSample);
-                (*sampleCount)--;
-                continue;
-            }
-
-            (*clusterCount)++;
-        }
-
-        // Set work items
-        for(int molPol = 0; molPol < 21; molPol++) {
-            (*workset)[currentWorkItem * 2] = currentSample;
-            (*workset)[currentWorkItem * 2 + 1] = molPol;
-            currentWorkItem++;
-        }
-    }
-
-    // Now we have a workset array with all sample/molPol combinations that need to be calculated.
-    // Furthermore, sampleCount is adjusted to reflect the actual number of samples to consider when clustering
-
-    if (non->cluster != -1) {
-        fclose(Cfile);
-    }
-}
-
-// Function to wait until all MPI requests in the given array have finished
-void asyncWaitForMPI(MPI_Request requests[], int requestCount, int initialWaitingTime, int maxWaitingTime) {
-    int waitingTime = initialWaitingTime;
-    int finished = 0;
-    MPI_Testall(requestCount, requests, &finished, MPI_STATUSES_IGNORE);
-    while(!finished) {
-        #ifdef _WIN32
-            Sleep(waitingTime);
-        #else
-            nanosleep((const struct timespec[]){{0, waitingTime * 1000000L}}, NULL);
-        #endif
-
-        if(waitingTime < maxWaitingTime) waitingTime *= 2;
-
-        MPI_Testall(requestCount, requests, &finished, MPI_STATUSES_IGNORE);
-    }
-}
+#include "MPI_subs.h"
 
 void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subSize, MPI_Comm subComm, MPI_Comm rootComm) {
     // Start by determining the work to be done, make an array of samples/poldir to simulate
     // and distribute those statically over all processors
     int clusterCount = 0, sampleCount = 0, * workset, * worksetSizes = calloc(parentSize, sizeof(int));;
+    int counter,counter_pass;
+    float counter_current;
+    double my_time,my_current_time;
+    counter=0,counter_pass=1;
     if(parentRank == 0) {
         // Master process calculates the work items to be performed
         int* fullWorkset;
@@ -173,6 +69,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     // Initialize each process base variables
     float* pol = 0; /* Currently dummy vector that can be used to change coordinate system in the future */ // RO
     const int nn2 = non->singles * (non->singles + 1) / 2;
+    const int nn2e= non->singles * (non->singles + 1) / 2;
     float* Hamil_i_e = calloc(nn2, sizeof(float));
 
     // Frequency shifts
@@ -224,24 +121,6 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    /* Open file for fluctuating anharmonicities and sequence transition dipoles if needed */
-    FILE* A_traj, *mu2_traj;
-    if (non->anharmonicity == 0 && (!strcmp(non->technique, "2DUVvis") || (!strcmp(non->technique, "EAUVvis")) || (!
-            strcmp(non->technique, "noEAUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!strcmp(
-            non->technique, "SEUVvis")))) {
-        A_traj = fopen(non->anharFName, "rb");
-        if (A_traj == NULL) {
-            if (parentRank == 0) printf("Anharmonicity file %s not found!\n", non->anharFName);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-
-        mu2_traj = fopen(non->overdipFName, "rb");
-        if (mu2_traj == NULL) {
-            if (parentRank == 0) printf("Overtone dipole file %s not found!\n", non->overdipFName);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-    }
-
     /* Read coupling */
     float* mu_xyz = calloc(3 * non->singles, sizeof(float)); // This is readonly inside the loops
     if (!strcmp(non->hamiltonian, "Coupling")) {
@@ -265,18 +144,17 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         }
     }
 
+    // Start clock
+    if (parentRank==0){
+	my_time=MPI_Wtime();
+    }
+
     // From now on we'll do the calculations
     for (int currentWorkItem = 0; currentWorkItem < worksetSizes[parentRank]; currentWorkItem += 2) {
         int currentSample = workset[currentWorkItem];
         int molPol = workset[currentWorkItem + 1];
 
         if (currentSample == -1 || molPol == -1) continue;
-
-        /* Log time */
-        time_t timeSampleStart;
-        time(&timeSampleStart);
-        //log_item("Starting sample %d\n", currentSample); TODO fix the logging in parallel
-        if (non->printLevel>0) printf("Starting sample %d, molPol %d\n", currentSample, molPol);
 
         /* Calculate 2DIR response */
         int tj = currentSample * non->sample + non->tmax1;
@@ -285,8 +163,8 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         polar(px, molPol);
 
         // Allocate arrays
-        float* Anh = calloc(non->singles, sizeof(float));
-        float* over = calloc(non->singles, sizeof(float));
+        //float* Anh = calloc(non->singles, sizeof(float));
+        //float* over = calloc(non->singles, sizeof(float));
 
         float* leftrr = calloc(non->singles, sizeof(float));
         float* leftri = calloc(non->singles, sizeof(float));
@@ -302,11 +180,10 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         float* mut3i = calloc(non->singles, sizeof(float));
         float* mut4 = calloc(non->singles, sizeof(float));
 
-        float* fr = calloc(nn2, sizeof(float));
-        float* fi = calloc(nn2, sizeof(float));
-        float** ft1r = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
-        float** ft1i = (float**)calloc2D(non->tmax1, nn2, sizeof(float), sizeof(float*));
-
+        float* fr = calloc(nn2e, sizeof(float));
+        float* fi = calloc(nn2e, sizeof(float));
+        float** ft1r = (float**)calloc2D(non->tmax1, nn2e, sizeof(float), sizeof(float*));
+        float** ft1i = (float**)calloc2D(non->tmax1, nn2e, sizeof(float), sizeof(float*));
         // Read information
         mureadE(non, mut2, tj, px[1], mu_traj, mu_xyz, pol);
 
@@ -424,16 +301,13 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         mureadE(non, mut3r, tk, px[2], mu_traj, mu_xyz, pol);
 
         if ((!strcmp(non->technique, "EAUVvis")) || (!strcmp(non->technique, "2DUVvis"))) {
-            if (non->anharmonicity == 0) {
-                read_over(non, over, mu2_traj, tk, px[2]);
-            }
+            //if (non->anharmonicity == 0) {
+            //    read_over(non, over, mu2_traj, tk, px[2]);
+            //}
             /* T2 propagation ended store vectors needed for EA */
-            dipole_double(non, mut3r, leftrr, leftri, fr, fi, over);
+            dipole_double_ES(non, mut3r, leftrr, leftri, fr, fi);
             for (int t1 = 0; t1 < non->tmax1; t1++) {
-                dipole_double(
-                    non, mut3r, leftnr[t1], leftni[t1],
-                    ft1r[t1], ft1i[t1], over
-                );
+                dipole_double_ES(non, mut3r, leftnr[t1], leftni[t1],ft1r[t1], ft1i[t1]);
             }
 
             memcpy(rightrr[0], leftnr[0], non->tmax1 * non->singles * sizeof(float));
@@ -545,16 +419,14 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 int tl = tk + t3;
                 /* Read Dipole t4 */
                 mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
-                if (non->anharmonicity == 0) {
-                    read_over(non, over, mu2_traj, tl, px[3]);
-                }
+                //if (non->anharmonicity == 0) {
+                //    read_over(non, over, mu2_traj, tl, px[3]);
+                //}
 
                 /* Multiply with the last dipole */
-                dipole_double_last(non, mut4, fr, fi, leftrr, leftri, over);
+                dipole_double_last_ES(non, mut4, fr, fi, leftrr, leftri);
                 for (int t1 = 0; t1 < non->tmax1; t1++) {
-                    dipole_double_last(
-                        non, mut4, ft1r[t1], ft1i[t1], leftnr[t1], leftni[t1], over
-                    );
+                    dipole_double_last_ES(non, mut4, ft1r[t1], ft1i[t1], leftnr[t1], leftni[t1]);
                 }
 
                 /* Calculate EA response */
@@ -592,9 +464,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 }
 
                 /* Propagate vectors left */
-                if (non->anharmonicity == 0) {
-                    read_A(non, Anh, A_traj, tl);
-                }
+                //if (non->anharmonicity == 0) {
+                //    read_A(non, Anh, A_traj, tl);
+                //}
 
                 /* Propagate */
                 if (non->propagation == 0) {
@@ -604,7 +476,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     int* Rs = calloc(non->singles * non->singles, sizeof(int));
                     int* Cs = calloc(non->singles * non->singles, sizeof(int));
 
-                    // bug? Cs and Rs seems to be exchanged
+                    // bug? Cs and Rs seems to be exchanged (TLC just multiplying with imaginary number)
                     int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
                     if (currentSample == non->begin && molPol == 0 && t3 == 0) {
                         printf("Sparse matrix efficiency: %f pct.\n",
@@ -617,20 +489,18 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
                     // Key parallel loop 1
                     // Initial step, former t1=-1
-                    propagate_double_sparce(
-                        non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts, Anh
-                    );
+                    propagate_double_sparce_ES(
+                        non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts);
 
                     int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
                     #pragma omp parallel for \
-                        shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
+                        shared(non, Urs, Uis, Rs, Cs, ft1r, ft1i) \
                         schedule(static, 1)
 
                     for(t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_double_sparce(
+                        propagate_double_sparce_ES(
                             non, Urs, Uis, Rs, Cs, ft1r[t1],
-                            ft1i[t1], elements, non->ts, Anh
-                        );
+                            ft1i[t1], elements, non->ts);
                     }
 
                     // Propagate vectors right
@@ -649,19 +519,17 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 else if(non->propagation == 1) {
                     // Key parallel loop 1
                     // Initial step
-                    propagate_vec_coupling_S_doubles(
-                        non, Hamil_i_e, fr, fi, non->ts, Anh
-                    );
+                    propagate_vec_coupling_S_doubles_ES(
+                        non, Hamil_i_e, fr, fi, non->ts); 
 
                     int t1;
                     #pragma omp parallel for \
-                        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
+                        shared(non,Hamil_i_e,ft1r,ft1i) \
                         schedule(static, 1)
 
                     for (t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_coupling_S_doubles(
-                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts, Anh
-                        );
+                        propagate_vec_coupling_S_doubles_ES(
+                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts); 
                     }
 
                     // Key parallel loop 2
@@ -685,18 +553,24 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         free(mut3r);
         free(mut3i);
         free(mut4);
-        free(Anh), free(over);
         free(fr), free(fi);
         free2D((void**) ft1r), free2D((void**) ft1i);
 
-        time_t timeSampleEnd;
-        time(&timeSampleEnd);
-        char* timeText = time_diff(timeSampleStart, timeSampleEnd);
-        //log_item("Finished sample %d, %s\n", currentSample, timeText);
-        if (molPol == 0 || non->printLevel>0 ){
-          printf("Finished sample %d, molPol %d in %s", currentSample, molPol, timeText);
-        }
-        free(timeText);
+        counter++;
+	if (subRank==0){
+	    counter_current=counter*100.0/sampleCount/21*parentSize;
+            if (counter_current>counter_pass){
+		if (non->printLevel>0){
+		    my_current_time=MPI_Wtime();    
+		    printf("Passed %d pct. of expected calculation time in %s",(int)floor(counter_current),MPI_time(my_current_time-my_time));
+		    if (non->printLevel==1){		    
+		      counter_pass=floor(counter_current)+10;
+		    } else {
+                      counter_pass=floor(counter_current)+1;
+		    }
+		}
+	    }
+	}
     }
 
     // Reduce calculation results, in a tiered approach to save network bandwidth
@@ -748,13 +622,6 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         /* Close Files */
         fclose(mu_traj), fclose(H_traj);
-        if ((!strcmp(non->technique, "2DUVvis")) || (!strcmp(non->technique, "GBUVvis")) || (!
-            strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "EAUVvis")) || (!strcmp(
-                non->technique, "noEAUVvis"))) {
-            if (non->anharmonicity == 0) {
-                fclose(mu2_traj), fclose(A_traj);
-            }
-        }
 
         /* Print 2D */
         print2D("RparI.dat", rrIpar, riIpar, non, sampleCount);
@@ -766,7 +633,11 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         printf("----------------------------------------\n");
         printf(" 2DES calculation succesfully completed\n");
-        printf("----------------------------------------\n\n");
+        my_current_time=MPI_Wtime();
+        char* timeText=MPI_time(my_current_time-my_time);
+        printf(" Total time elapsed %s",timeText);
+        free(timeText);
+	printf("----------------------------------------\n\n");
     }
 
     /* Free memory for 2D calculation */

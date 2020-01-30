@@ -10,6 +10,7 @@ void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
 char* time_diff(time_t t0, time_t t1);
+char* MPI_time(double t0);
 int Eindex(int a,int b,int N);
 int read_He(t_non *non,float *He,FILE *FH,int pos);
 int read_Dia(t_non *non,float *He,FILE *FE,int pos);
@@ -24,15 +25,19 @@ int propagate_vec_DIA_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int 
 void propagate_vec_coupling_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);
 void propagate_vec_coupling_S_doubles(t_non *non,float *Hamiltonian_i,float *cr,float 
 *ci,int m,float *Anh);
+void propagate_vec_coupling_S_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m);
 void diagonalizeLPD(float *H,float *v,int N);
 void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);
 void generateCS(float *X,float *Y,float *Z);
 void projection(float *phi,t_non *non);
 int control(t_non *non);
 void dipole_double(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
+void dipole_double_ES(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi);
 void dipole_double_last(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
+void dipole_double_last_ES(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi);
 int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
 void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m,float *Anh);
+void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing

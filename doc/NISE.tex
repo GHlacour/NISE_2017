@@ -24,9 +24,10 @@
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{definition}{Definition}
 
-\title{\textsc{NISE Manual\\ Version 3.2}}
+\title{\textsc{NISE Manual\\ Version 3.3}}
 \author{Thomas la Cour Jansen\\ University of Groningen}
-\date{\today\\ \includegraphics{2ds.pdf}}
+%\date{\today\\ \includegraphics{2ds.pdf}}
+\date{\today\\ \includegraphics{cover.png}}
 \begin{document}
 \maketitle
 
@@ -74,7 +75,7 @@ NISE has a number of dependencies:
 \item MPI v3 implementation, such as OpenMPI, MPICH (Unix) or MS-MPI (Windows)
 \item Modern C compiler, implementing a recent OpenMP version
 \item LaTeX + BibTex distribution if you want to build the documentation. Not required
-\item DISLIN or gnuplot, for plotting the results using the included scripts
+\item DISLIN, python, MATLAB, or gnuplot, for plotting the results using the included scripts
 \end{itemize}
 As some FFTW3 installations do not come with the correct CMake compatibility, it might be useful to use \href{https://github.com/microsoft/vcpkg}{vcpkg} as package manager for C++ libraries. This package manager is cross-platform compatible.
 
@@ -129,16 +130,17 @@ Here, the location of the installed cmake version and the libomp version may hav
 Alternatively macports can be used in a very similar way to homebrew. Install libomp with \texttt{sudo port install libomp}. The location of omp.h may be different than expected by CMake, which may be fixed with \texttt{sudo ln -s /opt/local/include/libomp/omp.h /opt/local/include/omp.h}. or \texttt{sudo port install libomp +top\_level}.
 
 \section{Parallelization}
-NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, only the *UVvis techniques support MPI. Other 2D techniques only support OpenMP, while linear techniques do not have a parallel implementation as they are generally fast.
+NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, both the time consuming 2DIR and 2DUVvis techniques support MPI. The linear techniques do not have a parallel implementation as they are generally fast. (Techniques relying on LAPACK including Luminescence may use the MLK OpenMP support for limited speedup.)
 
-For the *UVvis techniques, it is recommended to understand the implemented approach for parallelization in order to achieve good performance. Each run will calculate a specified number of samples, each for 21 different polarization directions. The calculation time for each polarization direction is determined by the chosen values for {\tt t1max}, {\tt t2max} and {\tt t3max}.
+For the two-dimensional techniques, it is recommended to understand the implemented approach for parallelization in order to achieve good performance. Each run will calculate a specified number of samples, each for 21 different polarization directions. The calculation time for each polarization direction is determined by the chosen values for {\tt t1max}, {\tt t2max} and {\tt t3max}.
 
-All polarization directions are calculated in parallel using MPI, distributed over all registered tasks (more explanation follows later). As long as you have sufficiently many samples, this will scale very well. In general, it is recommended to have a fraction or multiple of 21 as number of tasks, in order to make sure that no cores are simply waiting around after completing their part of the calculations.
+All polarization directions may efficiently be calculated in parallel using MPI, distributed over all registered tasks (more explanation follows later). As long as you have sufficiently many samples, this will scale very well. In general, it is recommended to have a fraction or multiple of 21 as number of tasks, in order to make sure that no cores are simply waiting around after completing their part of the calculations.
 
-Within each polarization direction, loops over t1 times are parallelized using OpenMP. Due to communication overhead and data sharing difficulties, this does not scale as well as the MPI parallelization. If possible, it is recommended to overprovision your cores, i.e. to make the system spawn more threads than there are cores available. The larger the computation per polarization direction (so higher t1, t2 and t3), the better this part will scale. It is recommended that the number of OpenMP threads is either small compared to {\tt t1max} or that {\tt max+1} is equal to an integer times the number of OpenMP threads.
+Within each polarization direction, loops over the t1 coherence times are parallelized using OpenMP. Due to communication overhead and data sharing difficulties, this does not scale as well as the MPI parallelization. If possible, it is recommended to overprovision your cores, i.e. to make the system spawn more threads than there are cores available. The larger the computation per polarization direction (so higher t2, t3, system size {\tt singles}), the better this part will scale. It is recommended that the number of OpenMP threads is either small compared to {\tt t1max} or that {\tt t1max+1} is equal to an integer times the number of OpenMP threads.
 
 For example, to run 4 tasks with each 12 threads with OpenMPI, use the following command:\\
-{\tt mpirun -np 4 -x OMP\_NUM\_THREADS=12 --bind-to socket ~/pathToNISE inputFile}
+{\tt mpirun -np 4 -x OMP\_NUM\_THREADS=12 --bind-to socket ~/pathToNISE inputFile}\\
+For cluster computing refer to the manual for the cluster. Special commands as {\tt srun} may be required for {\tt SLURM} systems. The MPI implementation require all input files to be located at a disk available to all nodes.
 
 \subsection{Efficiency considerations}
 Some considerations and examples to achieve higher performance:
@@ -150,7 +152,16 @@ Some considerations and examples to achieve higher performance:
 \end{itemize}
 
 \section{Changelog}
-\subsection{Version 3.2}
+\subsection{Version 3.3}
+{\small Work by Thomas Jansen}
+\begin{itemize}
+\item Extended MPI support to 2DIR
+\item Implemented true two-state behaviour for the *UVvis techniques
+\item Added linear dichroism
+\item Changed timing information for two-dimensional calculations to percentage of full calculation based
+\item Important change in naming of 2DIR sub techniques to contain IR at the end (GBIR, SEIR, EAIR, etc.).
+\end{itemize}
+	\subsection{Version 3.2}
 {\small Work by Floris Westerman}
 \begin{itemize}
 \item Added CMake build system and improved cross-platform compatibility
@@ -160,10 +171,12 @@ Some considerations and examples to achieve higher performance:
 
 \subsection{Version 3.1}
 \begin{itemize}
-\item Included OpenMP support for some calculations
+\item Included OpenMP support for two-dimensional calculations
 \end{itemize}
 
 \include{input}
+
+\include{tutorial}
 
 \include{techniques}
 
@@ -178,7 +191,7 @@ that was adjusted to give the example provided with the tutorial. The Skinner gr
 Carlos Baiz are gratefully acknowledged for helping making the code more user friendly 
 and with correcting minor bugs. Chungwen Liang is acknowledged for corrections of the 
 Manual and implementation of the linear SFG code. The NWO is gratefully acknowledged
-for financial support making is possible to write this code. 
+for financial support making is possible to write the initial versions of this code. 
 
 \bibliography{Merged2016}%Rochester-9.bib}
 \end{document} 
