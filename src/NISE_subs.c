@@ -89,6 +89,21 @@ char* time_diff(time_t t0, time_t t1) {
     return text;
 }
 
+// Forms a string with the times for MPI_Wtime
+char* MPI_time(double t0) {
+    int ms =t0*1000; // Convert to milliseconds
+    int h = ms / 3600000;
+    ms = ms % 3600000;
+    int m = ms / 60000;
+    ms = ms % 60000;
+    int s = ms / 1000;
+    ms = ms % 1000;
+
+    char* text;
+    asprintf(&text, " %dh %dmin %ds %dms\n", h, m, s, ms);
+    return text;
+}
+
 /* INDEXING FOR ELECTRONIC STATES */
 int Eindex(int a, int b, int N) {
     int ind;

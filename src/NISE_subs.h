@@ -10,6 +10,7 @@ void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
 char* time_diff(time_t t0, time_t t1);
+char* MPI_time(double t0);
 int Eindex(int a,int b,int N);
 int read_He(t_non *non,float *He,FILE *FH,int pos);
 int read_Dia(t_non *non,float *He,FILE *FE,int pos);

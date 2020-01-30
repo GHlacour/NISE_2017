@@ -24,7 +24,7 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
     int counter,counter_pass;
     float counter_current;
     double my_time,my_current_time;
-    counter=0,counter_pass=0;
+    counter=0,counter_pass=1;
     if(parentRank == 0) {
         // Master process calculates the work items to be performed
         int* fullWorkset;
@@ -172,12 +172,6 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
         int molPol = workset[currentWorkItem + 1];
 
         if (currentSample == -1 || molPol == -1) continue;
-
-        /* Log time */
-        time_t timeSampleStart;
-        time(&timeSampleStart);
-        //log_item("Starting sample %d\n", currentSample); TODO fix the logging in parallel
-        //if (non->printLevel>0) printf("Starting sample %d, molPol %d\n", currentSample, molPol);
 
         /* Calculate 2DIR response */
         int tj = currentSample * non->sample + non->tmax1;
@@ -582,29 +576,23 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
         free(fr), free(fi);
         free2D((void**) ft1r), free2D((void**) ft1i);
 
-        time_t timeSampleEnd;
-        time(&timeSampleEnd);
-        char* timeText = time_diff(timeSampleStart, timeSampleEnd);
-        //log_item("Finished sample %d, %s\n", currentSample, timeText);
         counter++;
 	if (subRank==0){
 	    counter_current=counter*100.0/sampleCount/21*parentSize;
             if (counter_current>counter_pass){
 		if (non->printLevel>0){
                     my_current_time=MPI_Wtime();
-                    printf("Passed %d pct. of expected calculation time in %f sec.\n",(int)floor(counter_current+1),(float)(my_current_time-my_time));
+                    char* timeText=MPI_time(my_current_time-my_time);
+  		    printf("Passed %d pct. of expected calculation time in %s",(int)floor(counter_current),timeText);
                     if (non->printLevel==1){
                       counter_pass=floor(counter_current)+10;
                     } else {
                       counter_pass=floor(counter_current)+1;
                     }
+		    free(timeText);
                 }
 	    }
 	}	
-	//if (molPol == 0 || non->printLevel>0 ){
-         // printf("Finished sample %d, molPol %d in %s", currentSample, molPol, timeText);
-        //}
-        free(timeText);
     }
 
     // Reduce calculation results, in a tiered approach to save network bandwidth
@@ -674,7 +662,11 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         printf("----------------------------------------\n");
         printf(" 2DIR calculation succesfully completed\n");
-        printf("----------------------------------------\n\n");
+        my_current_time=MPI_Wtime();
+        char* timeText=MPI_time(my_current_time-my_time);
+        printf(" Total time elapsed %s",timeText);
+	free(timeText);
+	printf("----------------------------------------\n\n");
     }
 
     /* Free memory for 2D calculation */
