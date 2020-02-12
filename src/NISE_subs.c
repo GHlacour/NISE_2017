@@ -71,7 +71,7 @@ time_t log_time(time_t t0, FILE* log) {
     time(&t1);
 
     char* text = time_diff(t0, t1);
-    fprintf(log, text);
+    // fprintf(log, text);
     free(text);
     return t1;
 }
@@ -355,6 +355,100 @@ void propagate_vec_DIA(t_non* non, float* Hamiltonian_i, float* cr, float* ci, i
     }
 
 
+    free(cnr), free(cni), free(re_U), free(im_U), free(H), free(e);
+    free(crr), free(cri);
+    return;
+}
+
+// Do the propagation for t2 using the matrix exponent and using a single diagonalization
+// for all vectors
+void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *vr,float *vi,int sign){
+    float f;
+    int index, N;
+    float *H, *re_U, *im_U, *e;
+    float *cnr, *cni;
+    float *crr, *cri;
+    float re, im;
+    int a, b, c;
+    int t1;
+    N = non->singles;
+    f = non->deltat * icm2ifs * twoPi * sign;
+    H = (float *)calloc(N * N, sizeof(float));
+    re_U = (float *)calloc(N, sizeof(float));
+    im_U = (float *)calloc(N, sizeof(float));
+    e = (float *)calloc(N, sizeof(float));
+    cnr = (float *)calloc(N * N, sizeof(float));
+    cni = (float *)calloc(N * N, sizeof(float));
+    crr = (float *)calloc(N * N, sizeof(float));
+    cri = (float *)calloc(N * N, sizeof(float));
+    // Build Hamiltonian
+    for (a = 0; a < N; a++) {
+        H[a + N * a] = Hamiltonian_i[a + N * a - (a * (a + 1)) / 2]; // Diagonal
+        for (b = a + 1; b < N; b++) {
+            H[a + N * b] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
+            H[b + N * a] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
+        }
+    }
+
+    diagonalizeLPD(H, e, N);
+    // Exponentiate [U=exp(-i/h H dt)]
+    for (a = 0; a < N; a++) {
+        re_U[a] = cos(e[a] * f);
+        im_U[a] = -sin(e[a] * f);
+    }
+
+    // Do the single t1 independent vector
+    // Transform to site basis
+    for (a = 0; a < N; a++) {
+        for (b = 0; b < N; b++) {
+            cnr[b + a * N] += H[b + a * N] * re_U[b], cni[b + a * N] += H[b + a * N] * im_U[b];
+        }
+    }
+    for (a = 0; a < N; a++) {
+        for (b = 0; b < N; b++) {
+            for (c = 0; c < N; c++) {
+                crr[a + c * N] += H[b + a * N] * cnr[b + c * N], cri[a + c * N] += H[b + a * N] * cni[b + c * N];
+            }
+        }
+    }
+    // The one exciton propagator has been calculated
+
+    //  elements=0;
+    for (a = 0; a < N; a++) {
+        cnr[a] = 0, cni[a] = 0;
+        for (b = 0; b < N; b++) {
+            //      if ((crr[a+b*N]*crr[a+b*N]+cri[a+b*N]*cri[a+b*N])>non->thres){
+            //        elements++;
+            cnr[a] += crr[a + b * N] * cr[b] - cri[a + b * N] * ci[b];
+            cni[a] += crr[a + b * N] * ci[b] + cri[a + b * N] * cr[b];
+            //      }
+        }
+    }
+
+    for (a = 0; a < N; a++) {
+        cr[a] = cnr[a], ci[a] = cni[a];
+    }
+
+    // Do the t1 dependent vectors
+#pragma omp parallel for
+    for (t1=0;t1< non->tmax1; t1++) {
+      //  elements=0;
+      for (a = 0; a < N; a++) {
+        cnr[a] = 0, cni[a] = 0;
+        for (b = 0; b < N; b++) {
+            //      if ((crr[a+b*N]*crr[a+b*N]+cri[a+b*N]*cri[a+b*N])>non->thres){
+            //        elements++;
+            cnr[a] += crr[a + b * N] * vr[b+t1*N] - cri[a + b * N] * vi[b+t1*N];
+            cni[a] += crr[a + b * N] * vi[b+t1*N] + cri[a + b * N] * vr[b+t1*N];
+            //      }
+        }
+      }
+
+      for (a = 0; a < N; a++) {
+        vr[a+t1*N] = cnr[a], vi[a+t1*N] = cni[a];
+      }
+    }
+    
     free(cnr), free(cni), free(re_U), free(im_U), free(H), free(e);
     free(crr), free(cri);
     return;

@@ -7,7 +7,7 @@ Anharmonicfile Anharmonicity.bin
 Overtonedipolefile OvertoneDipole.bin
 Length 100000
 #Length 10000
-Samplerate 1000
+Samplerate 100
 Lifetime 1000
 Timestep 10
 Trotter 5
