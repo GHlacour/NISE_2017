@@ -6,6 +6,9 @@ void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
+void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N);
+void matrix_on_vector(float *c,float *vr,float *vi,int N);
+void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
@@ -21,7 +24,7 @@ void muread(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj);
 void mureadE(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj,float *mu,float *pol);
 int read_cluster(t_non *non,int pos,int *cl,FILE *FH);
 void propagate_vec_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
-void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *vr,float *vi,int sign);
+void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign);
 int propagate_vec_DIA_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
 void propagate_vec_coupling_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);
 void propagate_vec_coupling_S_doubles(t_non *non,float *Hamiltonian_i,float *cr,float 
