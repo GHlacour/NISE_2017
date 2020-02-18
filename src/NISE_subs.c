@@ -40,6 +40,60 @@ void clearvec(float* a, int N) {
     for (i = 0; i < N; i++) a[i] = 0;
 }
 
+// Multiply a complex diagonal matrix on a complex vector
+void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N){
+    int a;
+    float re,im;
+    for (a=0;a<N;a++){
+	re=rr[a]*vr[a]-ir[a]*vi[a];
+	im=ir[a]*vr[a]+rr[a]*vi[a];
+	vr[a]=re;
+	vi[a]=im;
+    }
+}
+
+// Multiply a real matrix on a complex vector (vr,vi)
+void matrix_on_vector(float *c,float *vr,float *vi,int N){
+    float *xr;
+    float *xi;
+    int a,b;
+    xr = (float *)calloc(N * N, sizeof(float));
+    xi = (float *)calloc(N * N, sizeof(float));
+    // Multiply
+    for (a=0;a<N;a++){
+        for (b=0;b<N;b++){
+            xr[a]+=c[a+b*N]*vr[b];
+	    xi[a]+=c[a+b*N]*vi[b];
+	}
+    }
+    // Copy back
+    copyvec(xr,vr,N);
+    copyvec(xi,vi,N);
+    free(xr);
+    free(xi);
+}
+
+// Multiply transpose of a real matrix on a complex vector (vr,vi)
+void trans_matrix_on_vector(float *c,float *vr,float *vi,int N){
+    float *xr;
+    float *xi;
+    int a,b;
+    xr = (float *)calloc(N * N, sizeof(float));
+    xi = (float *)calloc(N * N, sizeof(float));
+    // Multiply
+    for (a=0;a<N;a++){
+        for (b=0;b<N;b++){
+            xr[a]+=c[b+a*N]*vr[b];
+            xi[a]+=c[b+a*N]*vi[b];
+        }
+    }
+    // Copy back
+    copyvec(xr,vr,N);
+    copyvec(xi,vi,N);
+    free(xr);
+    free(xi);
+}
+
 /**
  * Method that logs a message, in which the message can be formatted like printf accepts.
  */
@@ -362,12 +416,10 @@ void propagate_vec_DIA(t_non* non, float* Hamiltonian_i, float* cr, float* ci, i
 
 // Do the propagation for t2 using the matrix exponent and using a single diagonalization
 // for all vectors
-void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *vr,float *vi,int sign){
+void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign){
     float f;
     int index, N;
     float *H, *re_U, *im_U, *e;
-    float *cnr, *cni;
-    float *crr, *cri;
     float re, im;
     int a, b, c;
     int t1;
@@ -377,10 +429,7 @@ void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float 
     re_U = (float *)calloc(N, sizeof(float));
     im_U = (float *)calloc(N, sizeof(float));
     e = (float *)calloc(N, sizeof(float));
-    cnr = (float *)calloc(N * N, sizeof(float));
-    cni = (float *)calloc(N * N, sizeof(float));
-    crr = (float *)calloc(N * N, sizeof(float));
-    cri = (float *)calloc(N * N, sizeof(float));
+   
     // Build Hamiltonian
     for (a = 0; a < N; a++) {
         H[a + N * a] = Hamiltonian_i[a + N * a - (a * (a + 1)) / 2]; // Diagonal
@@ -398,59 +447,25 @@ void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float 
     }
 
     // Do the single t1 independent vector
-    // Transform to site basis
-    for (a = 0; a < N; a++) {
-        for (b = 0; b < N; b++) {
-            cnr[b + a * N] += H[b + a * N] * re_U[b], cni[b + a * N] += H[b + a * N] * im_U[b];
-        }
-    }
-    for (a = 0; a < N; a++) {
-        for (b = 0; b < N; b++) {
-            for (c = 0; c < N; c++) {
-                crr[a + c * N] += H[b + a * N] * cnr[b + c * N], cri[a + c * N] += H[b + a * N] * cni[b + c * N];
-            }
-        }
-    }
-    // The one exciton propagator has been calculated
+    // Transfer to eigen basis
+    matrix_on_vector(H,cr,ci,N);
+    // Multiply with matrix exponent
+    vector_on_vector(re_U,im_U,cr,ci,N);
+    // Transfer back to site basis
+    trans_matrix_on_vector(H,cr,ci,N);
 
-    //  elements=0;
-    for (a = 0; a < N; a++) {
-        cnr[a] = 0, cni[a] = 0;
-        for (b = 0; b < N; b++) {
-            //      if ((crr[a+b*N]*crr[a+b*N]+cri[a+b*N]*cri[a+b*N])>non->thres){
-            //        elements++;
-            cnr[a] += crr[a + b * N] * cr[b] - cri[a + b * N] * ci[b];
-            cni[a] += crr[a + b * N] * ci[b] + cri[a + b * N] * cr[b];
-            //      }
-        }
+    // Do all the t1 dependent vectors
+#pragma omp parallel for shared(non,re_U,im_U,H,vr,vi) schedule(static,1)
+    for (t1=0;t1<non->tmax1;t1++){
+        // Transfer to eigen basis
+        matrix_on_vector(H,vr[t1],vi[t1],N);
+        // Multiply with matrix exponent
+        vector_on_vector(re_U,im_U,vr[t1],vi[t1],N);
+        // Transfer back to site basis
+        trans_matrix_on_vector(H,vr[t1],vi[t1],N);
     }
 
-    for (a = 0; a < N; a++) {
-        cr[a] = cnr[a], ci[a] = cni[a];
-    }
-
-    // Do the t1 dependent vectors
-#pragma omp parallel for
-    for (t1=0;t1< non->tmax1; t1++) {
-      //  elements=0;
-      for (a = 0; a < N; a++) {
-        cnr[a] = 0, cni[a] = 0;
-        for (b = 0; b < N; b++) {
-            //      if ((crr[a+b*N]*crr[a+b*N]+cri[a+b*N]*cri[a+b*N])>non->thres){
-            //        elements++;
-            cnr[a] += crr[a + b * N] * vr[b+t1*N] - cri[a + b * N] * vi[b+t1*N];
-            cni[a] += crr[a + b * N] * vi[b+t1*N] + cri[a + b * N] * vr[b+t1*N];
-            //      }
-        }
-      }
-
-      for (a = 0; a < N; a++) {
-        vr[a+t1*N] = cnr[a], vi[a+t1*N] = cni[a];
-      }
-    }
-    
-    free(cnr), free(cni), free(re_U), free(im_U), free(H), free(e);
-    free(crr), free(cri);
+    free(re_U), free(im_U), free(H), free(e);
     return;
 }
 

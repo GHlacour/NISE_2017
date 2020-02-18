@@ -283,9 +283,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
 
-            //propagate_t2_DIA(non, Hamil_i_e, leftrr, leftri,*leftnr,*leftni, 1);
+            propagate_t2_DIA(non, Hamil_i_e, leftrr, leftri,leftnr,leftni, 1);
 	    // Old t2 propagation to be replaced 10/2-2020 
-            propagate_vec_DIA(non, Hamil_i_e, leftrr, leftri, 1);
+/*            propagate_vec_DIA(non, Hamil_i_e, leftrr, leftri, 1);
 
             int t1;
             #pragma omp parallel for \
@@ -296,7 +296,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 propagate_vec_DIA(
                     non, Hamil_i_e, leftnr[t1], leftni[t1], 1
                 );
-            }
+            }*/
 	     
         }
 
