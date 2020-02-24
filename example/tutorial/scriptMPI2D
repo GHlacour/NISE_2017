@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name NISE-Xlong
+#SBATCH --ntasks=2
+#SBATCH --cpus-per-task=4
+#SBATCH --time=0-00:30:00
+#SBATCH --partition=short
+#SBATCH --mem=6000
+
+export OMP_NUM_THREADS=2
+
+# Change to the directory where the files are located
+cd $SLURM_SUBMIT_DIR
+
+# You may need to change the module name
+module load foss/2018a
+
+# It is assumed that the bin files are already in your home
+# You may have to change the location of the programme
+time srun ~/git/NISE_2017/bin/NISE input2D
+
+# This script does not perform the 2DFFT you can do that after the calculation finished
+# ~/git/NISE_2017/bin/2DFFT input2D
+
