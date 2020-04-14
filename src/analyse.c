@@ -13,6 +13,7 @@ void analyse(t_non *non){
   // Initialize variables
   float *average_frequency;
   float *average_coupling;
+  float *average_H;
   float avall,flucall;
   float *fluctuation;
   float *Jfluctuation;
@@ -56,6 +57,7 @@ void analyse(t_non *non){
   N=non->singles;
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
+  average_H=(float *)calloc(nn2,sizeof(float));
   H=(float *)calloc(N*N,sizeof(float));
   e=(float *)calloc(N,sizeof(float));
   average_frequency=(float *)calloc(N,sizeof(float));
@@ -144,10 +146,14 @@ void analyse(t_non *non){
     participation_ratio+=calc_participation_ratio(N,H);
     find_dipole_mag(non,dip2,samples,mu_traj,H);
     counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
+    // Find Averages
     for (i=0;i<non->singles;i++){
       average_frequency[i]+=Hamil_i_e[Sindex(i,i,N)];
       avall+=Hamil_i_e[Sindex(i,i,N)];
       for (j=0;j<non->singles;j++){
+        if (j>=i){
+          average_H[Sindex(i,j,N)]+=Hamil_i_e[Sindex(i,j,N)];
+        }
         if (j!=i){
           average_coupling[i]+=Hamil_i_e[Sindex(i,j,N)];
         }
@@ -160,6 +166,9 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++){
     average_frequency[i]/=Nsam;
     average_coupling[i]/=Nsam;
+    for(j=i;j<non->singles;j++){
+      average_H[Sindex(i,j,non->singles)]/=Nsam;
+    }
   }
   avall/=(Nsam*non->singles);   
 
@@ -207,6 +216,23 @@ void analyse(t_non *non){
   flucall/=(Nsam*non->singles);   
   flucall=sqrt(flucall);
 
+  // Write Average Hamiltonian in GROASC format
+  outone=fopen("Av_Hamiltonian.txt","w");
+    if (outone==NULL){
+    printf("Problem encountered opening Analyse.dat for writing.\n");
+    printf("Disk full or write protected?\n");
+    exit(1);
+  }
+  fprintf(outone,"0 ");
+  for (i=0;i<non->singles;i++){
+    for (j=i;j<non->singles;j++){
+      if (i==j) average_H[Sindex(i,j,non->singles)]+=non->shifte;
+      fprintf(outone,"%f ",average_H[Sindex(i,j,non->singles)]);
+    }
+  }
+  fprintf(outone,"\n");
+  fclose(outone);
+
   outone=fopen("Analyse.dat","w");
   if (outone==NULL){
     printf("Problem encountered opening Analyse.dat for writing.\n");
@@ -239,6 +265,7 @@ void analyse(t_non *non){
   free(Jfluctuation);
   // free(mu_eg);
   free(Hamil_i_e);
+  free(average_H);
   free(cEig);
   free(cDOS);
   free(H);
