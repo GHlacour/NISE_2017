@@ -139,14 +139,14 @@ All polarization directions may efficiently be calculated in parallel using MPI,
 Within each polarization direction, loops over the t1 coherence times are parallelized using OpenMP. Due to communication overhead and data sharing difficulties, this does not scale as well as the MPI parallelization. If possible, it is recommended to overprovision your cores, i.e. to make the system spawn more threads than there are cores available. The larger the computation per polarization direction (so higher t2, t3, system size {\tt singles}), the better this part will scale. It is recommended that the number of OpenMP threads is either small compared to {\tt t1max} or that {\tt t1max+1} is equal to an integer times the number of OpenMP threads.
 
 For example, to run 4 tasks with each 12 threads with OpenMPI, use the following command:\\
-{\tt mpirun -np 4 -x OMP\_NUM\_THREADS=12 --bind-to socket ~/pathToNISE inputFile}\\
+{\tt mpirun -np 4 -x OMP\_NUM\_THREADS=12 --bind-to-socket ~/pathToNISE/NISE inputFile}\\
 For cluster computing refer to the manual for the cluster. Special commands as {\tt srun} may be required for {\tt SLURM} systems. The MPI implementation require all input files to be located at a disk available to all nodes.
 
 \subsection{Efficiency considerations}
 Some considerations and examples to achieve higher performance:
 \begin{itemize}
 \item As OpenMP parallelization uses shared memory, it is necessary to limit each task to one node. If possible, it is recommended to limit a task even to one socket, or in case of more modern chips, 1 NUMA node. However, this might make the runtime for one polarization direction too high, so it might be worthwhile to trade some efficiency for shorter runtimes.
-\item It is recommended to overprovision your OpenMP threads by a factor of 2-3. So if a NUMA node has 12 cores, you could pin the threads of this task to this NUMA node and tell OpenMP to create 24-36 threads. Thread pinning differs per OS and more details can be found online. Many popular workload schedulers like SLURM, and some MPI implementations, offer this built-in (for example, {\tt --bind-to socket} in the command above).
+\item It is recommended to overprovision your OpenMP threads by a factor of 2-3. So if a NUMA node has 12 cores, you could pin the threads of this task to this NUMA node and tell OpenMP to create 24-36 threads. Thread pinning differs per OS and more details can be found online. Many popular workload schedulers like SLURM, and some MPI implementations, offer this built-in (for example, {\tt --bind-to-socket} in the command above).
 \item The most efficient workload division also depends on the problem size, for larger problems with fewer samples, the OpenMP scaling is more efficient than for smaller problems with more samples.
 \item For example, on a machine with 2 12-core Xeon processors (single NUMA node per socket), it is most efficient to run 4 tasks, with 12 threads assigned to each task (overprovisioning). However, for very large problems with only 2 or 3 samples, it might be better to scale down to 2 tasks, each with 24 threads. For smaller problems with many samples, 8 tasks with 6 threads might be better. In general, it is good to do some quick performance tests beforehand.
 \end{itemize}

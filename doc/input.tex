@@ -40,7 +40,7 @@ The translate program convert between different formats. The program also allows
 \item[InputFormat] [GROBIN/GROASC/MITASC/SKIBIN]
 \item[OutputFormat] [GROBIN/GROASC/MITASC/SKIBIN]
 \item[Modify][Leave this out if you do not wish to modify the Hamiltonian]
-\item[Select] [Number of amide units to include, if selected number is less than the number of units in the original a list of the units to include should be given on the following line (i.e. 0 1 2 3 5 if 6 units are in the original and we want unit 4 excluded).]
+\item[Select] [Number of amide units to include, if selected number is less than the number of units in the original a list of the units to include should be given on the following line (i.e. 0 1 2 3 5 if 6 units are in the original and we want unit 4 excluded) Note that Singles should be the number of residues in the original file.]
 \item[Label] [On the following line the for each selected unit the isotope labeling is given (0=native, 1=C13, 2=O18) C13 gives a 41 wavenumber frequency shift and O18 gives a 60 wavenumber shift in this implementation.]
 \item[Shift] [On the following line for each selected unit a frequency shift can be provided. This can be used for modifying proline or terminal frequencies or for isotope labeling.]   
 \end{description}
