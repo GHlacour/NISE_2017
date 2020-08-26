@@ -174,10 +174,12 @@ int Eindex(int a, int b, int N) {
 /* Read Hamiltonian */
 int read_He(t_non* non, float* He, FILE* FH, int pos) {
     int i, N, control, t;
-    float* H;
+    float* H; // Help Hamiltonain
+    float* R; // Distance if needed
+    float* mu; // Dipole moment if needed
 
     /* Read only diagonal part */
-    if (!strcmp(non->hamiltonian, "Coupling") && pos >= 0) {
+    if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole"))) {
         H = (float *)calloc(non->singles, sizeof(float));
         /* Find position */
         fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles)),SEEK_SET);
@@ -224,6 +226,22 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             He[i * non->singles + i - (i * (i + 1)) / 2] -= non->shifte;
         }
     }
+    /* Find the couplings from the TDC scheme  */
+    if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
+        R = (float *)calloc(3*non->singles, sizeof(float));
+        mu = (float *)calloc(3*non->singles, sizeof(float));
+	/* Read in positions */
+        /* Read in dipoles */
+        /* Calculate the couplings according to TDC */
+        for (i = 0; i < non->singles; i++) {
+            for (j = i+1; j < non->singles; j++) {
+                He[Sindex(i,j,non->singles)] = 0;
+	    }
+        }   
+       free(R);
+       free(mu);
+    }
+
     return control;
 }
 

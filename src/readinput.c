@@ -80,7 +80,7 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Overtone dipole file keyword
         if (keyWordS("Overtonedipolefile", Buffer, non->overdipFName, LabelLength) == 1) continue;
 
-        // Dipole file keyword
+        // Position file keyword
         if (keyWordS("Positionfile", Buffer, non->positionFName, LabelLength) == 1) continue;
         // PDB file keyword
         if (keyWordS("PDBfile", Buffer, non->pdbFName, LabelLength) == 1) continue;
