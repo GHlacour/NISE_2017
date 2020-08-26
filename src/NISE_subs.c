@@ -173,7 +173,7 @@ int Eindex(int a, int b, int N) {
 
 /* Read Hamiltonian */
 int read_He(t_non* non, float* He, FILE* FH, int pos) {
-    int i, N, control, t;
+    int i,j, N, control, t;
     float* H; // Help Hamiltonain
     float* R; // Distance if needed
     float* mu; // Dipole moment if needed
