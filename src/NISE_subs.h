@@ -6,6 +6,7 @@ void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
+void unitmat(float *a,int N);
 void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N);
 void matrix_on_vector(float *c,float *vr,float *vi,int N);
 void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);

@@ -17,6 +17,12 @@ Here $f$ and $i$ are the final and initial sites. Generally two files are genera
 Not implemented yet (check NISE\_2015)
 \section{Ani (anisotropy)}
 Not implemented yet (check NISE\_2015)
+\section{DOS}
+The density of states is calculated using the sunction:
+\begin{equation}
+	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/T_1).
+\end{equation}
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain density of states, which is stored in the file DOS.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
 \section{Absorption}
 The linear absorption is calculated using the first-order response function
 \begin{equation}

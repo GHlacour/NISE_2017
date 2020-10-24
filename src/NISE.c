@@ -9,6 +9,7 @@
 #include "NISE.h"
 #include "absorption.h"
 #include "c_absorption.h"
+#include "calc_DOS.h"
 #include "luminescence.h"
 #include "calc_2DIR.h"
 #include "calc_2DES.h"
@@ -150,6 +151,19 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Call the Linear DOS Routine
+    if (!strcmp(non->technique, "DOS")) {
+        // Does not support MPI
+        if (parentRank == 0) {
+            if (!strcmp(non->hamiltonian, "Coupling")) {
+                calc_DOS(non);
+            }
+            else {
+                calc_DOS(non);
+            }
+        }
+    }
+
     // Call the Luminescence Routine
     if (!strcmp(non->technique, "Luminescence")) {
         // Does not support MPI
@@ -189,7 +203,7 @@ int main(int argc, char* argv[]) {
         strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "EAUVvis")) || (!strcmp(
         non->technique, "noEAUVvis"))) {
         // Does support MPI
-        calc_2DES(non, parentRank, parentSize, subRank, subSize, subComm, rootComm);
+        calc_2DES(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
     // Call the 2DFD calculation routine
