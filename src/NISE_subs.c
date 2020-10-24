@@ -40,6 +40,17 @@ void clearvec(float* a, int N) {
     for (i = 0; i < N; i++) a[i] = 0;
 }
 
+// Construct unit matrix
+void unitmat(float *a,int N){
+    int i,j;
+    for (i = 0; i < N; i++){
+	for (j = 0; j < N ; j++){
+            a[i+N*j]=0;
+    	    if (i==j) a[i+N*j]=1;
+	}
+    }
+}
+
 // Multiply a complex diagonal matrix on a complex vector
 void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N){
     int a;
