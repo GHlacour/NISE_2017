@@ -15,6 +15,7 @@
 #include "calc_2DES.h"
 #include "analyse.h"
 #include "calc_CD.h"
+#include "calc_LD.h"
 #include "population.h"
 #include <mpi.h>
 
@@ -172,7 +173,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Linear Dichroism Routine
-    if (!strcmp(non->technique, "LD")) { }
+    if (!strcmp(non->technique, "LD")) {
+        // Does not support MPI
+        if (parentRank == 0)
+            LD(non);
+    }
 
     // Call the Circular Dichroism Routine
     if (!strcmp(non->technique, "CD")) {
