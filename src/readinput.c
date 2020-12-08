@@ -29,9 +29,9 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->temperature = 300;
     non->cluster = -1; // Average over all snapshots no clusters
     non->fft = 0;
-    non->printLevel = 0; // Set to standard print level
+    non->printLevel = 1; // Set to standard print level
     sprintf(non->basis, "Local");
-    //  non->hamiltonian="Full";
+    sprintf(non->hamiltonian, "Full");
 
     if (argc < 2) {
         printf("Specify input file name on command line!\n");

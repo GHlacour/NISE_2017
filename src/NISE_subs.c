@@ -177,6 +177,12 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
     float* H; // Help Hamiltonain
     float* R; // Distance if needed
     float* mu; // Dipole moment if needed
+    float A; // Conversion factor for TDC coupling
+    float Rx,Ry,Rz,dist,idist,idist3; // Variables for TDC
+    float m1x,m1y,m1z,m2x,m2y,m2z; // Variables for TDC
+    float f1,f2; // Variables for TDC
+    FILE *pos_traj;
+    FILE *dip_traj;
 
     /* Read only diagonal part */
     if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole"))) {
@@ -226,20 +232,45 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             He[i * non->singles + i - (i * (i + 1)) / 2] -= non->shifte;
         }
     }
-    /* Find the couplings from the TDC scheme  */
+    /* Find the couplings from the TDC 'on the fly' scheme  */
+    A=5.04; 
     if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
         R = (float *)calloc(3*non->singles, sizeof(float));
         mu = (float *)calloc(3*non->singles, sizeof(float));
 	/* Read in positions */
+        pos_traj=fopen(non->positionFName,"rb");
+        read_mue(non,R,pos_traj,pos,0);
+        read_mue(non,R+non->singles,pos_traj,pos,1);
+        read_mue(non,R+non->singles,pos_traj,pos,2);
         /* Read in dipoles */
+        dip_traj=fopen(non->dipoleFName,"rb");
+        read_mue(non,mu,dip_traj,pos,0);
+        read_mue(non,mu+non->singles,dip_traj,pos,1);
+        read_mue(non,mu+non->singles,dip_traj,pos,2);
         /* Calculate the couplings according to TDC */
         for (i = 0; i < non->singles; i++) {
             for (j = i+1; j < non->singles; j++) {
-                He[Sindex(i,j,non->singles)] = 0;
+                Rx=R[i]-R[j];
+                Ry=R[non->singles+i]-R[non->singles+j];
+                Rz=R[2*non->singles+i]-R[2*non->singles+j];
+                m1x=mu[i];
+                m1y=mu[non->singles+i];
+                m1z=mu[2*non->singles+i];
+                m2x=mu[j];
+                m2y=mu[non->singles+j];
+                m2z=mu[2*non->singles+j];
+                dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+                idist=1.0/dist;
+                idist3=idist*idist*idist;
+                f1=m1x*m2x+m1y*m2y+m1z*m2z;
+                f2=(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
+                He[Sindex(i,j,non->singles)] = A*(f1+f2)*idist3;
 	    }
         }   
        free(R);
        free(mu);
+       fclose(pos_traj);
+       fclose(dip_traj);
     }
 
     return control;
