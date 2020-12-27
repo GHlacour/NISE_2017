@@ -109,7 +109,7 @@ The NISE program use the following input:\\
 \item [Alphafile] [File name] (Only needed for SFG calculations)
 \item [Anharmonicfile] [File name]
 \item [Overtonedipolefile] [File name]
-\item [HamiltonianType] [Full/Coupling] (Full is the default, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements.)
+\item [HamiltonianType] [Full/Coupling/TransitionDipole] (Full is the default, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements. If TransitionDipole is specified the positions in the Positionfile and the transition-diploes in the Dipolefile are used to calculate the couplings with the Transition-Dipole coupling scheme. As for the Coupling method the Hamiltonianfile only contain the diagonal elements. Dipoles are then assumed in Debye and Positions in \AA ngstr\"{o} m)
 \item [Couplingfile] [File name]
 \item [PDBfile] [File name]
 \item [Length] [Number of snapshots in trajectory] 

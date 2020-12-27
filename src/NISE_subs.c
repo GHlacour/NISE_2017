@@ -189,7 +189,6 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         H = (float *)calloc(non->singles, sizeof(float));
         /* Find position */
         fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles)),SEEK_SET);
-
         /* Read time */
         control = fread(&t, sizeof(int), 1, FH); /* control=1; */
         if (control > non->length + non->begin * non->sample) {
@@ -199,7 +198,6 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             printf("Check that the numbers of singles and doubles is correct!\n");
             exit(-1);
         }
-
         /* Read single excitation Hamiltonian */
         fread(H, sizeof(float), non->singles, FH);
 
@@ -214,8 +212,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         if (pos == -1) { pos = 0; }
         N = non->singles * (non->singles + 1) / 2;
         /* Find position */
-        fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles * (non->singles + 1) / 2 +
-                  non->doubles * (non->doubles + 1) / 2)),SEEK_SET);
+        fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles * (non->singles + 1) / 2 + non->doubles * (non->doubles + 1) / 2)),SEEK_SET);
         /* Read time */
         control = fread(&t, sizeof(int), 1, FH); /* control=1; */
         if (control > non->length + non->begin * non->sample) {
@@ -233,7 +230,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         }
     }
     /* Find the couplings from the TDC 'on the fly' scheme  */
-    A=5.04; 
+    A=5034; /* Convert to cm-1 from Deb**2/Ang**3 */ 
     if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
         R = (float *)calloc(3*non->singles, sizeof(float));
         mu = (float *)calloc(3*non->singles, sizeof(float));
@@ -241,12 +238,12 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         pos_traj=fopen(non->positionFName,"rb");
         read_mue(non,R,pos_traj,pos,0);
         read_mue(non,R+non->singles,pos_traj,pos,1);
-        read_mue(non,R+non->singles,pos_traj,pos,2);
+        read_mue(non,R+2*non->singles,pos_traj,pos,2);
         /* Read in dipoles */
         dip_traj=fopen(non->dipoleFName,"rb");
         read_mue(non,mu,dip_traj,pos,0);
         read_mue(non,mu+non->singles,dip_traj,pos,1);
-        read_mue(non,mu+non->singles,dip_traj,pos,2);
+        read_mue(non,mu+2*non->singles,dip_traj,pos,2);
         /* Calculate the couplings according to TDC */
         for (i = 0; i < non->singles; i++) {
             for (j = i+1; j < non->singles; j++) {
@@ -263,7 +260,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
                 idist=1.0/dist;
                 idist3=idist*idist*idist;
                 f1=m1x*m2x+m1y*m2y+m1z*m2z;
-                f2=(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
+                f2=-3*(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
                 He[Sindex(i,j,non->singles)] = A*(f1+f2)*idist3;
 	    }
         }   
@@ -973,6 +970,7 @@ void projection(float* phi, t_non* non) {
 int control(t_non* non) {
     float *mu_eg, *Hamil_i_e;
     FILE *H_traj, *mu_traj;
+    FILE *x_traj;
     int itime, N_samples;
     int samples;
     int nn2;
@@ -1013,6 +1011,15 @@ int control(t_non* non) {
         return 1;
     }
     if (!strcmp(non->hamiltonian, "Coupling")) { }
+    else if (!strcmp(non->hamiltonian, "TransitionDipole")) {
+        x_traj = fopen(non->positionFName, "rb");
+        if (x_traj == NULL) {
+          printf("Position file not found!\n");
+          return 1;
+        }
+        fclose(x_traj);
+    }
+
     else {
         // Check last element
         if (read_mue(non, mu_eg, mu_traj, non->length - 1, 2) != 1) {
