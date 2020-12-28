@@ -230,7 +230,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         }
     }
     /* Find the couplings from the TDC 'on the fly' scheme  */
-    A=5034; /* Convert to cm-1 from Deb**2/Ang**3 */ 
+    A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */ 
     if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
         R = (float *)calloc(3*non->singles, sizeof(float));
         mu = (float *)calloc(3*non->singles, sizeof(float));
