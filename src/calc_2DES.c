@@ -560,12 +560,13 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         free2D((void**) ft1r), free2D((void**) ft1i);
 
         counter++;
-	if (subRank==0){
+	if (parentRank==0){
 	    counter_current=counter*100.0/sampleCount/21*parentSize;
             if (counter_current>counter_pass){
 		if (non->printLevel>0){
 		    my_current_time=MPI_Wtime();    
 		    printf("Passed %d pct. of expected calculation time in %s",(int)floor(counter_current),MPI_time(my_current_time-my_time));
+                    fflush(stdout);
 		    if (non->printLevel==1){		    
 		      counter_pass=floor(counter_current)+10;
 		    } else {
