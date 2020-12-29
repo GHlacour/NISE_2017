@@ -175,9 +175,10 @@ int Eindex(int a, int b, int N) {
 int read_He(t_non* non, float* He, FILE* FH, int pos) {
     int i,j, N, control, t;
     float* H; // Help Hamiltonain
-    float* R; // Distance if needed
+    float* R,*R2; // Distance if needed
     float* mu; // Dipole moment if needed
     float A; // Conversion factor for TDC coupling
+    float q1,q2,J; // Charges for EDC coupling
     float Rx,Ry,Rz,dist,idist,idist3; // Variables for TDC
     float m1x,m1y,m1z,m2x,m2y,m2z; // Variables for TDC
     float f1,f2; // Variables for TDC
@@ -185,7 +186,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
     FILE *dip_traj;
 
     /* Read only diagonal part */
-    if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole"))) {
+    if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole")) || (!strcmp(non->hamiltonian, "ExtendedDipole")) ) {
         H = (float *)calloc(non->singles, sizeof(float));
         /* Find position */
         fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles)),SEEK_SET);
@@ -246,13 +247,13 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         read_mue(non,mu+2*non->singles,dip_traj,pos,2);
         /* Calculate the couplings according to TDC */
         for (i = 0; i < non->singles; i++) {
+            m1x=mu[i];
+            m1y=mu[non->singles+i];
+            m1z=mu[2*non->singles+i];
             for (j = i+1; j < non->singles; j++) {
                 Rx=R[i]-R[j];
                 Ry=R[non->singles+i]-R[non->singles+j];
                 Rz=R[2*non->singles+i]-R[2*non->singles+j];
-                m1x=mu[i];
-                m1y=mu[non->singles+i];
-                m1z=mu[2*non->singles+i];
                 m2x=mu[j];
                 m2y=mu[non->singles+j];
                 m2z=mu[2*non->singles+j];
@@ -269,7 +270,83 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
        fclose(pos_traj);
        fclose(dip_traj);
     }
-
+    /* Find the couplings from the EDC 'on the fly' scheme  */
+    A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */
+    if ((!strcmp(non->hamiltonian, "ExtendedDipole"))) {
+        R = (float *)calloc(3*non->singles, sizeof(float));
+        R2 = (float *)calloc(3*non->singles, sizeof(float));
+        mu = (float *)calloc(3*non->singles, sizeof(float));
+        /* Read in positions */
+        pos_traj=fopen(non->positionFName,"rb");
+        read_mue(non,R,pos_traj,2*pos,0);
+        read_mue(non,R+non->singles,pos_traj,2*pos,1);
+        read_mue(non,R+2*non->singles,pos_traj,2*pos,2);
+        read_mue(non,R2,pos_traj,2*pos+1,0);
+        read_mue(non,R2+non->singles,pos_traj,2*pos+1,1);
+        read_mue(non,R2+2*non->singles,pos_traj,2*pos+1,2);
+        /* Read in dipoles */
+        dip_traj=fopen(non->dipoleFName,"rb");
+        read_mue(non,mu,dip_traj,pos,0);
+        read_mue(non,mu+non->singles,dip_traj,pos,1);
+        read_mue(non,mu+2*non->singles,dip_traj,pos,2);
+        /* Calculate the couplings according to EDC */
+        for (i = 0; i < non->singles; i++) {
+            /* Find q1 */
+            Rx=R2[i]-R[i];
+            Ry=R2[non->singles+i]-R[non->singles+i];
+            Rz=R2[2*non->singles+i]-R[2*non->singles+i];
+            m1x=mu[i];
+            m1y=mu[non->singles+i];
+            m1z=mu[2*non->singles+i];
+            dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+            q1=sqrt(m1x*m1x+m1y*m1y+m1z*m1z)/dist;
+            for (j = i+1; j < non->singles; j++) {
+            	/* Find q2 */
+            	Rx=R2[j]-R[j];
+            	Ry=R2[non->singles+j]-R[non->singles+j];
+            	Rz=R2[2*non->singles+j]-R[2*non->singles+j];
+            	m2x=mu[j];
+            	m2y=mu[non->singles+j];
+            	m2z=mu[2*non->singles+j];
+            	dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+            	q2=sqrt(m1x*m1x+m1y*m1y+m1z*m1z)/dist;
+                /* ++ */
+                Rx=R[i]-R[j];
+                Ry=R[non->singles+i]-R[non->singles+j];
+                Rz=R[2*non->singles+i]-R[2*non->singles+j];
+                dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+                idist=1.0/dist;
+                J=idist;
+                /* +- */
+                Rx=R[i]-R2[j];
+                Ry=R[non->singles+i]-R2[non->singles+j];
+                Rz=R[2*non->singles+i]-R2[2*non->singles+j];
+                dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+                idist=1.0/dist;
+                J=J-idist;
+                /* -+ */
+                Rx=R2[i]-R[j];
+                Ry=R2[non->singles+i]-R[non->singles+j];
+                Rz=R2[2*non->singles+i]-R[2*non->singles+j];
+                dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+                idist=1.0/dist;
+                J=J-idist;
+                /* -- */
+                Rx=R2[i]-R2[j];
+                Ry=R2[non->singles+i]-R2[non->singles+j];
+                Rz=R2[2*non->singles+i]-R2[2*non->singles+j];
+                dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+                idist=1.0/dist;
+                J=J+idist;
+                He[Sindex(i,j,non->singles)] = A*q1*q2*J;
+            }
+        }
+       free(R);
+       free(R2);
+       free(mu);
+       fclose(pos_traj);
+       fclose(dip_traj);
+    }
     return control;
 }
 
