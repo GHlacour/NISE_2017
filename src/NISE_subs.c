@@ -1088,7 +1088,7 @@ int control(t_non* non) {
         return 1;
     }
     if (!strcmp(non->hamiltonian, "Coupling")) { }
-    else if (!strcmp(non->hamiltonian, "TransitionDipole")) {
+    else if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")) {
         x_traj = fopen(non->positionFName, "rb");
         if (x_traj == NULL) {
           printf("Position file not found!\n");
