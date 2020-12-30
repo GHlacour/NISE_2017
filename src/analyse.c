@@ -199,7 +199,7 @@ void analyse(t_non *non){
       flucall+=x*x;
       x=0;
       for (j=0;j<non->singles;j++){
-        x+=Hamil_i_e[Sindex(i,j,N)];
+        if (i!=j) x+=Hamil_i_e[Sindex(i,j,N)];
       }
       x=x-average_coupling[i];
       Jfluctuation[i]+=x*x;

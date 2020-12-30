@@ -183,7 +183,7 @@ void luminescence(t_non *non){
 
   fclose(mu_traj),fclose(H_traj);
 
-  outone=fopen("RLum.dat","w");
+  outone=fopen("TD_Lum.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
   }
