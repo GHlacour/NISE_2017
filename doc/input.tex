@@ -98,7 +98,7 @@ In the energy file each snapshot is stored after a line containing the word SNAP
 of the snapshot (starting from 1). After this the upper tridiagonal matrix of the Hamiltonian snapshot is stored with one row on each line. The numbers are separated by a space. The dipole file also contain a line with the word SNAPSHOT and the number of that snapshot. This is followed by the transition dipoles stored with the x, y and z components for each site on one line separated by a space. Only the single excitation Hamiltonian and the transition dipoles from the ground state to the singly excited state are saved.
 
 
-\subsection{Full nonadiabatic simulation}
+\subsection{NISE (Full nonadiabatic simulation)}
 The nonadiabatic linear and third-order response can be simulated with the 'NISE' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in \cite{Jansen.2010.JCP.132.224503}.
 The coupling propagation scheme is described in \cite{Liang.2012.JCTC.8.1706}.
 The program require the Hamiltonian trajectory in binary format.
@@ -109,7 +109,7 @@ The NISE program use the following input:\\
 \item [Alphafile] [File name] (Only needed for SFG calculations)
 \item [Anharmonicfile] [File name]
 \item [Overtonedipolefile] [File name]
-\item [HamiltonianType] [Full/Coupling/TransitionDipole/ExtendedDipole] (Full is the default, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements. If TransitionDipole is specified the positions in the Positionfile and the transition-dipoles in the Dipolefile are used to calculate the couplings with the Transition-Dipole coupling scheme. As for the Coupling method the Hamiltonianfile only contains the diagonal elements. Dipoles are then assumed in Debye and Positions in \AA ngstr\"{o} m. If ExtendedDipole is selected the dipole magnitude is taken from the DipoleFile. The position of the two transition point-charges must be provided in a PositionFile, with the first point corresponding to odd timepoints and the second point corresponding to even timepoints.)
+\item [HamiltonianType] [Full/Coupling/TransitionDipole/ExtendedDipole] (Full is the default)
 \item [Couplingfile] [File name]
 \item [PDBfile] [File name]
 \item [Length] [Number of snapshots in trajectory] 
@@ -137,7 +137,7 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
 \item [Project] (Should be followed by two new lines. The first with Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero.)
-\item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.
+\item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.)
 \end{description}
 
 The minimum and maximum frequencies are used for two things. First, the average of minw1 and maxw1 are used to shift the frequencies during the simulation. By shifting all transitions by the
@@ -148,6 +148,8 @@ min and the max which reduce file size.
 The lifetime is currently only applied during the coherence times ($t_1$ and $t_3$ ) according 
 to the formula in \cite{Liang.2012.JCTC.8.1706}. The waiting time dependence can trivially be accounted for by 
 multiplying the whole spectrum with $\exp( -t_2 /T_1 )$.
+
+The HamiltonianType allow the use of different ways to store the Hamiltonian trajectories. The default setting is Full, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements. If TransitionDipole is specified the couplings are calculated on the fly using the transition-dipole coupling scheme. The chromophore positions must then be provided in the Positionfile and the transition-dipoles in the Dipolefile. As for the Coupling method the HamiltonianFile then only contains the diagonal elements. The dipoles are then assumed in Debye and Positions in \AA ngstr\"{o}m. If ExtendedDipole is selected the extended-dipole coupling scheme is used to calculate coupling on the fly. The dipole magnitude is then taken from the Dipolefile. The position of the two transition point-charges must be provided in the Positionfile, with the first point corresponding to odd timepoints and the second point corresponding to even timepoints.
 
 The double excitation Hamiltonian is propagated using the Trotter formula scheme\cite{Paarmann.2008.JCP.128.191103,Jansen.2010.JCP.132.224503}.
 

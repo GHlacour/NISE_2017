@@ -18,7 +18,7 @@ Not implemented yet (check NISE\_2015)
 \section{Ani (anisotropy)}
 Not implemented yet (check NISE\_2015)
 \section{DOS}
-The density of states is calculated using the sunction:
+The density of states is calculated using the response function:
 \begin{equation}
 	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/T_1).
 \end{equation}
@@ -32,7 +32,7 @@ Both the real and imaginary parts are stored. The Fourier transform is the frequ
 \section{Luminescence}
 The luminescence is calculated using the first-order response function
 \begin{equation}
-	I(t)=\sum_{\alpha}^{xyz}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{xyz}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function. 
 \section{LD (linear dichroism)}
