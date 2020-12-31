@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -1456,3 +1457,28 @@ void propagate_double_sparce_ES(t_non* non, float* Ur, float* Ui, int* R, int* C
     free(vr);
     free(vi);
 }
+
+/* Return the distance between two locations squared */
+float distance(float *rf,float *ri,int a,int b,int N,float box){
+  float d,r;
+  int x;
+  d=0;
+  for (x=0;x<3;x++){
+    r=rf[3*a+x]-ri[3*b+x];
+    if (r>box) r=r-box;
+    if (r<-box) r=r+box;
+    d+=r*r;
+  }
+  return d;
+}
+
+/* Return the distance between two locations along a direction x */
+float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x){
+  float r;
+  r=rf[3*a+x]-ri[3*b+x];
+  if (r>box) r=r-box;
+  if (r<-box) r=r+box;
+  return r;
+}
+
+

@@ -16,6 +16,7 @@
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
+#include "calc_Diffusion.h"
 #include "population.h"
 #include <mpi.h>
 
@@ -134,7 +135,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Exciton Diffusion routine
-    if (!strcmp(non->technique, "Dif")) { }
+    if (!strcmp(non->technique, "Dif")) {
+       calc_Diffusion(non);
+    }
 
     // Call the Anisotropy and Rotational Correlation routine
     if (!strcmp(non->technique, "Ani")) { }
