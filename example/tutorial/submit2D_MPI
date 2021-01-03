@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name NISE-Xlong
+#SBATCH --ntasks=7
+#SBATCH --cpus-per-task=16
+#SBATCH --time=0-00:30:00
+#SBATCH --partition=short
+#SBATCH --mem=6000
+#XXXSBATCH --profile=task
+#XXXSBATCH --acctg-freq=task=1
+ 
+export OMP_NUM_THREADS=32
+cd $SLURM_SUBMIT_DIR
+ 
+module load foss/2018a
+ 
+#time srun ~/NISE/bin/NISE input2D
+time srun ~/git/NISE_2017/bin/NISE input2D
