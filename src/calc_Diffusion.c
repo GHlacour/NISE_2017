@@ -16,8 +16,9 @@ void calc_Diffusion(t_non *non){
   float *Hamil_i_e;
   // Aid arrays
   float *vecr,*veci;
-  float *Pop,*pos_i,*pos_f,*Ori,*Anis;
+  float *Pop,*pos_i,*pos_f,*Ori;
   float dist[3];
+  float PopP,OriP;
 
   /* Floats */
   float shift1;
@@ -38,6 +39,8 @@ void calc_Diffusion(t_non *non){
   int elements;
   int cl,Ncl;
   int a,b;
+  int nthreads,mythread;
+  int nsamples;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -48,14 +51,21 @@ void calc_Diffusion(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
 
+  /* Determine number of threads */
+  #pragma omp parallel
+  {
+    nthreads=omp_get_num_threads();
+  }
+
+  printf("Using %d openMP threads.\n",nthreads);
+
   // Allocate memory
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
-  Pop=(float *)calloc(non->tmax,sizeof(float));
+  Pop=(float *)calloc(non->tmax1,sizeof(float));
   pos_i=(float *)calloc(non->singles*3,sizeof(float));
   pos_f=(float *)calloc(non->singles*3,sizeof(float));
-  Ori=(float *)calloc(non->tmax,sizeof(float));
-  Anis=(float *)calloc(non->tmax,sizeof(float));
+  Ori=(float *)calloc(non->tmax1,sizeof(float));
 
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
@@ -63,13 +73,14 @@ void calc_Diffusion(t_non *non){
     printf("Hamiltonian file not found!\n");
     exit(1);
   }
-  P_traj=fopen("Position.bin","rb");
+  P_traj=fopen(non->positionFName,"rb");
   if (P_traj==NULL){
     printf("Position file %s not found!\n","Position.bin");
     exit(1);
   }
   // Read box size
   fread(&box_size,sizeof(float),1,P_traj);
+  printf("Box size: %f Angstrom\n",box_size);
 
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
@@ -123,7 +134,6 @@ void calc_Diffusion(t_non *non){
 
   /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
-
     ti=samples*non->sample;
     if (non->cluster!=-1){
       if (read_cluster(non,ti,&cl,Cfile)!=1){
@@ -137,12 +147,14 @@ void calc_Diffusion(t_non *non){
     }
     if (non->cluster==-1 || non->cluster==cl){
       /* Initialize */
+      clearvec(vecr,non->singles*non->singles);
+      clearvec(veci,non->singles*non->singles);
       for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
-      
+         
       /* Read initial coordinates */
       fseek(P_traj,sizeof(float)*(1+ti*non->singles*3),SEEK_SET);
       fread(pos_i,sizeof(float),non->singles*3,P_traj);
-      for (t1=0;t1<non->tmax;t1++){
+      for (t1=0;t1<non->tmax1;t1++){
         tj=ti+t1;
         /* Read Hamiltonian */
         if (!strcmp(non->hamiltonian,"Coupling")){
@@ -161,14 +173,19 @@ void calc_Diffusion(t_non *non){
         fseek(P_traj,sizeof(float)*(1+tj*non->singles*3),SEEK_SET);
         fread(pos_f,sizeof(float),non->singles*3,P_traj);
         /* Calculate distance evolution of wave */
+        PopP=0;
+        #pragma parallel for reduction(+:PopP)
         for (a=0;a<non->singles;a++){
           for (b=0;b<non->singles;b++){
-            Pop[t1]+=vecr[a+b*non->singles]*vecr[a+b*non->singles]*distance(pos_f,pos_i,b,a,non->singles,box_size);
-            Pop[t1]+=veci[a+b*non->singles]*veci[a+b*non->singles]*distance(pos_f,pos_i,b,a,non->singles,box_size);
+            PopP+=vecr[a+b*non->singles]*vecr[a+b*non->singles]*distance(pos_f,pos_i,b,a,non->singles,box_size);
+            PopP+=veci[a+b*non->singles]*veci[a+b*non->singles]*distance(pos_f,pos_i,b,a,non->singles,box_size);
           }
         }
+        Pop[t1]+=PopP;
 
+        OriP=0;
         /* Calculate distance evolution of center */
+        #pragma parallel for reduction(+:OriP)
         for (a=0;a<non->singles;a++){
           dist[0]=0,dist[1]=0,dist[2]=0;
           for (x=0;x<3;x++){
@@ -177,8 +194,11 @@ void calc_Diffusion(t_non *non){
               dist[x]+=veci[a+b*non->singles]*veci[a+b*non->singles]*distance_x(pos_f,pos_i,b,a,non->singles,box_size,x);
             }
           }
-          Ori[t1]+=dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2];
+          OriP+=dist[0]*dist[0]+dist[1]*dist[1]+dist[2]*dist[2];
         }
+        Ori[t1]+=OriP;
+
+        #pragma parallel for
         for (a=0;a<non->singles;a++){
           /* Propagate vector */
           if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr+a*non->singles,veci+a*non->singles,non->ts,1);
@@ -201,19 +221,22 @@ void calc_Diffusion(t_non *non){
       }
     }
 
-    // Log time
-    log=fopen("NISE.log","a");
-    fprintf(log,"Finished sample %d\n",samples);
+    /* Log time */
+    if (mythread==0){
+      log=fopen("NISE.log","a");
+      fprintf(log,"Finished sample %d\n",samples);
           
-    time_now=log_time(time_now,log);
-    fclose(log);
+      time_now=log_time(time_now,log);
+      fclose(log);
+    }
   }
-
+  samples=non->end-1;
   free(vecr);
   free(veci);
   free(Hamil_i_e);
-
+  printf("Test End\n");
   // The calculation is finished, lets write output
+
   log=fopen("NISE.log","a");
   fprintf(log,"Finished Calculating Response!\n");
   fprintf(log,"Writing to file!\n");  
@@ -222,7 +245,7 @@ void calc_Diffusion(t_non *non){
   if (non->cluster!=-1){
     printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
     //    printf("Changing normalization to number of samples used.");
-    //    samples=Ncl;
+    // samples=Ncl;
     if (samples==0){ // Avoid dividing by zero
       samples=1;
     }
@@ -234,11 +257,14 @@ void calc_Diffusion(t_non *non){
   }
 
   /* Save time domain response */
-  outone=fopen("Dif.dat","w");
+  outone=fopen("RMSD.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f %e %e\n",t1*non->deltat,Pop[t1]/samples/non->singles,Ori[t1]/samples/non->singles);
   }
   fclose(outone);
+
+  free(Pop);
+  free(Ori);
 
   printf("----------------------------------------------\n");
   printf(" Diffusion calculation succesfully completed\n");
