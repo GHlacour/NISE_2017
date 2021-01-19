@@ -136,7 +136,9 @@ int main(int argc, char* argv[]) {
 
     // Call the Exciton Diffusion routine
     if (!strcmp(non->technique, "Dif")) {
-       calc_Diffusion(non);
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Diffusion(non);
     }
 
     // Call the Anisotropy and Rotational Correlation routine
@@ -146,12 +148,12 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "Absorption")) {
         // Does not support MPI
         if (parentRank == 0) {
-            if (!strcmp(non->hamiltonian, "Coupling")) {
+//            if (!strcmp(non->hamiltonian, "Coupling")) {
                 c_absorption(non);
-            }
-            else {
-                absorption(non);
-            }
+//            }
+//            else {
+//                absorption(non);
+//            }
         }
     }
 
