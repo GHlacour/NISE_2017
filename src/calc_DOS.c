@@ -160,6 +160,7 @@ void calc_DOS(t_non *non){
 	c_calc_DOS(re_S_1,im_S_1,t1,non,vecr,veci);
 
 	// Loop over vectors to propagate
+#pragma omp parallel for
 	for (i=0; i<non->singles; i++){
 	  j=i*non->singles;
 	  // Probagate vector
