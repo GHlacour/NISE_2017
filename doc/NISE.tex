@@ -3,7 +3,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{epstopdf}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage{listings}
 \usepackage{cite}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
@@ -152,6 +152,13 @@ Some considerations and examples to achieve higher performance:
 \end{itemize}
 
 \section{Changelog}
+\subsection{Version 3.4 in progress}
+{\small Work by Thomas Jansen}
+\begin{itemize}
+\item openMP parallel CD and DOS were implemented
+\item Diffusion calculations were added
+\item On the fly transition-dipole and extended-dipole coupling schemes were impemented
+\end{itemize}
 \subsection{Version 3.3}
 {\small Work by Thomas Jansen}
 \begin{itemize}
