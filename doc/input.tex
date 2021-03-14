@@ -2,7 +2,7 @@
 This chapter contain the description of the various input parameters, file formats, and output files for the NISE code.
 \section{Units}
 The code use wavenumbers (cm$^{-1}$) for frequencies and times are in femtoseconds (fs). Users are discouraged from trying to use other units at this may lead to numerical instabilities or unit conversion errors. The transition
-dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly.
+dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly. However, for using the on-the-fly coupling calculations the transition dipoles should be provided in Debye and positions should be provided in \AA ngstr\"{o}m. 
 
 \section{Programs}
 Overview over programs for calculating spectra and analysis:\\
@@ -64,7 +64,13 @@ format the double excited Hamiltonian might be provided afterwards again in a tr
 
 The dipole file has the following format.
 For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
-Then the x components of the transition dipole matrix are given in floats, followed by the y and z components. For the GROBIN format the transition dipole matrix for the single to double transitions is then given, again with the x components given first.
+Then the x components of the transition dipole matrix are given in floats, followed by the y and z components. For the GROBIN format the transition dipole matrix for the single to double transitions may then be given, again with the x components given first. In Figure \ref{fig:filestructure} the format of the file is also illustrated.
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=10cm]{file_structure.pdf}
+\end{center}
+\caption{\label{fig:filestructure}The file structure for the dipole, and position files.}
+\end{figure}
 
 The anharmonicity file is only given in the SKIBIN format.
 For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
@@ -79,6 +85,8 @@ has the following format. For each snapshot in the trajectory they contain first
 typically containing the number of the snapshot. This integer is not used in the calculation, 
 but can be used for control purposes. Then the xx components of the transition polarizability
 matrix are given in floats, followed by the yy and zz components. 
+
+The position files are available in the GROBIN format and used to store either the center positions of the chromophores or the positions of the two sites in each chromophore defining the extended dipole coupling. This file is used when calculating CD spectra, excition diffusion, or when using the on-the-fly coupling calculations. The structure of the file is as for the dipole files (see Figure \ref{fig:filestructure}).
 
 \noindent
 \underline{GROASC:}\\

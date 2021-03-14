@@ -43,6 +43,9 @@ void dipole_double_last_ES(t_non *non,float *dipole,float *cr,float *ci,float *f
 int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
 void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m,float *Anh);
 void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);
+float distance(float *rf,float *ri,int a,int b,int N,float box);
+float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x);
+
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing

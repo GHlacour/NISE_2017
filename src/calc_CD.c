@@ -13,6 +13,7 @@
 void calc_CD(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
+  float *re_S_1j,*im_S_1j; // Before avaraging
   float *mu_eg,*Hamil_i_e;
   float *pos;
   float posj;
@@ -54,10 +55,12 @@ void calc_CD(t_non *non){
 
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
-  im_S_1=(float *)calloc(non->tmax,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax,sizeof(float));  
   nn2=non->singles*(non->singles+1)/2;
   N=non->singles;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
+  re_S_1j=(float *)calloc(non->tmax*N,sizeof(float));
+  im_S_1j=(float *)calloc(non->tmax*N,sizeof(float));
 
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
@@ -112,10 +115,8 @@ void calc_CD(t_non *non){
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
-  vecr=(float *)calloc(non->singles,sizeof(float));	
-  veci=(float *)calloc(non->singles,sizeof(float));
-//  vecr_old=(float *)calloc(non->singles,sizeof(float));
-//  veci_old=(float *)calloc(non->singles,sizeof(float));
+  vecr=(float *)calloc(non->singles*non->singles,sizeof(float));	
+  veci=(float *)calloc(non->singles*non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
   pos=(float *)calloc(non->singles,sizeof(float));
 
@@ -138,95 +139,99 @@ void calc_CD(t_non *non){
     }
     if (non->cluster==-1 || non->cluster==cl){
 
-    // Loop over initial sites
-    for (j=0;j<N;j++){ 
-
-    // Loop over polarizations of the initial excitation      
-    for (x=0;x<3;x++){
-      // Read mu(ti)
-      if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
-	printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	printf("ITIME %d %d\n",ti,x);
-	exit(1);
-      }
-      // Initialize excitation on initial site
-      clearvec(vecr,non->singles);
-      clearvec(veci,non->singles);
-      vecr[j]=mu_eg[j];
-//      copyvec(vecr,vecr_old,non->singles);
-//      copyvec(vecr,mu_eg,non->singles);
-      // Loop over delay
-      for (t1=0;t1<non->tmax;t1++){
-	tj=ti+t1;
-	// Read Hamiltonian
-	if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+      // Loop over polarizations of the initial excitation      
+      for (x=0;x<3;x++){
+        // Read mu(ti)
+        if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
+  	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	  printf("ITIME %d %d\n",ti,x);
 	  exit(1);
-	}
-
-        // Loop over polarization values y for mu
-        for (y=0;y<3;y++){
-          // Exclude values taken up by the first interaction
-          if (y!=x){	
-            // Find corresponding value for the polarization used for the distance matrix
-            z=3-x-y;
-	    // Read mu(tj)
-	    if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
-	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	      printf("JTIME %d %d\n",tj,y);
-	      exit(1);
-            }
-            // Read positions
-            if (read_mue(non,pos,pos_traj,tj,z)!=1){
-              printf("Position trajectory file to short, could not fill buffer!!!\n");
-              printf("JTIME %d %d\n",tj,z);
-              exit(1);
-            }
-            posj=pos[j];
-	    // Do projection on selected sites if asked
-	    if (non->Npsites>0){
-	      projection(mu_eg,non);
-	    }
-	
-            sign=0;
-            // Determine the sign
-            if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
-            if (z==0 & y==2 & x==1){sign=-1;}//{}sign=-1;}
-            if (z==1 & y==0 & x==2){sign=-1;}//{sign=-1;}
-            if (z==2 & y==0 & x==1){sign=1;}//{sign=1;}
-            if (z==2 & y==1 & x==0){sign=-1;}//{sign=-1;}
-            if (z==1 & y==2 & x==0){sign=1;}//{sign=1;}
-            if (sign==0){
-              printf("Bug in CD routine.\n");
-              exit(1);
-            }
-
-	    // Find response
-	    calc_CD1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,pos,sign,posj);
-	  }
         }
-
-	// Propagate vector
-	if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
-	if (non->propagation==0){
-	  if (non->thres==0 || non->thres>1){
-	    propagate_vec_DIA(non,Hamil_i_e,vecr,veci,1);
-	  } else {
-	    elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr,veci,1);
-	    if (samples==non->begin){
-	      if (t1==0){
-		if (x==0){
-		  printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
-		  printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
-		  printf("Suggested truncation %f.\n",0.001);
-		}
-	      }
-	    }
+        // Initialize excitation on initial site
+        clearvec(vecr,non->singles*non->singles);
+        clearvec(veci,non->singles*non->singles);
+        
+        // Loop over initial sites
+        for (j=0;j<N;j++){
+          vecr[j+j*N]=mu_eg[j];
+        }
+        
+        // Loop over delay
+        for (t1=0;t1<non->tmax;t1++){
+	  tj=ti+t1;
+	  // Read Hamiltonian
+	  if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
+	    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+            exit(1);
 	  }
-	}
+
+          // Loop over polarization values y for mu
+          for (y=0;y<3;y++){
+            // Exclude values taken up by the first interaction
+            if (y!=x){	
+              // Find corresponding value for the polarization used for the distance matrix
+              z=3-x-y;
+	      // Read mu(tj)
+	      if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
+	        printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	        printf("JTIME %d %d\n",tj,y);
+	        exit(1);
+              }
+              // Read positions
+              if (read_mue(non,pos,pos_traj,tj,z)!=1){
+                printf("Position trajectory file to short, could not fill buffer!!!\n");
+                printf("JTIME %d %d\n",tj,z);
+                exit(1);
+              }
+ //             posj=pos[j];
+              // Do projection on selected sites if asked
+	      if (non->Npsites>0){
+	        projection(mu_eg,non);
+              }
+	      
+              sign=0;
+              // Determine the sign
+              if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
+              if (z==0 & y==2 & x==1){sign=-1;}//{}sign=-1;}
+              if (z==1 & y==0 & x==2){sign=-1;}//{sign=-1;}
+              if (z==2 & y==0 & x==1){sign=1;}//{sign=1;}
+              if (z==2 & y==1 & x==0){sign=-1;}//{sign=-1;}
+              if (z==1 & y==2 & x==0){sign=1;}//{sign=1;}
+              if (sign==0){
+                printf("Bug in CD routine.\n");
+                exit(1);
+              }
+
+	      // Find response
+              calc_CD1(re_S_1j,im_S_1j,t1,non,vecr,veci,mu_eg,pos,sign);
+	    }
+          }
+          
+	  // Propagate vector
+#pragma omp parallel for
+          for (j=0;j<non->singles;j++){
+	    if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr+j*N,veci+j*N,non->ts,1);
+	    if (non->propagation==0){
+	      if (non->thres==0 || non->thres>1){
+	        propagate_vec_DIA(non,Hamil_i_e,vecr+j*N,veci+j*N,1);
+	      } else {
+	        elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr+j*N,veci+j*N,1);
+	        if (samples==non->begin){
+	          if (t1==0){
+		    if (x==0){
+                      if (j==0){
+		        printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
+		        printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
+		        printf("Suggested truncation %f.\n",0.001);
+		      }
+	            }
+	          }
+	        }
+	      }
+            }
+          }
+        }
       }
-    }
-    }
     } // Cluster loop
   
     // Log time
@@ -241,6 +246,14 @@ void calc_CD(t_non *non){
   free(veci);
   free(mu_eg);
   free(Hamil_i_e);
+
+  // Sum over results from different chrompohores
+  for (t1=0;t1<non->tmax;t1++){
+    for (j=0;j<N;j++){
+      re_S_1[t1]+=re_S_1j[t1+j*non->tmax];
+      im_S_1[t1]+=im_S_1j[t1+j*non->tmax]; 
+    }
+  } 
 
   // The calculation is finished, lets write output
   log=fopen("NISE.log","a");
@@ -272,6 +285,7 @@ void calc_CD(t_non *non){
   do_1DFFT(non,"CD.dat",re_S_1,im_S_1,samples);
 
   free(re_S_1),free(im_S_1);
+  free(re_S_1j),free(im_S_1j);
 
   printf("----------------------------------------------\n");
   printf(" CD calculation succesfully completed\n");
@@ -280,11 +294,14 @@ void calc_CD(t_non *non){
   return;
 }	
 
-void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign,float posj){
+void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign){
   int i,j;  
-  for (i=0;i<non->singles;i++){
-    re_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*cr[i];
-    im_S_1[t1]+=sign*(pos[i]-posj)*mu[i]*ci[i];
+#pragma omp parallel for
+  for (j=0;j<non->singles;j++){
+    for (i=0;i<non->singles;i++){
+      re_S_1[t1+j*non->tmax]+=sign*(pos[i]-pos[j])*mu[i]*cr[i+j*non->singles];
+      im_S_1[t1+j*non->tmax]+=sign*(pos[i]-pos[j])*mu[i]*ci[i+j*non->singles];
+    }
   }
   return;
 }

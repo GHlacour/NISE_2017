@@ -16,6 +16,7 @@
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
+#include "calc_Diffusion.h"
 #include "population.h"
 #include <mpi.h>
 
@@ -134,7 +135,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Exciton Diffusion routine
-    if (!strcmp(non->technique, "Dif")) { }
+    if (!strcmp(non->technique, "Dif")) {
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Diffusion(non);
+    }
 
     // Call the Anisotropy and Rotational Correlation routine
     if (!strcmp(non->technique, "Ani")) { }
@@ -143,12 +148,12 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "Absorption")) {
         // Does not support MPI
         if (parentRank == 0) {
-            if (!strcmp(non->hamiltonian, "Coupling")) {
+//            if (!strcmp(non->hamiltonian, "Coupling")) {
                 c_absorption(non);
-            }
-            else {
-                absorption(non);
-            }
+//            }
+//            else {
+//                absorption(non);
+//            }
         }
     }
 

@@ -13,7 +13,7 @@ if(GENERATE_DOCS AND LATEX_COMPILER AND BIBTEX_COMPILER)
     add_latex_document(
         NISE.tex
         INPUTS tableofcontents.tex developers.tex techniques.tex input.tex tutorial.tex
-        IMAGES 2ds.pdf cover.png
+        IMAGES 2ds.pdf cover.png file_structure.pdf
         BIBFILES Merged2016.bib
         TARGET_NAME doc
         EXCLUDE_FROM_ALL
