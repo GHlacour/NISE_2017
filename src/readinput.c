@@ -103,6 +103,9 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Read Endpoint
         if (keyWordI("EndPoint", Buffer, &non->end, LabelLength) == 1) continue;
 
+        // Read t2 propagation method
+        if (keyWordI("PropT2", Buffer, &non->prop_t2, LabelLength) == 1) continue;
+
         // Read Lifetime
         if (keyWordF("Lifetime", Buffer, &non->lifetime, LabelLength) == 1) continue;
 
