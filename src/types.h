@@ -51,6 +51,7 @@ typedef struct {
   int ts;
   int interpol;
   int propagation;
+  int prop_t2;
   float lifetime;
   float deltat;
   int buffer,singles,doubles;
