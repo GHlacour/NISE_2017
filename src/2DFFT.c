@@ -9,8 +9,9 @@
 
 #define round(x) ((x)>0?(long)(x+0.5):(long)(x-0.5))
 
-/* This program take the Fourier transform of kI and kII processes */
-
+/* This program takes the Fourier transform of kI and kII processes */
+/* and adds up the results to get the absorptive 2D spectra. */
+/* The process is identical for 2DIR and 2DUVvis type spectra. */
 int main(int argc,char *argv[]){
   int fft;
   fftw_complex *fftIn,*fftOut;
@@ -260,7 +261,10 @@ int main(int argc,char *argv[]){
     input=fopen(timeFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",timeFName);
-      exit(0);
+//      exit(0); Changed April 2021 to simply skip to the next polarization
+//      if the response function is missing for this one. TLC
+      printf("Warning: Skipping this response function polarization!\n"); 
+	continue;
     }
     
     printf("Reading response function (kI) file!\n");
@@ -382,7 +386,9 @@ int main(int argc,char *argv[]){
     input=fopen(timeFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",timeFName);
-      exit(0);
+//      exit(0); April 2021 Skips if the polarization is missing.
+      printf("Warning: Skipping this response function polarization!\n");
+      continue; 
     }
     
     printf("Reading response function file (kII)!\n");
@@ -557,7 +563,9 @@ int main(int argc,char *argv[]){
     input=fopen(kIFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",kIFName);
-      exit(0);
+      //exit(0);
+      printf("Warning: Skipping this response function polarization!\n");
+      continue;
     }
     printf("Reading response function file (kI)!\n");
     for (i=1;i<=p1I;i++){
@@ -572,7 +580,8 @@ int main(int argc,char *argv[]){
     input=fopen(kIIFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",kIIFName);
-      exit(0);
+      //exit(0);
+      printf("Warning: Skipping this response function polarization!\n");
     }
     printf("Reading response function file (kII)!\n");
     for (i=1;i<=p1II;i++){
