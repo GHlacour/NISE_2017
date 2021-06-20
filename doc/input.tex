@@ -144,7 +144,7 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
-\item [Project] (Should be followed by two new lines. The first with Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero.)
+\item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read Projectfile [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers.)
 \item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.)
 \end{description}
 

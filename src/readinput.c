@@ -331,6 +331,8 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
     char Buf[256];
     int i, NN, j;
     char* pStatus;
+    FILE* projectFile;
+    char projectFName[256];
 
     if (!strncmp(&Buffer[0], &keyWord[0], 6)) {
         printf("%s:\n", keyWord);
@@ -339,6 +341,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
         // Select
         pStatus = fgets(&Buf[0], sizeof(Buf), inputFile);
         printf("%s", Buf);
+        /* Proceed here if site numbers are provided directly in input file */
         if (!strncmp(&Buf[0], "Sites", 5)) {
             sscanf(Buf, "%s %d", dummy, &NN);
             //      printf("%d\n",NN);
@@ -354,9 +357,39 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
                     //	  printf("MS %d %d\n",i,modify->select[i]);
                 }
             }
-        }
-        else {
-            printf("Sites keyword not found after Project!\n");
+        /* Proceed here if site numbers are provided in a separate file */
+        } else if (!strncmp(&Buf[0], "Projectfile", 11)) {
+          pValue = &Buf[11];
+          while (*pValue == ' ') {
+            pValue++;
+          }
+          /* Read file name */
+          sscanf(Buf, "%s %s", dummy, &projectFName);
+          printf("Reading sites to project on from %s\n", &projectFName);
+          /* Read projection file */
+          projectFile=fopen(projectFName,"r");
+          if (projectFile == NULL) {
+             printf("Projectfile %d not found!\n",&projectFName);
+             exit(-1);
+          }
+
+          fscanf(projectFile, "%d ", &NN);
+          printf("Projecting on the following %d sites:\n",NN);
+          non->psites = (int *)calloc(N, sizeof(int));
+          for (i = 0; i < NN; i++) {
+              if (NN != N) {
+                  fscanf(projectFile, "%d ", &j);
+                  non->psites[j] = 1;
+                  printf("%d ", j);
+              }
+              else {
+                  non->psites[i] = 1;
+     //             printf("MS %d %d\n",i,modify->select[i]);
+              }
+          }       
+          fclose(projectFile);
+        } else {
+            printf("Neither Sites nor Projectfile keyword not found after Project!\n");
             exit(-1);
         }
         printf("\n");

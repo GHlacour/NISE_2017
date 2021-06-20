@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name NISE-Xlong
-#SBATCH --ntasks=7
-#SBATCH --cpus-per-task=16
+#SBATCH --ntasks=4
+#SBATCH --cpus-per-task=4
 #SBATCH --time=0-00:30:00
 #SBATCH --partition=short
 #SBATCH --mem=6000
 #XXXSBATCH --profile=task
 #XXXSBATCH --acctg-freq=task=1
  
-export OMP_NUM_THREADS=32
+export OMP_NUM_THREADS=16
 cd $SLURM_SUBMIT_DIR
  
 module load foss/2018a
