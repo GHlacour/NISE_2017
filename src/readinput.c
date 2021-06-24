@@ -349,6 +349,12 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
             for (i = 0; i < NN; i++) {
                 if (NN != N) {
                     fscanf(inputFile, "%d ", &j);
+                    if (non->psites[j] ==1){
+                       printf("\n\nSite %d was defined twice for projection!\n",j);
+                       printf("Check your list of sites in the input file.\n");
+                       printf("Aborting calculation.\n");
+                       exit(0);
+                    }
                     non->psites[j] = 1;
                     printf("%d ", j);
                 }
@@ -379,6 +385,12 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
           for (i = 0; i < NN; i++) {
               if (NN != N) {
                   fscanf(projectFile, "%d ", &j);
+                  if (non->psites[j] ==1){
+                     printf("\n\nSite %d was defined twice for projection!\n",j);
+                     printf("Check your list of sites in the file: %s \n",&projectFName);
+                     printf("Aborting calculation.\n");
+                     exit(0);
+                  }
                   non->psites[j] = 1;
                   printf("%d ", j);
               }
