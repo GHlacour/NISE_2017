@@ -94,6 +94,16 @@ void population(t_non *non){
     printf("The transfer rates are between eigenstates.\n");
   }
 
+  if (non->propagation==1){
+    printf("==============================================================\n");
+    printf("You cannot use the Coupling propagation scheme for Popultation\n");
+    printf("calculations! Please, use the 'Propagation Sparse' option.\n");
+    printf("Use 'Threshold 0.0' for highest accuracy.\n");
+    printf("Aborting run now.\n");
+    printf("==============================================================\n");
+    exit(0);
+  }
+
   // Find average basis
   if (!strcmp(non->basis,"Average")){
     for (samples=non->begin;samples<non->end;samples++){
@@ -218,12 +228,12 @@ void population(t_non *non){
           elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr+a*non->singles,veci+a*non->singles,1);
           if (samples==non->begin && a==0){
             if (t1==0){
-              printf("\n");
-              printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-              printf("WARNING!!! You are propagating the population with the Coupling scheme!\n");
-              printf("This may lead to large errors and carefull testing to the Trotter setting\n");
-              printf("must be performed. The Coupling scheme is often only reliable for short times.\n");
-              printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+//              printf("\n");
+//              printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+//              printf("WARNING!!! You are propagating the population with the Coupling scheme!\n");
+//              printf("This may lead to large errors and carefull testing to the Trotter setting\n");
+//              printf("must be performed. The Coupling scheme is often only reliable for short times.\n");
+//              printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
               printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
               printf("Pressent tuncation %f.\n",non->thres/(non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts));
               printf("Suggested truncation %f.\n",0.001);
