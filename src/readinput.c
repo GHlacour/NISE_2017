@@ -370,12 +370,12 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
             pValue++;
           }
           /* Read file name */
-          sscanf(Buf, "%s %s", dummy, &projectFName);
-          printf("Reading sites to project on from %s\n", &projectFName);
+          sscanf(Buf, "%s %s", dummy, projectFName);
+          printf("Reading sites to project on from %s\n", projectFName);
           /* Read projection file */
           projectFile=fopen(projectFName,"r");
           if (projectFile == NULL) {
-             printf("Projectfile %d not found!\n",&projectFName);
+             printf("Projectfile %s not found!\n",projectFName);
              exit(-1);
           }
 
@@ -387,7 +387,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
                   fscanf(projectFile, "%d ", &j);
                   if (non->psites[j] ==1){
                      printf("\n\nSite %d was defined twice for projection!\n",j);
-                     printf("Check your list of sites in the file: %s \n",&projectFName);
+                     printf("Check your list of sites in the file: %s \n",projectFName);
                      printf("Aborting calculation.\n");
                      exit(0);
                   }
