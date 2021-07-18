@@ -96,10 +96,10 @@ void population(t_non *non){
 
   if (non->propagation==1){
     printf("==============================================================\n");
-    printf("You cannot use the Coupling propagation scheme for Popultation\n");
+    printf(RED "You cannot use the Coupling propagation scheme for Popultation\n");
     printf("calculations! Please, use the 'Propagation Sparse' option.\n");
     printf("Use 'Threshold 0.0' for highest accuracy.\n");
-    printf("Aborting run now.\n");
+    printf("Aborting run now.\n" RESET);
     printf("==============================================================\n");
     exit(0);
   }
