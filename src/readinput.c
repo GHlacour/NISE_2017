@@ -30,12 +30,15 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->cluster = -1; // Average over all snapshots no clusters
     non->fft = 0;
     non->printLevel = 1; // Set to standard print level
+    non->tmax1=256;
+    non->tmax2=0;
+    non->tmax3=256;
     sprintf(non->basis, "Local");
     sprintf(non->hamiltonian, "Full");
 
     if (argc < 2) {
-        printf("Specify input file name on command line!\n");
-        printf("Program terminated!\n");
+        printf(RED "Specify input file name on command line!\n");
+        printf("Program terminated!\n" RESET);
         exit(-1);
     }
     else {
@@ -183,15 +186,15 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->tmax = non->tmax1;
     /* Is the length large enough? */
     if (non->length < non->tmax1 + non->tmax2 + non->tmax3) {
-        printf("The trajectory length is too small!\n");
-        printf("It must be longer than %d snapshots.\n", non->tmax1 + non->tmax2 + non->tmax3);
+        printf(RED "The trajectory length is too small!\n");
+        printf("It must be longer than %d snapshots.\n" RESET, non->tmax1 + non->tmax2 + non->tmax3);
         exit(0);
     }
 
     // Check RunTimes keyword setting
     if (non->tmax1 == 0) {
-        printf("First runtime variable is zero.\n");
-        printf("You need to specify the RunTimes keyword!\n");
+        printf(RED "First runtime variable is zero.\n");
+        printf("You need to specify the RunTimes keyword!\n" RESET);
         exit(0);
     }
 
@@ -206,7 +209,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     if (!strcmp(prop, "Diagonal")) {
         non->propagation = 2;
         printf("\nUsing propagation with full diagonalization!\n\n");
-        printf("Presently NOT implemented. Use sparse with no cutoff!\n");
+        printf(RED "Presently NOT implemented. Use sparse with no cutoff!\n" RESET);
         exit(0);
     }
 
@@ -223,8 +226,10 @@ void readInput(int argc, char* argv[], t_non* non) {
         printf("smaller than this value.\n");
     }
 
-    if ((!strcmp(non->technique, "2D")) || (!strcmp(non->technique, "GB")) || (!strcmp(non->technique, "SE")) || (!
-        strcmp(non->technique, "EA")) || (!strcmp(non->technique, "noEA")) || (!strcmp(non->technique, "2DSFG"))) {
+    if ((!strcmp(non->technique, "2DIR")) || (!strcmp(non->technique, "GBIR")) || (!strcmp(non->technique, "SEIR")) ||
+     (!strcmp(non->technique, "EAIR")) || (!strcmp(non->technique, "noEAIR")) || (!strcmp(non->technique, "2DUVvis")) ||
+     (!strcmp(non->technique, "EAUVvis")) || (!strcmp(non->technique, "noEAUVvis")) || (!strcmp(non->technique, "2DSFG")) ||
+     (!strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "GBUVvis"))) {
         printf("\nThe waiting time will be %f fs.\n\n", non->tmax2 * non->deltat);
     }
 
@@ -350,9 +355,9 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
                 if (NN != N) {
                     fscanf(inputFile, "%d ", &j);
                     if (non->psites[j] ==1){
-                       printf("\n\nSite %d was defined twice for projection!\n",j);
+                       printf(RED "\n\nSite %d was defined twice for projection!\n",j);
                        printf("Check your list of sites in the input file.\n");
-                       printf("Aborting calculation.\n");
+                       printf("Aborting calculation.\n" RESET);
                        exit(0);
                     }
                     non->psites[j] = 1;
@@ -375,7 +380,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
           /* Read projection file */
           projectFile=fopen(projectFName,"r");
           if (projectFile == NULL) {
-             printf("Projectfile %s not found!\n",projectFName);
+             printf(RED "Projectfile %s not found!\n" RESET,projectFName);
              exit(-1);
           }
 
@@ -386,9 +391,9 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
               if (NN != N) {
                   fscanf(projectFile, "%d ", &j);
                   if (non->psites[j] ==1){
-                     printf("\n\nSite %d was defined twice for projection!\n",j);
+                     printf(RED "\n\nSite %d was defined twice for projection!\n",j);
                      printf("Check your list of sites in the file: %s \n",projectFName);
-                     printf("Aborting calculation.\n");
+                     printf("Aborting calculation.\n" RESET);
                      exit(0);
                   }
                   non->psites[j] = 1;
@@ -401,7 +406,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
           }       
           fclose(projectFile);
         } else {
-            printf("Neither Sites nor Projectfile keyword not found after Project!\n");
+            printf(RED "Neither Sites nor Projectfile keyword found after Project!\n" RESET);
             exit(-1);
         }
         printf("\n");
