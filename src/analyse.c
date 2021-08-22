@@ -19,6 +19,7 @@ void analyse(t_non *non){
   float *Jfluctuation;
   float *mu_eg,*Hamil_i_e,*H,*e;
   float participation_ratio;
+  float local_participation_ratio;
   float *cEig,*dip2,*cDOS;
 
   // Aid arrays
@@ -115,6 +116,7 @@ void analyse(t_non *non){
 
 
   participation_ratio=0;
+  local_participation_ratio=0;
   avall=0;
   flucall=0;
   counts=0;
@@ -144,6 +146,7 @@ void analyse(t_non *non){
     }
     build_diag_H(Hamil_i_e,H,e,N);
     participation_ratio+=calc_participation_ratio(N,H);
+    local_participation_ratio+=calc_local_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
     find_dipole_mag(non,dip2,samples,mu_traj,H);
     counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
     // Find Averages
@@ -241,14 +244,19 @@ void analyse(t_non *non){
   }
 
   participation_ratio/=(non->singles*Nsam);
+  local_participation_ratio/=counts;
   printf("===================================\n");
   printf("Result of Hamiltonian analysis:\n");
   printf("Delocalization size according to\n");
   printf("Thouless, Phys. Rep. 13:93 (1974)\n");
+  printf("for full Hamiltonian:\n");
   printf("R=%f\n",participation_ratio);
+  printf("for selected frequency range\n");
+  printf("(%f to %f) cm-1:\n",non->min1,non->max1);
+  printf("R=%f\n",local_participation_ratio);
   printf("Average site frequency %f cm-1.\n",avall+non->shifte);
   printf("Overall standard deviation of site\n");
-  printf("frequencies from averall average:\n");
+  printf("frequencies from overall average:\n");
   printf("%f cm-1.\n",flucall);
   printf("===================================\n");
 
@@ -306,6 +314,26 @@ float calc_participation_ratio(int N,float *H){
     parti+=1.0/inter;
   }
 
+  return parti;
+}
+
+/* Find Participation Ratio for states in given energy range */
+float calc_local_participation_ratio(int N,float *H,float min,float max,float *e,float shift){
+  int i,j,a,b;
+  float inter,parti;
+
+  parti=0;
+  for (i=0;i<N;i++){
+    inter=0;
+    // Loop over sites
+    if (e[i]>min-shift && e[i]<max-shift){
+      for (j=0;j<N;j++){
+          inter+=H[i+N*j]*H[i+N*j]*H[i+N*j]*H[i+N*j];
+      }
+      parti+=1.0/inter;
+    }
+  }
+ 
   return parti;
 }
 
