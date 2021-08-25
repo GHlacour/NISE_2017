@@ -21,6 +21,7 @@ void analyse(t_non *non){
   float participation_ratio;
   float local_participation_ratio;
   float *cEig,*dip2,*cDOS;
+  float *rho,*local_rho,*spec_rho;
 
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
@@ -28,6 +29,7 @@ void analyse(t_non *non){
   /* Floats */
   float shift1;
   float x;
+  float normal;
 
   /* File handles */
   FILE *H_traj,*mu_traj,*PDF_traj;
@@ -68,6 +70,9 @@ void analyse(t_non *non){
   cEig=(float *)calloc(N,sizeof(float));
   cDOS=(float *)calloc(N,sizeof(float));
   dip2=(float *)calloc(N,sizeof(float));
+  rho=(float *)calloc(N*N,sizeof(float));
+  local_rho=(float *)calloc(N*N,sizeof(float));
+  spec_rho=(float *)calloc(N*N,sizeof(float));
 
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
@@ -148,6 +153,7 @@ void analyse(t_non *non){
     participation_ratio+=calc_participation_ratio(N,H);
     local_participation_ratio+=calc_local_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
     find_dipole_mag(non,dip2,samples,mu_traj,H);
+    calc_densitymatrix(non,rho,local_rho,spec_rho,H,e,dip2);
     counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
     // Find Averages
     for (i=0;i<non->singles;i++){
@@ -266,6 +272,39 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++){
     fprintf(outone,"%d %f %f %f %F %f %f\n",i,average_frequency[i]+non->shifte,fluctuation[i],average_coupling[i],Jfluctuation[i],cEig[i]/counts,cDOS[i]/counts);
   }
+  fclose(outone);
+
+  outone=fopen("LocalDensityMatrix.dat","w");
+  if (outone==NULL){
+    printf("Problem encountered opening LocalDensityMatrix.dat for writing.\n");
+    printf("Disk full or write protected?\n");
+    exit(1);
+  }
+  normal=0; /* Normalize Density Matrix */
+  for (i=0;i<non->singles;i++) normal+=local_rho[i+non->singles*i];
+  for (i=0;i<non->singles;i++){
+    for (j=0;j<non->singles;j++){
+      fprintf(outone,"%f ",local_rho[i+non->singles*j]/normal);
+    }
+    fprintf(outone,"\n");
+  }
+  fclose(outone);
+
+  outone=fopen("SpectralDensityMatrix.dat","w");
+  if (outone==NULL){
+    printf("Problem encountered opening SpectralDensityMatrix.dat for writing.\n");
+    printf("Disk full or write protected?\n");
+    exit(1);
+  }
+  normal=0; /* Normalize Density Matrix */
+  for (i=0;i<non->singles;i++) normal+=spec_rho[i+non->singles*i];
+  for (i=0;i<non->singles;i++){
+    for (j=0;j<non->singles;j++){
+      fprintf(outone,"%f ",spec_rho[i+non->singles*j]/normal);
+    }
+    fprintf(outone,"\n");
+  }
+  fclose(outone);
 
   free(average_frequency);
   free(fluctuation);
@@ -279,6 +318,9 @@ void analyse(t_non *non){
   free(H);
   free(e);
   free(dip2);
+  free(rho);
+  free(local_rho);
+  free(spec_rho);
   
   // The calculation is finished, lets write output
   log=fopen("NISE.log","a");
@@ -287,7 +329,6 @@ void analyse(t_non *non){
   fclose(log);
 
   fclose(mu_traj),fclose(H_traj);
-  fclose(outone);
   if (non->cluster!=-1){
     fclose(Cfile);
   } 
@@ -388,4 +429,32 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H){
   free(dip);
   free(dipeb);
   return;
+}
+
+/* Calculate full density matrix and density matrix is specific frequency
+ * range in the site basis */
+void calc_densitymatrix(t_non *non,float *rho,float *local_rho,float *spec_rho,float *H,float* e,float *dip2){
+  int i,j,k,N;
+  float shift,d;
+  float max,min;
+
+  N=non->singles;
+  shift=non->shifte;
+  min=non->min1;
+  max=non->max1;
+  /* Loop over eigenstates */
+  for (i=0;i<N;i++){
+    /* Loop over sites */
+    for (j=0;j<N;j++){
+      for (k=0;k<N;k++){
+        /* Find density matrix element */
+        d=H[i+j*N]*H[i+k*N];
+        rho[j+k*N]+=d;
+        if (e[i]>min-shift && e[i]<max-shift){
+          local_rho[j+k*N]+=d;
+          spec_rho[j+k*N]+=d*dip2[i];
+        }
+      }
+    }
+  }        
 }
