@@ -1,5 +1,5 @@
 \chapter{\label{chap:techniques}Details on the available techniques}
-In this Chapter, more details on special options and the theory behind each technique is given. The techniques marked with a star (*) are implemented with OpenMP and MPI options, while techniques implemented with OpenMP options are marked with a plus (+). All other techniques are implemented as single CPU. 
+In this Chapter, more details on special options and the theory behind each technique is given. The techniques marked with a star (*) are implemented with OpenMP and MPI options (see \cite{Sardjan_2020}), while techniques implemented with OpenMP options are marked with a plus (+). All other techniques are implemented as single CPU. 
 \section{Analyse}
 The Hamiltonian is analysed and different statistical properties are provided including the average delocalization size of Thouless \cite{Thouless.1974.PR.13.93}. This inverse participation ratio (IPR) is expressed as:
 \begin{equation}
@@ -14,7 +14,8 @@ P_{fi}(t)=\langle |U_{fi}(t,0)|^2 \rangle
 \end{equation}
 Here $f$ and $i$ are the final and initial sites. Generally two files are generated. In Pop.dat average of the population remaining on the initial site ($P_{ii}$) is calculated resulting in a value starting at 1 (all popiulation is on the initial state) and decaying to the equilibrium value 1/N (equal population on all states). In the PopF.dat file a full matrix op all combinations of initial and final states is given. The columns start start with the first initial state and all possible final states continuing to the second possible initial state and all possible final states. This file may be very large for large system sizes!
 \section{Dif (diffusion)$^{+}$}
-The mean square displacement of excitons are calculated using the positions provided in the Positions file. Two diffusion properties are calculated. The diffusion of the exciton center is calculated by calculating the center of the excitation given it started on a specific site $j$: $x_{\textrm{ex},i}(t)=\langle \sum_j (x_j(t)-x_i(0)) |U_{ji}(t,0)|^2$ and then determining the mean square displacement as $MSD_{\textrm{ex}}(t)=\langle \sum_i  x_{\textrm{ex},i}(t)^2\rangle$. The other measure is based on the probability of starting on one site and being detected on another site $MSD_{\textrm{site}}(t)=\langle \sum_{ji} (x_j(t)-x_i(0))|U_{ji}(t,0)|^2\rangle$. $MSD_{\textrm{site}}(t)$ is stored in the second column of the Dif.dat output file and $MSD_{\textrm{ex}}(t)$ is stored in the third column. The first column contain the time in femtoseconds. The unit for the mean square displacements is the distance unit provided on the position file (\AA ngstr\"{o}m recommended) squared per femtosecond. 
+The mean square displacement of excitons are calculated using the positions provided in the Positions file. Periodic boundary conditions are applied assuming a cube box. The box size must be provided in the first column of the Positions file.
+Two diffusion properties are calculated. The diffusion of the exciton center is calculated by calculating the center of the excitation given it started on a specific site $j$: $x_{\textrm{ex},i}(t)=\langle \sum_j (x_j(t)-x_i(0)) |U_{ji}(t,0)|^2$ and then determining the mean square displacement as $MSD_{\textrm{ex}}(t)=\langle \sum_i  x_{\textrm{ex},i}(t)^2\rangle$. The other measure is based on the probability of starting on one site and being detected on another site $MSD_{\textrm{site}}(t)=\langle \sum_{ji} (x_j(t)-x_i(0))|U_{ji}(t,0)|^2\rangle$. $MSD_{\textrm{site}}(t)$ is stored in the second column of the Dif.dat output file and $MSD_{\textrm{ex}}(t)$ is stored in the third column. The first column contain the time in femtoseconds. The unit for the mean square displacements is the distance unit provided on the position file (\AA ngstr\"{o}m recommended) squared per femtosecond. 
 \section{Ani (anisotropy)}
 Not implemented yet (check NISE\_2015)
 \section{DOS$^{+}$}
@@ -24,7 +25,7 @@ The density of states is calculated using the response function:
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain density of states, which is stored in the file DOS.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
 \section{Absorption}
-The linear absorption is calculated using the first-order response function
+The linear absorption is calculated using the first-order response function \cite{Duan_2015}
 \begin{equation}
 	I(t)=\sum_{\alpha}^{xyz}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
 \end{equation}
@@ -34,15 +35,15 @@ The luminescence is calculated using the first-order response function
 \begin{equation}
 	I(t)=\sum_{\alpha}^{xyz}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
 \end{equation}
-Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function. 
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function ($Z$). 
 \section{LD (linear dichroism)}
-The linear dichroism is calculated identically to the linear absorption except the absorption in the x and y directions are subtracted from the absorption in the z direction. This corresponds to a perfect linear dichroism setup, where the molecules are aligned along the z-axis.
+The linear dichroism is calculated identically to the linear absorption except the average of the absorption in the x and y directions is subtracted from the absorption in the z direction. This corresponds to a perfect linear dichroism setup, where the molecules are aligned along the z-axis.
 \section{CD (circular dichroism)$^{+}$}
 The circular dichroism is calculated using the first-order response function
 \begin{equation}
 	I(t)=\sum_{\alpha}^{xyz}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/T_1).
 \end{equation}
-Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
+Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. Note that the positions of the chromophores must be provided in the Positions file. The calculation does \textit{not} account for periodic boundary positions and the positions must at all times along the position trajectory be specified accordingly.
 \section{Raman}
 Not implemented yet
 \section{SFG (sum-frequency generation)}

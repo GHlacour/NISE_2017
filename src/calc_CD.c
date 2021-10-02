@@ -120,6 +120,10 @@ void calc_CD(t_non *non){
   mu_eg=(float *)calloc(non->singles,sizeof(float));
   pos=(float *)calloc(non->singles,sizeof(float));
 
+  printf("\n Note that the CD implementation assumes that the positions of\n");
+  printf("the full system specified in the Position file is contained\n");
+  printf("in a box as periodic boundary contitions are NOT applied.\n\n");
+
   // Loop over samples
   for (samples=non->begin;samples<non->end;samples++){
 
@@ -294,6 +298,8 @@ void calc_CD(t_non *non){
   return;
 }	
 
+/* Do the final CD calculation */
+/* Currently neglecting periodic boundary conditions */
 void calc_CD1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu,float *pos,int sign){
   int i,j;  
 #pragma omp parallel for

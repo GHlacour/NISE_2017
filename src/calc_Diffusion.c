@@ -75,12 +75,18 @@ void calc_Diffusion(t_non *non){
   }
   P_traj=fopen(non->positionFName,"rb");
   if (P_traj==NULL){
-    printf("Position file %s not found!\n","Position.bin");
+    printf("Position file %s not found!\n",non->positionFName);
     exit(1);
   }
   // Read box size
   fread(&box_size,sizeof(float),1,P_traj);
   printf("Box size: %f Angstrom\n",box_size);
+  printf("Currently only works for cube box!\n");
+  if (box_size<10.0 || box_size>2000.0){
+    printf(RED "Box size specified too small or large!\n");
+    printf("Specify correct size in %s file!\n",non->positionFName);
+    printf("Program terminated!\n" RESET);
+  } 
 
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
