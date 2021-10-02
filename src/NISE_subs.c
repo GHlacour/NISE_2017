@@ -1465,8 +1465,8 @@ float distance(float *rf,float *ri,int a,int b,int N,float box){
   d=0;
   for (x=0;x<3;x++){
     r=rf[3*a+x]-ri[3*b+x];
-    if (r>box) r=r-box;
-    if (r<-box) r=r+box;
+    if (r>box/2) r=r-box;
+    if (r<-box/2) r=r+box;
     d+=r*r;
   }
   return d;
@@ -1476,8 +1476,8 @@ float distance(float *rf,float *ri,int a,int b,int N,float box){
 float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x){
   float r;
   r=rf[3*a+x]-ri[3*b+x];
-  if (r>box) r=r-box;
-  if (r<-box) r=r+box;
+  if (r>box/2) r=r-box;
+  if (r<-box/2) r=r+box;
   return r;
 }
 
