@@ -77,6 +77,11 @@ void population(t_non *non){
   }
 
   if (non->end==0) non->end=N_samples;
+  if (non->end>N_samples){
+    printf(RED "Endpoint larger than number of samples was specified.\n" RESET);
+    printf(RED "Endpoint was %d but cannot be larger than %d.\n" RESET,non->end,N_samples);
+    exit(0);
+  }
   Nsam=non->end-non->begin;
 
   log=fopen("NISE.log","a");

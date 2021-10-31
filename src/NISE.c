@@ -8,7 +8,7 @@
 #include "readinput.h"
 #include "NISE.h"
 #include "absorption.h"
-#include "c_absorption.h"
+//#include "c_absorption.h"
 #include "calc_DOS.h"
 #include "luminescence.h"
 #include "calc_2DIR.h"
@@ -148,12 +148,7 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "Absorption")) {
         // Does not support MPI
         if (parentRank == 0) {
-//            if (!strcmp(non->hamiltonian, "Coupling")) {
-                c_absorption(non);
-//            }
-//            else {
-//                absorption(non);
-//            }
+                absorption(non);
         }
     }
 
@@ -161,12 +156,7 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "DOS")) {
         // Does not support MPI
         if (parentRank == 0) {
-            if (!strcmp(non->hamiltonian, "Coupling")) {
                 calc_DOS(non);
-            }
-            else {
-                calc_DOS(non);
-            }
         }
     }
 
