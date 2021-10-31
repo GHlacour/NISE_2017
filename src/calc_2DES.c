@@ -212,8 +212,8 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
         }
 
-        float* t1nr = calloc(non->tmax1, sizeof(float));
-        float* t1ni = calloc(non->tmax1, sizeof(float));
+        float* t1nr = calloc((unsigned int)non->tmax1, sizeof(float));
+        float* t1ni = calloc((unsigned int)non->tmax1, sizeof(float));
        
         for (int t1 = 0; t1 < non->tmax1; t1++) {
             t1nr[t1] = 0, t1ni[t1] = 0;

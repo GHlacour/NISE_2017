@@ -14,7 +14,7 @@ void absorption(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
-
+  float *mu_xyz;
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
 
@@ -26,6 +26,7 @@ void absorption(t_non *non){
 
   /* File handles */
   FILE *H_traj,*mu_traj;
+  FILE *C_traj;
   FILE *outone,*log;
   FILE *Cfile;
 
@@ -65,7 +66,7 @@ void absorption(t_non *non){
     printf("Dipole file %s not found!\n",non->dipoleFName);
     exit(1);
   }
-
+  //printf("A\n");
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
     Cfile=fopen("Cluster.bin","rb");
@@ -94,6 +95,11 @@ void absorption(t_non *non){
   }
 
   if (non->end==0) non->end=N_samples;
+  if (non->end>N_samples){
+    printf(RED "Endpoint larger than number of samples was specified.\n" RESET);
+    printf(RED "Endpoint was %d but cannot be larger than %d.\n" RESET,non->end,N_samples);
+    exit(0);
+  }
 
   log=fopen("NISE.log","a");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
@@ -104,11 +110,33 @@ void absorption(t_non *non){
   vecr_old=(float *)calloc(non->singles,sizeof(float));
   veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
-  // Loop over samples
+  /* Read coupling */
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    C_traj=fopen(non->couplingFName,"rb");
+    if (C_traj==NULL){
+      printf("Coupling file not found!\n");
+      exit(1);
+    }
+    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
+      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
+      exit(1);
+    }
+    fclose(C_traj);
+    for (x=0;x<3;x++){
+      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
+         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+         printf("ITIME %d %d\n",0,x);
+         exit(1);
+      }
+    }
+  }
+
+  /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
 
-    // Calculate linear response    
+    /* Calculate linear response */   
     ti=samples*non->sample;
     if (non->cluster!=-1){
       if (read_cluster(non,ti,&cl,Cfile)!=1){
@@ -125,11 +153,15 @@ void absorption(t_non *non){
     if (non->cluster==-1 || non->cluster==cl){
       
     for (x=0;x<3;x++){
-      // Read mu(ti)
-      if (read_mue(non,vecr,mu_traj,ti,x)!=1){
-	printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	printf("ITIME %d %d\n",ti,x);
-	exit(1);
+      /* Read mu(ti) */
+      if (!strcmp(non->hamiltonian,"Coupling")){
+        copyvec(mu_xyz+non->singles*x,vecr,non->singles);
+      } else {
+        if (read_mue(non,vecr,mu_traj,ti,x)!=1){
+	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	  printf("ITIME %d %d\n",ti,x);
+	  exit(1);
+        }
       }
       clearvec(veci,non->singles);
       copyvec(vecr,vecr_old,non->singles);
@@ -137,18 +169,29 @@ void absorption(t_non *non){
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
-	// Read Hamiltonian
-	if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	  exit(1);
-	}
+	/* Read Hamiltonian */
+	if (!strcmp(non->hamiltonian,"Coupling")){
+          if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
+            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+            exit(1);
+          }
+        } else {
+	  if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
+	    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+	    exit(1);
+  	  }
+        }
 	
-	// Read mu(tj)
-	if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
-	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	  printf("JTIME %d %d\n",tj,x);
-	  exit(1);
-	}
+	/* Read mu(tj) */
+        if (!strcmp(non->hamiltonian,"Coupling")){
+          copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
+        } else {
+	  if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
+	    printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	    printf("JTIME %d %d\n",tj,x);
+	    exit(1);
+	  }
+        }
 
 	// Do projection on selected sites if asked
 	if (non->Npsites>0){
@@ -193,6 +236,7 @@ void absorption(t_non *non){
   free(vecr_old);
   free(veci_old);
   free(mu_eg);
+  free(mu_xyz);
   free(Hamil_i_e);
 
   // The calculation is finished, lets write output
