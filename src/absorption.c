@@ -18,7 +18,7 @@ void absorption(t_non *non){
   float *mu_eg,*Hamil_i_e;
   float *mu_xyz;
   // Aid arrays
-  float *vecr,*veci;//,*vecr_old; //,*veci_old;
+  float *vecr,*veci;
 
   /* Floats */
   float shift1;
@@ -109,8 +109,6 @@ void absorption(t_non *non){
 
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
-//  vecr_old=(float *)calloc(non->singles,sizeof(float));
-//  veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
   mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
@@ -169,7 +167,6 @@ void absorption(t_non *non){
           }
         }
         clearvec(veci,non->singles);
-//        copyvec(vecr,vecr_old,non->singles);
         copyvec(vecr,mu_eg,non->singles);
         // Loop over delay
         for (t1=0;t1<non->tmax;t1++){
@@ -238,8 +235,6 @@ void absorption(t_non *non){
 
   free(vecr);
   free(veci);
-//  free(vecr_old);
-//  free(veci_old);
   free(mu_eg);
   free(mu_xyz);
   free(Hamil_i_e);
@@ -283,6 +278,7 @@ void absorption(t_non *non){
   return;
 }	
 
+// This subroutine updates the response function
 void calc_S1(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci,float *mu){
   int i;
   for (i=0;i<non->singles;i++){
