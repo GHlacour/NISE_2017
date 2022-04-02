@@ -249,6 +249,10 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         mu = (float *)calloc(3*non->singles, sizeof(float));
 	/* Read in positions */
         pos_traj=fopen(non->positionFName,"rb");
+	if (pos_traj==NULL){
+    	    printf(RED "Atom position file for TDC on the fly not found!\n" RESET);
+            exit(1);
+        }
         read_mue(non,R,pos_traj,pos,0);
         read_mue(non,R+non->singles,pos_traj,pos,1);
         read_mue(non,R+2*non->singles,pos_traj,pos,2);
@@ -290,6 +294,10 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         mu = (float *)calloc(3*non->singles, sizeof(float));
         /* Read in positions */
         pos_traj=fopen(non->positionFName,"rb");
+	if (pos_traj==NULL){
+            printf(RED "Atom position file for TDC on the fly not found!\n" RESET);
+            exit(1);
+        }
         read_mue(non,R,pos_traj,2*pos,0);
         read_mue(non,R+non->singles,pos_traj,2*pos,1);
         read_mue(non,R+2*non->singles,pos_traj,2*pos,2);
