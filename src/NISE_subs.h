@@ -36,6 +36,7 @@ void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);
 void generateCS(float *X,float *Y,float *Z);
 void projection(float *phi,t_non *non);
 int control(t_non *non);
+int autodetect_singles(t_non* non);
 void dipole_double(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
 void dipole_double_ES(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi);
 void dipole_double_last(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);

@@ -1146,6 +1146,61 @@ int control(t_non* non) {
     return 0;
 }
 
+/* Routine for autodetection of the number of singles */
+int autodetect_singles(t_non* non){
+    float *Hamil_i_e;
+    FILE *H_traj;
+    int i;
+    int samples;
+    int n,nn2;
+    int identified;
+
+    identified=0;
+    nn2=non->singles*(non->singles+1)/2;
+    Hamil_i_e = (float *)calloc(nn2, sizeof(float));
+    /* Open Trajectory files */
+    H_traj = fopen(non->energyFName, "rb");
+    if (H_traj == NULL) {
+        printf("Hamiltonian file not found!\n");
+        return 1;
+    }
+    for (n=1;n<non->singles*2;n++){
+      if (!strcmp(non->hamiltonian, "Coupling")) {
+      }
+      if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+      }
+      if (!strcmp(non->hamiltonian, "Full")) {
+	 fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+	 fread(&i,sizeof(int),1,H_traj);
+	 //printf("%d %d\n",n,i);
+         if (abs(i)<1000){
+            printf("Autodetected potential singles at %d\n",n);
+	    if (n==non->singles){
+	       identified=-1;
+	       break;
+	    }
+	    if (n!=non->singles){
+	       identified=n;
+	       break;
+	    }
+	 }
+      }
+    }
+    if (identified==0){
+       printf("Warning: Autodetaction of sites failed. You may need to increase Singles\n");
+    }
+    if (identified==-1){
+       printf("Singles confirmed by auto detection.\n");
+    }
+    if (identified>0){
+      printf("Warning: Singles keyword may be specified incorrectly!\n");
+      printf("Autodetection suggested %d singles.\n",identified);
+    }
+    fclose(H_traj);
+    free(Hamil_i_e);
+    return 0;
+}
+
 /* Multiply with double exciton dipole mu_ef on single states */
 void dipole_double(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi, float* over) {
     int N;
