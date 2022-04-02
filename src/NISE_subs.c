@@ -1126,17 +1126,17 @@ int control(t_non* non) {
         }
         // Read Hamiltonian
         if (read_He(non, Hamil_i_e, H_traj, non->length - 1) != 1) {
-            printf("Failed initial control\n");
+            printf(RED "Failed initial control\n");
             printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-            printf("Real file length shorter than specified with Length keyword!\n");
+            printf("Real file length shorter than specified with Length keyword!\n" RESET);
             return 1;
         }
         // Check Hamiltonian elements
         if (Hamil_i_e[0] + non->shifte > non->max1 || Hamil_i_e[0] + non->shifte < non->min1) {
-            printf("Warning: Hamiltonian value %f outside expected range.\n", Hamil_i_e[0] + non->shifte);
+            printf(RED "Warning: Hamiltonian value %f outside expected range.\n", Hamil_i_e[0] + non->shifte);
             printf("Expected frequency range: %f to %f.\n", non->min1, non->max1);
             printf("Computation will continue, but check is the number above is realistic\n");
-            printf("You may have specified wrong number of sites!\n");
+            printf("You may have specified wrong number of sites!\n" RESET);
             printf("---------------------------------------------------------------------\n");
         }
     }
@@ -1164,7 +1164,7 @@ int autodetect_singles(t_non* non){
         printf("Hamiltonian file not found!\n");
         return 1;
     }
-    for (n=1;n<non->singles*2;n++){
+    for (n=1;n<non->singles*10;n++){
       if (!strcmp(non->hamiltonian, "Coupling")) {
       }
       if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
@@ -1187,14 +1187,14 @@ int autodetect_singles(t_non* non){
       }
     }
     if (identified==0){
-       printf("Warning: Autodetaction of sites failed. You may need to increase Singles\n");
+       printf(RED "Warning: Autodetection of sites failed. You may need to increase Singles\n" RESET);
     }
     if (identified==-1){
        printf("Singles confirmed by auto detection.\n");
     }
     if (identified>0){
-      printf("Warning: Singles keyword may be specified incorrectly!\n");
-      printf("Autodetection suggested %d singles.\n",identified);
+      printf(RED "Warning: Singles keyword may be specified incorrectly!\n");
+      printf("Autodetection suggested %d singles.\n" RESET,identified);
     }
     fclose(H_traj);
     free(Hamil_i_e);
