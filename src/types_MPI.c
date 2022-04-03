@@ -1,7 +1,7 @@
 #include "types_MPI.h"
 
 const t_non_datatype T_NON_TYPE = {
-    61,
+    62,
     {
         1, 1, 1,
         1, 1, 1,
@@ -12,8 +12,8 @@ const t_non_datatype T_NON_TYPE = {
         1, 1,
         4,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1,
-        1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 
         256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
         1,
         1,
@@ -36,7 +36,7 @@ const t_non_datatype T_NON_TYPE = {
         MPI_FLOAT, MPI_FLOAT,
         MPI_INT,
         MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT,
-        MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
+        MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
         MPI_INT, MPI_INT, MPI_INT,
         MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR,
         MPI_INT,
@@ -61,7 +61,7 @@ const t_non_datatype T_NON_TYPE = {
         offsetof(t_non, k),
         offsetof(t_non, length), offsetof(t_non, sample), offsetof(t_non, fft), offsetof(t_non, begin),
             offsetof(t_non, end), offsetof(t_non, is), offsetof(t_non, ts), offsetof(t_non, interpol), offsetof(t_non, propagation),
-        offsetof(t_non, lifetime), offsetof(t_non, inhomogen), offsetof(t_non, deltat),
+        offsetof(t_non, lifetime), offsetof(t_non, homogen), offsetof(t_non, inhomogen), offsetof(t_non, deltat),
         offsetof(t_non, buffer), offsetof(t_non, singles), offsetof(t_non, doubles),
         offsetof(t_non, energyFName), offsetof(t_non, dipoleFName), offsetof(t_non, alphaFName),
             offsetof(t_non, positionFName), offsetof(t_non, anharFName), offsetof(t_non, overdipFName),

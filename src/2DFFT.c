@@ -57,6 +57,7 @@ int main(int argc,char *argv[]){
   float dw1,dw3;
   float dum;
   float rwma1,rwma3,rwmi1,rwmi3;
+  float homo,inhomo;
 
   fixedtime=-1;
 
@@ -110,6 +111,32 @@ int main(int argc,char *argv[]){
 
       deltat=(float) atof(pValue);
       printf("%f fs.\n",deltat);
+      continue;
+    }
+
+    // Homogen keyword
+    if (!strncmp(&Buffer[0],"Homogen",LabelLength)){
+      printf("Homogeneous Lifetime: ");
+      pValue = &Buffer[LabelLength];
+      while (*pValue == ' '){
+        pValue++;
+      }
+
+      homo=(float) atof(pValue);
+      printf("%f fs.\n",homo);
+      continue;
+    }
+
+    // Inhomogen keyword
+    if (!strncmp(&Buffer[0],"Inhomogen",LabelLength)){
+      printf("Inhomogeneous Lifetime: ");
+      pValue = &Buffer[LabelLength];
+      while (*pValue == ' '){
+        pValue++;
+      }
+
+      inhomo=(float) atof(pValue);
+      printf("%f fs.\n",inhomo);
       continue;
     }
 
@@ -275,6 +302,15 @@ int main(int argc,char *argv[]){
 	// Test is the fixed time is right
 	if (round(ti[tv3]/deltat)==round(fixedtime/deltat) || fixedtime<-.5){
 	  index=round(ti[tv2]/(deltat*t.dt[tv2])+fft*ti[tv1]/(deltat*t.dt[tv1]));
+	  /* Apply appodization */
+	  if (homo>0.0){
+	     rr=rr*exp(-(ti[1]+ti[3])/2/homo);
+             ir=ir*exp(-(ti[1]+ti[3])/2/homo);
+	  }
+          if (inhomo>0.0){
+             rr=rr*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
+             ir=ir*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
+          }
 	  if (index<fft*fft){
 	    fftIn[index][0]=rr;
 	    fftIn[index][1]=ir;
@@ -404,6 +440,15 @@ int main(int argc,char *argv[]){
 	  } else {
 	    index=round((ti[tv2])/(deltat*t.dt[tv2])+fft*((ti[tv1])/(deltat*t.dt[tv1])));
 	  }
+	  /* Apply appodization */
+          if (homo>0.0){
+             rr=rr*exp(-(ti[1]+ti[3])/2/homo);
+             ir=ir*exp(-(ti[1]+ti[3])/2/homo);
+          }
+          if (inhomo>0.0){
+             rr=rr*exp(-(ti[1]+ti[3])*(ti[1]+ti[3])/2/inhomo/inhomo);
+             ir=ir*exp(-(ti[1]+ti[3])*(ti[1]+ti[3])/2/inhomo/inhomo);
+          }
 	  if (index<fft*fft){
 	    fftIn[index][0]+=rr;
 	    fftIn[index][1]+=ir;

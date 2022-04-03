@@ -34,8 +34,20 @@ void do_1DFFT(t_non *non,char fname[256],float *re_S_1,float *im_S_1,int samples
     fftIn[i][1]=0;
   }
   for (i=0;i<non->tmax1;i++){
-    fftIn[i][0]=im_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
-    fftIn[i][1]=re_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
+    fftIn[i][0]=im_S_1[i]/samples;
+    fftIn[i][1]=re_S_1[i]/samples;
+    if (non->lifetime > 0.0){
+       fftIn[i][0]*=exp(-i*non->deltat/(2*non->lifetime));
+       fftIn[i][1]*=exp(-i*non->deltat/(2*non->lifetime));
+    }
+    if (non->homogen > 0.0){
+       fftIn[i][0]*=exp(-i*non->deltat/(2*non->homogen));
+       fftIn[i][1]*=exp(-i*non->deltat/(2*non->homogen));
+    }
+    if (non->inhomogen > 0.0){
+       fftIn[i][0]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
+       fftIn[i][1]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
+    }
 /*    fftIn[fft-i][0]=-im_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
     fftIn[fft-i][1]=re_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));*/
   }

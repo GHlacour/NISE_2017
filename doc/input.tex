@@ -122,7 +122,9 @@ The NISE program use the following input:\\
 \item [PDBfile] [File name]
 \item [Length] [Number of snapshots in trajectory] 
 \item [Samplerate] [Number of snapshots between ensemble averaging]
-\item [Lifetime] [The life time in fs]
+\item [Lifetime] [The life time in fs included in 2D response functions]
+\item [Homogeneous] [Homogeneous lifetime for exponential apodization in fs, only included after FFT]
+\item [Inhomogeneous] [Inhomogeneous lifetime for gaussian apodization in fs, only included after FFT]
 \item [Timestep] [The length of each timestep in fs]
 \item [RunTimes] [t1 max] [t2] [t3 max, all in timesteps]
 %\item [MinTimes] [t1 min] [t2 min] [t3 min, all in timesteps, t1 min and t3 min should be 0]
@@ -153,9 +155,22 @@ average the oscillations of the time-evolution are reduced and the simulations c
 longer distance between the time points. Second, the output is reduced to frequencies within the
 min and the max which reduce file size.
 
-The lifetime is currently only applied during the coherence times ($t_1$ and $t_3$ ) according 
-to the formula in \cite{Liang.2012.JCTC.8.1706}. The waiting time dependence can trivially be accounted for by 
-multiplying the whole spectrum with $\exp( -t_2 /T_1 )$.
+The Lifetime is only applied during the coherence times ($t_1$ and $t_3$ ) according 
+to the formula in Ref. \citenum{Liang.2012.JCTC.8.1706}. The waiting time dependence can trivially be accounted for by 
+multiplying the whole spectrum with $\exp( -t_2 /T_1 )$. For apodization with an exponential or gaussian function the Homogeneous and Inhomogenious keywords are used. These only change the final spectra and not the response functions. The equations used are
+\begin{equation}
+R'(t)=R(t)\exp\left(-t/2 t_{\textrm{homo}}-t^2/2 t_{\textrm{inhomo}}^2\right)
+\end{equation}
+for the linear techniques,
+\begin{equation}
+R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)\exp\left(-(t_1+t+3)/2 t_{\textrm{homo}}-(t_1-t_3)^2/2 t_{\textrm{inhomo}}^2\right)
+\end{equation}
+for rephasing signals and
+\begin{equation}
+R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)
+\exp\left(-(t_1+t+3)/2 t_{\textrm{homo}}-(t_1+t_3)^2/2 t_{\textrm{inhomo}}^2\right)
+\end{equation}
+for non-rephasing signals. As default no apodization is performed. The apodizations are inactive when set to zero.  
 
 The HamiltonianType allow the use of different ways to store the Hamiltonian trajectories. The default setting is Full, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements. If TransitionDipole is specified the couplings are calculated on the fly using the transition-dipole coupling scheme. The chromophore positions must then be provided in the Positionfile and the transition-dipoles in the Dipolefile. As for the Coupling method the HamiltonianFile then only contains the diagonal elements. The dipoles are then assumed in Debye and Positions in \AA ngstr\"{o}m. If ExtendedDipole is selected the extended-dipole coupling scheme is used to calculate coupling on the fly. The dipole magnitude is then taken from the Dipolefile. The position of the two transition point-charges must be provided in the Positionfile, with the first point corresponding to odd timepoints and the second point corresponding to even timepoints.
 
