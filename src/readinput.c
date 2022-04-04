@@ -33,6 +33,8 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->tmax1=256;
     non->tmax2=0;
     non->tmax3=256;
+    non->homogen=0.0;
+    non->inhomogen=0.0;
     sprintf(non->basis, "Local");
     sprintf(non->hamiltonian, "Full");
 
@@ -109,6 +111,12 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Read Lifetime
         if (keyWordF("Lifetime", Buffer, &non->lifetime, LabelLength) == 1) continue;
 
+        // Read Homogeneous Lifetime
+        if (keyWordF("Homogeneous", Buffer, &non->homogen, LabelLength) == 1) continue;
+
+        // Read Inhomogeneous Lifetime
+        if (keyWordF("Inhomogeneous", Buffer, &non->inhomogen, LabelLength) == 1) continue;
+
         // Read timestep
         if (keyWordF("Timestep", Buffer, &non->deltat, LabelLength) == 1) continue;
 
@@ -139,7 +147,7 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Read trotter steps
         if (keyWordI("Trotter", Buffer, &non->ts, LabelLength) == 1) continue;
 
-        // Read integration steps
+        // Read interpolation steps
         if (keyWordI("Interpolation", Buffer, &non->interpol, LabelLength) == 1) continue;
 
         // Read cluster info if applicable

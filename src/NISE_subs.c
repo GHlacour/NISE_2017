@@ -1126,23 +1126,78 @@ int control(t_non* non) {
         }
         // Read Hamiltonian
         if (read_He(non, Hamil_i_e, H_traj, non->length - 1) != 1) {
-            printf("Failed initial control\n");
+            printf(RED "Failed initial control\n");
             printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-            printf("Real file length shorter than specified with Length keyword!\n");
+            printf("Real file length shorter than specified with Length keyword!\n" RESET);
             return 1;
         }
         // Check Hamiltonian elements
         if (Hamil_i_e[0] + non->shifte > non->max1 || Hamil_i_e[0] + non->shifte < non->min1) {
-            printf("Warning: Hamiltonian value %f outside expected range.\n", Hamil_i_e[0] + non->shifte);
+            printf(RED "Warning: Hamiltonian value %f outside expected range.\n", Hamil_i_e[0] + non->shifte);
             printf("Expected frequency range: %f to %f.\n", non->min1, non->max1);
             printf("Computation will continue, but check is the number above is realistic\n");
-            printf("You may have specified wrong number of sites!\n");
+            printf("You may have specified wrong number of sites!\n" RESET);
             printf("---------------------------------------------------------------------\n");
         }
     }
     free(mu_eg);
     free(Hamil_i_e);
     fclose(mu_traj), fclose(H_traj);
+    return 0;
+}
+
+/* Routine for autodetection of the number of singles */
+int autodetect_singles(t_non* non){
+    float *Hamil_i_e;
+    FILE *H_traj;
+    int i;
+    int samples;
+    int n,nn2;
+    int identified;
+
+    identified=0;
+    nn2=non->singles*(non->singles+1)/2;
+    Hamil_i_e = (float *)calloc(nn2, sizeof(float));
+    /* Open Trajectory files */
+    H_traj = fopen(non->energyFName, "rb");
+    if (H_traj == NULL) {
+        printf("Hamiltonian file not found!\n");
+        return 1;
+    }
+    for (n=1;n<non->singles*10;n++){
+      if (!strcmp(non->hamiltonian, "Coupling")) {
+      }
+      if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+      }
+      if (!strcmp(non->hamiltonian, "Full")) {
+	 fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+	 fread(&i,sizeof(int),1,H_traj);
+	 //printf("%d %d\n",n,i);
+         if (abs(i)<1000){
+            printf("Autodetected potential singles at %d\n",n);
+	    if (n==non->singles){
+	       identified=-1;
+	       break;
+	    }
+	    if (n!=non->singles){
+	       identified=n;
+	       break;
+	    }
+	 }
+      }
+    }
+    if (identified==0){
+       printf(RED "Warning: Autodetection of sites failed. You may need to increase Singles\n" RESET);
+    }
+    if (identified==-1){
+       printf("Singles confirmed by auto detection.\n");
+    }
+    if (identified>0){
+      printf(RED "Warning: Singles keyword may be specified incorrectly!\n");
+      printf("Autodetection suggested %d singles.\n" RESET,identified);
+    }
+    fclose(H_traj);
+    free(Hamil_i_e);
     return 0;
 }
 

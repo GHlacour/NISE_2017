@@ -84,6 +84,7 @@ int main(int argc, char* argv[]) {
 
         // Do initial check of the configuration
         initResult = control(non);        
+        initResult = autodetect_singles(non);
 
         // Create new log file
         FILE* logFile = fopen("NISE.log", "w");
