@@ -103,8 +103,13 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
     for (int t1 = 0; t1 < non->tmax1; t1++) {
         for (int t3 = 0; t3 < non->tmax3; t3++) {
-            lt_gb_se[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
-            lt_ea[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
+	    if (non->lifetime > 0){
+               lt_gb_se[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
+               lt_ea[t3][t1] = (float) exp(-(double)(t1 + t3) * non->deltat / (2 * non->lifetime));
+	    } else {
+	       lt_gb_se[t3][t1] = 1.0;
+	       lt_ea[t3][t1] = 1.0;
+	    }
         }
     }
 
