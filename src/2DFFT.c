@@ -115,7 +115,7 @@ int main(int argc,char *argv[]){
     }
 
     // Homogen keyword
-    if (!strncmp(&Buffer[0],"Homogen",LabelLength)){
+    if (!strncmp(&Buffer[0],"Homogeneous",LabelLength)){
       printf("Homogeneous Lifetime: ");
       pValue = &Buffer[LabelLength];
       while (*pValue == ' '){
@@ -128,7 +128,7 @@ int main(int argc,char *argv[]){
     }
 
     // Inhomogen keyword
-    if (!strncmp(&Buffer[0],"Inhomogen",LabelLength)){
+    if (!strncmp(&Buffer[0],"Inhomogeneous",LabelLength)){
       printf("Inhomogeneous Lifetime: ");
       pValue = &Buffer[LabelLength];
       while (*pValue == ' '){
