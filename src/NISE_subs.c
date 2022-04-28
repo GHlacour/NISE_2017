@@ -1152,13 +1152,13 @@ void generateCS(float* X, float* Y, float* Z) {
 }
 
 // This subroutine nullify all elements of vector for non selected sites
-void projection(float* phi, t_non* non) {
-    int i;
-    for (i = 0; i < non->singles; i++) {
-        phi[i] = phi[i] * non->psites[i];
-    }
-    return;
-}
+//void projection(float* phi, t_non* non) {
+//    int i;
+//    for (i = 0; i < non->singles; i++) {
+//        phi[i] = phi[i] * non->psites[i];
+//    }
+//    return;
+//}
 
 // Test at the start if the Hamiltonian and dipole files are sensible
 int control(t_non* non) {

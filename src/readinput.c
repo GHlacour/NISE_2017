@@ -359,68 +359,101 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
             sscanf(Buf, "%s %d", dummy, &NN);
             //      printf("%d\n",NN);
             non->psites = (int *)calloc(N, sizeof(int));
-            for (i = 0; i < NN; i++) {
-                if (NN != N) {
-                    fscanf(inputFile, "%d ", &j);
-                    if (non->psites[j] ==1){
-                       printf(RED "\n\nSite %d was defined twice for projection!\n",j);
-                       printf("Check your list of sites in the input file.\n");
-                       printf("Aborting calculation.\n" RESET);
-                       exit(0);
-                    }
-                    non->psites[j] = 1;
-                    printf("%d ", j);
-                }
-                else {
-                    non->psites[i] = 1;
+            /* More sites specified than available */
+	    if (NN>N){
+	       print(RED "More sites were specified than available!\n" RESET);
+	       exit(0);
+	    }
+	    /* Less sites specified than available */
+	    if (NN<N){ 
+               for (i = 0; i < NN; i++) {
+                   if (NN != N) {
+                       fscanf(inputFile, "%d ", &j);
+                       if (non->psites[j] ==1){
+                          printf(RED "\n\nSite %d was defined twice for projection!\n",j);
+                          printf("Check your list of sites in the input file.\n");
+                          printf("Aborting calculation.\n" RESET);
+                          exit(0);
+                       }
+                       non->psites[j] = 1;
+                       printf("%d ", j);
+                   }
+                   else {
+                       non->psites[i] = 1;
                     //	  printf("MS %d %d\n",i,modify->select[i]);
+                   }
+               }
+	    }
+            /* Exact number of sites available specified */
+            if (NN==N){
+               for (i = 0; i < NN; i++) {
+                   fscanf(inputFile, "%d ", &j);
+                   non->psites[i] = j;
+                   printf("%d ", j);
+		}
+	    }	
+
+           /* Proceed here if site numbers are provided in a separate file */
+           } else if (!strncmp(&Buf[0], "Projectfile", 11)) {
+             pValue = &Buf[11];
+             while (*pValue == ' ') {
+                pValue++;
+             }
+             /* Read file name */
+             sscanf(Buf, "%s %s", dummy, projectFName);
+             printf("Reading sites to project on from %s\n", projectFName);
+             /* Read projection file */
+             projectFile=fopen(projectFName,"r");
+             if (projectFile == NULL) {
+                printf(RED "Projectfile %s not found!\n" RESET,projectFName);
+                exit(-1);
+             }
+
+             fscanf(projectFile, "%d ", &NN);
+             printf("Projecting on the following %d sites:\n",NN);
+             non->psites = (int *)calloc(N, sizeof(int));
+	     /* More sites specified than available */
+             if (NN>N){
+                print(RED "More sites were specified than available!\n" RESET);
+                exit(0);
+             }
+             /* Less sites specified than available */
+             if (NN<N){
+                for (i = 0; i < NN; i++) {
+                   if (NN != N) {
+                     fscanf(projectFile, "%d ", &j);
+                     if (non->psites[j] ==1){
+                        printf(RED "\n\nSite %d was defined twice for projection!\n",j);
+                        printf("Check your list of sites in the file: %s \n",projectFName);
+                        printf("Aborting calculation.\n" RESET);
+                        exit(0);
+                     }
+                     non->psites[j] = 1;
+                     printf("%d ", j);
+                   }
+                   else {
+                       non->psites[i] = 1;
+     //                printf("MS %d %d\n",i,modify->select[i]);
+                   }
                 }
-            }
-        /* Proceed here if site numbers are provided in a separate file */
-        } else if (!strncmp(&Buf[0], "Projectfile", 11)) {
-          pValue = &Buf[11];
-          while (*pValue == ' ') {
-            pValue++;
-          }
-          /* Read file name */
-          sscanf(Buf, "%s %s", dummy, projectFName);
-          printf("Reading sites to project on from %s\n", projectFName);
-          /* Read projection file */
-          projectFile=fopen(projectFName,"r");
-          if (projectFile == NULL) {
-             printf(RED "Projectfile %s not found!\n" RESET,projectFName);
-             exit(-1);
-          }
+	     }
+             /* Exact number of sites available specified */
+             if (NN==N){
+                for (i = 0; i < NN; i++) {
+                     fscanf(projectFile, "%d ", &j);
+                     non->psites[i] = j;
+                     printf("%d ", j);
+                }
+	     }
+             fclose(projectFile);
+           } else {
+               printf(RED "Neither Sites nor Projectfile keyword found after Project!\n" RESET);
+               exit(-1);
+           }
+           printf("\n");
 
-          fscanf(projectFile, "%d ", &NN);
-          printf("Projecting on the following %d sites:\n",NN);
-          non->psites = (int *)calloc(N, sizeof(int));
-          for (i = 0; i < NN; i++) {
-              if (NN != N) {
-                  fscanf(projectFile, "%d ", &j);
-                  if (non->psites[j] ==1){
-                     printf(RED "\n\nSite %d was defined twice for projection!\n",j);
-                     printf("Check your list of sites in the file: %s \n",projectFName);
-                     printf("Aborting calculation.\n" RESET);
-                     exit(0);
-                  }
-                  non->psites[j] = 1;
-                  printf("%d ", j);
-              }
-              else {
-                  non->psites[i] = 1;
-     //             printf("MS %d %d\n",i,modify->select[i]);
-              }
-          }       
-          fclose(projectFile);
-        } else {
-            printf(RED "Neither Sites nor Projectfile keyword found after Project!\n" RESET);
-            exit(-1);
-        }
-        printf("\n");
-
-        *singles = NN;
-        return 1;
-    }
-    return 0;
+           *singles = NN;
+           return 1;
+       }
+       return 0;
 }

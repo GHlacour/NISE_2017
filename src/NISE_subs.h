@@ -34,7 +34,7 @@ void propagate_vec_coupling_S_doubles_ES(t_non *non,float *Hamiltonian_i,float *
 void diagonalizeLPD(float *H,float *v,int N);
 void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);
 void generateCS(float *X,float *Y,float *Z);
-void projection(float *phi,t_non *non);
+//void projection(float *phi,t_non *non);
 int control(t_non *non);
 int autodetect_singles(t_non* non);
 void dipole_double(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
