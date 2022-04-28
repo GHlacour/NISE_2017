@@ -781,6 +781,7 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
     int N = non->singles;
     int N2 = N * (N + 1) / 2;
     const float f = non->deltat * icm2ifs * twoPi / m;
+    float si, co;
     float* H0 = calloc(N2, sizeof(float));
     float* H1 = calloc(N * N / 2, sizeof(float));
     int* col = calloc(N * N / 2, sizeof(int));
@@ -840,21 +841,78 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
         for (int k = 0; k < kmax; k++) {
             int a = col[k];
             int b = row[k];
+            int c = 0;
             float J = H1[k] * f;
+            int aNsum = a * ((N << 1) - a - 1) / 2;  // copied part of Sindex
+            int bNsum = b * ((N << 1) - b - 1) / 2;  // copied part of Sindex
 
             /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
-            // TODO speedup
-            for (int c = 0; c < N; c++) {
-                float si = (c == a || c == b) ? -sinf(J * sqrt2) : -sinf(J);
 
-                float co = sqrtf(1 - si * si);
-                int index1 = Sindex(a, c, N), index2 = Sindex(c, b, N);
+            // c < a,b
+            si = -sinf(J);
+            co = sqrtf(1 - si * si);
+            for (; c < a; c++) {
+                int index1 = a + c * ((N << 1) - c - 1) / 2; // part of Sindex, but always a > c
+                int index2 = b + c * ((N << 1) - c - 1) / 2; // part of Sindex, but always b > c
                 float cr1 = co * ocr[index1] - si * oci[index2];
                 float ci1 = co * oci[index1] + si * ocr[index2];
                 float cr2 = co * ocr[index2] - si * oci[index1];
                 float ci2 = co * oci[index2] + si * ocr[index1];
                 ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
             }
+
+            // c == a
+            si = -sinf(J * sqrt2);
+            co = sqrtf(1 - si * si);
+            for (; c == a; c++) {  // yeah, one iteration. but loop for consistency across all 5
+                int index1 = a + c * ((N << 1) - c - 1) / 2;
+                int index2 = b + c * ((N << 1) - c - 1) / 2;
+                float cr1 = co * ocr[index1] - si * oci[index2];
+                float ci1 = co * oci[index1] + si * ocr[index2];
+                float cr2 = co * ocr[index2] - si * oci[index1];
+                float ci2 = co * oci[index2] + si * ocr[index1];
+                ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
+            }
+
+            // a < c < b
+            si = -sinf(J);
+            co = sqrtf(1 - si * si);
+            for (; c < b; c++) { // could be 0 iterations if (b == a + 1)
+                int index1 = c + aNsum;
+                int index2 = b + c * ((N << 1) - c - 1) / 2;
+                float cr1 = co * ocr[index1] - si * oci[index2];
+                float ci1 = co * oci[index1] + si * ocr[index2];
+                float cr2 = co * ocr[index2] - si * oci[index1];
+                float ci2 = co * oci[index2] + si * ocr[index1];
+                ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
+            }
+
+            // c == b
+            si = -sinf(J * sqrt2);
+            co = sqrtf(1 - si * si);
+            for (; c == b; c++) {
+                int index1 = c + aNsum;
+                int index2 = b + c * ((N << 1) - c - 1) / 2;
+                float cr1 = co * ocr[index1] - si * oci[index2];
+                float ci1 = co * oci[index1] + si * ocr[index2];
+                float cr2 = co * ocr[index2] - si * oci[index1];
+                float ci2 = co * oci[index2] + si * ocr[index1];
+                ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
+            }
+
+            // c > a,b
+            si = -sinf(J);
+            co = sqrtf(1 - si * si);
+            for (; c < N; c++) {
+                int index1 = c + aNsum;
+                int index2 = c + bNsum;
+                float cr1 = co * ocr[index1] - si * oci[index2];
+                float ci1 = co * oci[index1] + si * ocr[index2];
+                float cr2 = co * ocr[index2] - si * oci[index1];
+                float ci2 = co * oci[index2] + si * ocr[index1];
+                ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
+            }
+            
         }
 
         /* Multiply on vector second time */
