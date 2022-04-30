@@ -386,6 +386,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
 	    }
             /* Exact number of sites available specified */
             if (NN==N){
+	       printf("Using segment numbers:\n");
                for (i = 0; i < NN; i++) {
                    fscanf(inputFile, "%d ", &j);
                    non->psites[i] = j;
@@ -439,6 +440,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
 	     }
              /* Exact number of sites available specified */
              if (NN==N){
+		printf("Using segment numbers:\n");
                 for (i = 0; i < NN; i++) {
                      fscanf(projectFile, "%d ", &j);
                      non->psites[i] = j;

@@ -35,7 +35,7 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
   spec_r=(float *)calloc(fft*2*pro_dim,sizeof(float));  
   spec_i=(float *)calloc(fft*2*pro_dim,sizeof(float));
 
-  for (ip=0;i<pro_dim;ip++){
+  for (ip=0;ip<pro_dim;ip++){
      for (i=0;i<=fft;i++){
          fftIn[i][0]=0;
          fftIn[i][1]=0;

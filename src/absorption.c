@@ -276,7 +276,11 @@ void absorption(t_non *non){
   /* Save time domain response */
   outone=fopen("TD_Absorption.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
+      fprintf(outone,"%f ",t1*non->deltat);
+      for (ip=0;ip<pro_dim;ip++){
+	  fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
+      }
+      fprintf(outone,"\n");
   }
   fclose(outone);
 

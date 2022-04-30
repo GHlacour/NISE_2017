@@ -46,7 +46,7 @@ int project_dim(t_non* non){
    if (non->Npsites==non->singles){
       N=non->singles;
       for (i=0;i<non->singles;i++){
-	  if (non->psites[i]>N){
+	  if (non->psites[i]>=N){
              printf(RED "More projection segments than number of sites not allowed\n" RESET);
 	     exit(0);
 	  }
@@ -54,8 +54,8 @@ int project_dim(t_non* non){
              max=non->psites[i];
 	  }
       }
-      printf("Identified %d projection segments\n",max);
-      return max;
+      printf("Identified %d projection segments\n",max+1);
+      return max+1;
    }
    printf(RED "Something went wrong in projection input analysis.\n");
    printf("You should not be able to end up here! Contact developers!\n" RESET);
