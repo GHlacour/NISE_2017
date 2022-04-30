@@ -9,6 +9,7 @@
 #include "NISE_subs.h"
 #include "calc_DOS.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void calc_DOS(t_non *non){
   // Initialize variables

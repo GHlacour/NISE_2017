@@ -9,6 +9,7 @@
 #include "NISE_subs.h"
 #include "calc_CD.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void calc_CD(t_non *non){
   // Initialize variables

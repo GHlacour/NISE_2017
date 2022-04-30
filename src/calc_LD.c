@@ -9,6 +9,7 @@
 #include "NISE_subs.h"
 #include "calc_LD.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void LD(t_non *non){
   // Initialize variables

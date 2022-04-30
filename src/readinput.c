@@ -361,7 +361,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
             non->psites = (int *)calloc(N, sizeof(int));
             /* More sites specified than available */
 	    if (NN>N){
-	       print(RED "More sites were specified than available!\n" RESET);
+	       printf(RED "More sites were specified than available!\n" RESET);
 	       exit(0);
 	    }
 	    /* Less sites specified than available */
@@ -414,7 +414,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
              non->psites = (int *)calloc(N, sizeof(int));
 	     /* More sites specified than available */
              if (NN>N){
-                print(RED "More sites were specified than available!\n" RESET);
+                printf(RED "More sites were specified than available!\n" RESET);
                 exit(0);
              }
              /* Less sites specified than available */
