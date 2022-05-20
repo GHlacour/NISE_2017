@@ -1264,8 +1264,10 @@ int autodetect_singles(t_non* non){
     }
     for (n=1;n<non->singles*10;n++){
       if (!strcmp(non->hamiltonian, "Coupling")) {
+         identified=-2;
       }
       if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+         identified=-2;
       }
       if (!strcmp(non->hamiltonian, "Full")) {
 	 fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
