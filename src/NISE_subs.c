@@ -367,6 +367,15 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
        fclose(pos_traj);
        fclose(dip_traj);
     }
+    // Remove couplings below coupling cut
+    for (i = 0; i < non->singles; i++) {
+        for (j = i+1; j < non->singles; j++) {
+            if (fabs(He[Sindex(i,j,non->singles)])<non->couplingcut){
+               He[Sindex(i,j,non->singles)]=0;
+            }
+        }
+    }
+
     return control;
 }
 
