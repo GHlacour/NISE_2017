@@ -37,6 +37,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->inhomogen=0.0;
     sprintf(non->basis, "Local");
     sprintf(non->hamiltonian, "Full");
+    sprintf(non->pbcFName, "");
 
     if (argc < 2) {
         printf(RED "Specify input file name on command line!\n");
@@ -92,6 +93,9 @@ void readInput(int argc, char* argv[], t_non* non) {
 
         // Coupling file keyword
         if (keyWordS("Couplingfile", Buffer, non->couplingFName, LabelLength) == 1) continue;
+
+        // PBC file keyword
+        if (keyWordS("PBCfile", Buffer, non->pbcFName, LabelLength) == 1) continue;
 
         // Read Trajectory length
         if (keyWordI("Length", Buffer, &non->length, LabelLength) == 1) continue;

@@ -196,6 +196,22 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
     float f1,f2; // Variables for TDC
     FILE *pos_traj;
     FILE *dip_traj;
+    float box[3];
+    FILE *pbc_traj;
+
+    /* If pbc is needed read from file */
+    box[0]=box[1]=box[2]=0.0;
+    if (strlen(non->pbcFName)>0){
+        pbc_traj=fopen(non->pbcFName,"rb");
+        if (pos_traj==NULL){
+            printf(RED "Periodic Boundary Condition file not found!\n" RESET);
+            exit(1);
+        }
+        fseek(pbc_traj, pos * (sizeof(int) + sizeof(float) * (3)),SEEK_SET);
+        fread(&t, sizeof(int), 1, pbc_traj);
+        fread(box, sizeof(float), 3, pbc_traj);
+        fclose(pbc_traj);
+    }
 
     /* Read only diagonal part */
     if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole")) || (!strcmp(non->hamiltonian, "ExtendedDipole")) ) {
@@ -267,9 +283,9 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             m1y=mu[non->singles+i];
             m1z=mu[2*non->singles+i];
             for (j = i+1; j < non->singles; j++) {
-                Rx=R[i]-R[j];
-                Ry=R[non->singles+i]-R[non->singles+j];
-                Rz=R[2*non->singles+i]-R[2*non->singles+j];
+                Rx=pbc1(R[i]-R[j],0,box);
+                Ry=pbc1(R[non->singles+i]-R[non->singles+j],1,box);
+                Rz=pbc1(R[2*non->singles+i]-R[2*non->singles+j],2,box);
                 m2x=mu[j];
                 m2y=mu[non->singles+j];
                 m2z=mu[2*non->singles+j];
@@ -312,9 +328,9 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         /* Calculate the couplings according to EDC */
         for (i = 0; i < non->singles; i++) {
             /* Find q1 */
-            Rx=R2[i]-R[i];
-            Ry=R2[non->singles+i]-R[non->singles+i];
-            Rz=R2[2*non->singles+i]-R[2*non->singles+i];
+            Rx=pbc1(R2[i]-R[i],0,box);
+            Ry=pbc1(R2[non->singles+i]-R[non->singles+i],1,box);
+            Rz=pbc1(R2[2*non->singles+i]-R[2*non->singles+i],2,box);
             m1x=mu[i];
             m1y=mu[non->singles+i];
             m1z=mu[2*non->singles+i];
@@ -322,39 +338,39 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             q1=sqrt(m1x*m1x+m1y*m1y+m1z*m1z)/dist;
             for (j = i+1; j < non->singles; j++) {
             	/* Find q2 */
-            	Rx=R2[j]-R[j];
-            	Ry=R2[non->singles+j]-R[non->singles+j];
-            	Rz=R2[2*non->singles+j]-R[2*non->singles+j];
+            	Rx=pbc1(R2[j]-R[j],0,box);
+            	Ry=pbc1(R2[non->singles+j]-R[non->singles+j],1,box);
+            	Rz=pbc1(R2[2*non->singles+j]-R[2*non->singles+j],2,box);
             	m2x=mu[j];
             	m2y=mu[non->singles+j];
             	m2z=mu[2*non->singles+j];
             	dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
             	q2=sqrt(m1x*m1x+m1y*m1y+m1z*m1z)/dist;
                 /* ++ */
-                Rx=R[i]-R[j];
-                Ry=R[non->singles+i]-R[non->singles+j];
-                Rz=R[2*non->singles+i]-R[2*non->singles+j];
+                Rx=pbc1(R[i]-R[j],0,box);
+                Ry=pbc1(R[non->singles+i]-R[non->singles+j],1,box);
+                Rz=pbc1(R[2*non->singles+i]-R[2*non->singles+j],2,box);
                 dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
                 idist=1.0/dist;
                 J=idist;
                 /* +- */
-                Rx=R[i]-R2[j];
-                Ry=R[non->singles+i]-R2[non->singles+j];
-                Rz=R[2*non->singles+i]-R2[2*non->singles+j];
+                Rx=pbc1(R[i]-R2[j],0,box);
+                Ry=pbc1(R[non->singles+i]-R2[non->singles+j],1,box);
+                Rz=pbc1(R[2*non->singles+i]-R2[2*non->singles+j],2,box);
                 dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
                 idist=1.0/dist;
                 J=J-idist;
                 /* -+ */
-                Rx=R2[i]-R[j];
-                Ry=R2[non->singles+i]-R[non->singles+j];
-                Rz=R2[2*non->singles+i]-R[2*non->singles+j];
+                Rx=pbc1(R2[i]-R[j],0,box);
+                Ry=pbc1(R2[non->singles+i]-R[non->singles+j],1,box);
+                Rz=pbc1(R2[2*non->singles+i]-R[2*non->singles+j],2,box);
                 dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
                 idist=1.0/dist;
                 J=J-idist;
                 /* -- */
-                Rx=R2[i]-R2[j];
-                Ry=R2[non->singles+i]-R2[non->singles+j];
-                Rz=R2[2*non->singles+i]-R2[2*non->singles+j];
+                Rx=pbc1(R2[i]-R2[j],0,box);
+                Ry=pbc1(R2[non->singles+i]-R2[non->singles+j],1,box);
+                Rz=pbc1(R2[2*non->singles+i]-R2[2*non->singles+j],2,box);
                 dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
                 idist=1.0/dist;
                 J=J+idist;
@@ -1655,4 +1671,34 @@ float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x){
   return r;
 }
 
+/* Return the distance between two locations squared */
+float distance3(float *rf,float *ri,int a,int b,int N,float *box){
+  float d,r;
+  int x;
+  d=0;
+  for (x=0;x<3;x++){
+    r=rf[3*a+x]-ri[3*b+x];
+    if (r>box[x]/2) r=r-box[x];
+    if (r<-box[x]/2) r=r+box[x];
+    d+=r*r;
+  }
+  return d;
+}
 
+/* Return the distance between two locations along a direction x */
+float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x){
+  float r;
+  r=rf[3*a+x]-ri[3*b+x];
+  if (r>box[x]/2) r=r-box[x];
+  if (r<-box[x]/2) r=r+box[x];
+  return r;
+}
+
+float pbc1(float r, int x, float *box){
+  // Correct for pbc if active
+  if (box[0]>0.0){
+     if (r>box[x]/2) r=r-box[x];
+     if (r<-box[x]/2) r=r+box[x];
+  }
+  return r;
+}
