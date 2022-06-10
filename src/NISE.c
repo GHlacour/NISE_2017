@@ -18,6 +18,7 @@
 #include "calc_LD.h"
 #include "calc_Diffusion.h"
 #include "population.h"
+#include "anisotropy.h"
 #include <mpi.h>
 
 /* This is the 2017 version of the NISE program
@@ -143,7 +144,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Anisotropy and Rotational Correlation routine
-    if (!strcmp(non->technique, "Ani")) { }
+    if (!strcmp(non->technique, "Ani")) {
+        // Does not support MPI
+        if (parentRank == 0)
+            anisotropy(non);
+    }
 
     // Call the Linear Absorption Routine
     if (!strcmp(non->technique, "Absorption")) {

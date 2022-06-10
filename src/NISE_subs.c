@@ -203,7 +203,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
     box[0]=box[1]=box[2]=0.0;
     if (strlen(non->pbcFName)>0){
         pbc_traj=fopen(non->pbcFName,"rb");
-        if (pos_traj==NULL){
+        if (pbc_traj==NULL){
             printf(RED "Periodic Boundary Condition file not found!\n" RESET);
             exit(1);
         }
