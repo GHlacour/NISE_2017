@@ -134,7 +134,7 @@ The NISE program use the following input:\\
 \item [Anharmonicity] [0 = anharmonicities from file used, all other values result in the use of a fixed anharmonicity with that value]
 \item [Singles] [Number of singly excited states]
 \item [Propagation] [Sparse/Coupling default is Sparse] (Coupling recommended for fast calculations)
-\item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme]
+\item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme. NOTE that this approximation is NOT applied during t$_2$ for two-dimensional spectroscopic calculations and it is not used for the Analysis of the Hamiltonian. If you need to neglect couplings for such calculations you need to set the couplings to zero in the Hamiltonian file.]
 \item [Trotter] [The number of trotter steps in the Paarmann approximation for double excited 
 states, 5 recommended for the Sparse propagation scheme, for the Coupling propagation scheme this is the general number of trotter steps the recommended value is then 1 ]
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
