@@ -61,6 +61,10 @@ int main(int argc,char *argv[]){
 
   fixedtime=-1;
 
+  // Defaults
+  homo=0.0;
+  inhomo=0.0;
+
   // Read input
   if (argc!=2){
     printf("Specify input file name on command line!\n");
