@@ -5,10 +5,12 @@ Hamiltonianfile Energy.bin
 Dipolefile Dipole.bin
 Anharmonicfile Anharmonicity.bin
 Overtonedipolefile OvertoneDipole.bin
-Length 100000
+Length 10000
 #Length 10000
 Samplerate 100
 Lifetime 1000
+Homogen 0.0
+Inhomogen 0.0
 Timestep 10
 Trotter 5
 Anharmonicity 20
