@@ -67,6 +67,7 @@ typedef struct {
   char pdbFName[256];
   char hamiltonian[256];
   char couplingFName[256];
+  char pbcFName[256];
   int tmax;
   int cluster;
   float shifte,shiftf;

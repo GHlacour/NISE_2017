@@ -46,7 +46,9 @@ void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float 
 void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);
 float distance(float *rf,float *ri,int a,int b,int N,float box);
 float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x);
-
+float distance3(float *rf,float *ri,int a,int b,int N,float *box);
+float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x);
+float pbc1(float r, int x, float *box);
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing
