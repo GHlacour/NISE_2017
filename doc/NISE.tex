@@ -129,6 +129,17 @@ Here, the location of the installed cmake version and the libomp version may hav
 
 Alternatively macports can be used in a very similar way to homebrew. Install libomp with \texttt{sudo port install libomp}. The location of omp.h may be different than expected by CMake, which may be fixed with \texttt{sudo ln -s /opt/local/include/libomp/omp.h /opt/local/include/omp.h}. or \texttt{sudo port install libomp +top\_level}.
 
+The code can also be installed on a Raspberry Pi 4. This requires the installation of the already discussed packages which can be done with:
+\begin{verbatim}
+sudo apt update
+sudo apt install -y cmake
+sudo apt install libopenblas-dev
+sudo apt install libfftw3-dev
+sudo apt install libopenmpi-dev
+sudo apt install python3-matplotlib
+\end{verbatim}
+When running on this system one needs to keep in mind the limited disk space and memory of the system. However, the NISE program itself easily installs and run on this system. 
+
 \section{Parallelization}
 NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, both the time consuming 2DIR and 2DUVvis techniques support MPI. The linear techniques do not have a parallel implementation as they are generally fast. (Techniques relying on LAPACK including Luminescence may use the MLK OpenMP support for limited speedup.)
 
