@@ -198,8 +198,8 @@ void anisotropy(t_non *non){
   /* Write anisotropy */
   outone=fopen("Ani.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
-     Anis[t1]=Anis[t1]/samples/non->singles;
-     Ori[t1]=Ori[t1]/samples/non->singles;
+     Anis[t1]=0.2*(3*Anis[t1]/samples/non->singles-1);
+     Ori[t1]=0.2*(3*Ori[t1]/samples/non->singles-1);
      fprintf(outone,"%f %e %e\n",t1*non->deltat,Anis[t1],Ori[t1]);
   }
   fclose(outone);
