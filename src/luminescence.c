@@ -10,6 +10,7 @@
 #include "absorption.h"
 #include "luminescence.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void luminescence(t_non *non){
   // Initialize variables

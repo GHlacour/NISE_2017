@@ -16,6 +16,7 @@
 #include <stdarg.h>
 #include "mpi.h"
 #include "MPI_subs.h"
+#include "project.h"
 
 void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subSize, MPI_Comm subComm, MPI_Comm rootComm) {
     // Start by determining the work to be done, make an array of samples/poldir to simulate
