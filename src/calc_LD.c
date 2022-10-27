@@ -9,11 +9,13 @@
 #include "NISE_subs.h"
 #include "calc_LD.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void LD(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
+  float *mu_p;
 
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
@@ -37,6 +39,7 @@ void LD(t_non *non){
   int t1,fft;
   int elements;
   int cl,Ncl;
+  int pro_dim,ip;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -46,10 +49,12 @@ void LD(t_non *non){
   shift1=(non->max1+non->min1)/2;
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
+  /* Check for projection */
+  pro_dim=project_dim(non);
 
   // Allocate memory
-  re_S_1=(float *)calloc(non->tmax,sizeof(float));
-  im_S_1=(float *)calloc(non->tmax,sizeof(float));
+  re_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
@@ -109,6 +114,7 @@ void LD(t_non *non){
   vecr_old=(float *)calloc(non->singles,sizeof(float));
   veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
+  mu_p=(float *)calloc(non->singles,sizeof(float)); 
 
   // Loop over samples
   for (samples=non->begin;samples<non->end;samples++){
@@ -156,13 +162,22 @@ void LD(t_non *non){
 	}
 
 	// Do projection on selected sites if asked
-	if (non->Npsites>0){
-	  projection(mu_eg,non);
-	}
-	
-	// Find response
-	calc_LD(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,x);
-
+//	if (non->Npsites>0){
+//	  projection(mu_eg,non);
+        if (non->Npsites==0){
+           /* Find response without projection */
+           calc_LD(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,x);
+	} else if (non->Npsites<non->singles){
+           projection(mu_eg,non);
+           /* Find response with projection on single segment */
+	   calc_LD(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg,x);
+        } else {
+           /* Find response with projection on multiple segments */
+           for (ip=0;ip<pro_dim;ip++){
+               multi_projection(mu_eg,mu_p,non,ip);
+               calc_LD(re_S_1+non->tmax*ip,im_S_1+non->tmax*ip,t1,non,vecr,veci,mu_p,x);
+           }
+        }
 	// Probagate vector
 	if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
 	if (non->propagation==0){
@@ -223,7 +238,12 @@ void LD(t_non *non){
   /* Save time domain response */
   outone=fopen("TD_LD.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
+    /* fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples); */
+      fprintf(outone,"%f ",t1*non->deltat);
+      for (ip=0;ip<pro_dim;ip++){
+         fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
+      }
+      fprintf(outone,"\n");
   }
   fclose(outone);
 
@@ -232,9 +252,9 @@ void LD(t_non *non){
 
   free(re_S_1),free(im_S_1);
 
-  printf("----------------------------------------------\n");
-  printf(" Absorption calculation succesfully completed\n");
-  printf("----------------------------------------------\n\n");
+  printf("---------------------------------------------------\n");
+  printf(" Linear Dichroism calculation succesfully completed\n");
+  printf("---------------------------------------------------\n\n");
 
   return;
 }	

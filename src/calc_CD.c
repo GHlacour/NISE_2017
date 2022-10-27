@@ -9,12 +9,14 @@
 #include "NISE_subs.h"
 #include "calc_CD.h"
 #include "1DFFT.h"
+#include "project.h"
 
 void calc_CD(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *re_S_1j,*im_S_1j; // Before avaraging
   float *mu_eg,*Hamil_i_e;
+  float *mu_p;
   float *pos;
   float posj;
   // Aid arrays
@@ -43,6 +45,7 @@ void calc_CD(t_non *non){
   int elements;
   int cl,Ncl;
   int sign;
+  int pro_dim,ip;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -53,14 +56,17 @@ void calc_CD(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
 
+  /* Check for projection */
+  pro_dim=project_dim(non);
+
   // Allocate memory
-  re_S_1=(float *)calloc(non->tmax,sizeof(float));
-  im_S_1=(float *)calloc(non->tmax,sizeof(float));  
+  re_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));  
   nn2=non->singles*(non->singles+1)/2;
   N=non->singles;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
-  re_S_1j=(float *)calloc(non->tmax*N,sizeof(float));
-  im_S_1j=(float *)calloc(non->tmax*N,sizeof(float));
+  re_S_1j=(float *)calloc(non->tmax*N*pro_dim,sizeof(float));
+  im_S_1j=(float *)calloc(non->tmax*N*pro_dim,sizeof(float));
 
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
@@ -123,6 +129,7 @@ void calc_CD(t_non *non){
   vecr=(float *)calloc(non->singles*non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles*non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
+  mu_p=(float *)calloc(non->singles,sizeof(float));
   pos=(float *)calloc(non->singles,sizeof(float));
 
   printf("\n Note that the CD implementation assumes that the positions of\n");
@@ -194,8 +201,35 @@ void calc_CD(t_non *non){
               }
  //             posj=pos[j];
               // Do projection on selected sites if asked
-	      if (non->Npsites>0){
+/*	      if (non->Npsites>0){
 	        projection(mu_eg,non);
+              }*/
+              sign=0;
+              // Determine the sign
+              if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
+              if (z==0 & y==2 & x==1){sign=-1;}//{}sign=-1;}
+              if (z==1 & y==0 & x==2){sign=-1;}//{sign=-1;}
+              if (z==2 & y==0 & x==1){sign=1;}//{sign=1;}
+              if (z==2 & y==1 & x==0){sign=-1;}//{sign=-1;}
+              if (z==1 & y==2 & x==0){sign=1;}//{sign=1;}
+              if (sign==0){
+                 printf(RED "Bug in CD routine.\n" RESET);
+                 exit(1);
+              }
+
+              if (non->Npsites==0){
+              /* Find response without projection */
+                calc_CD1(re_S_1j,im_S_1j,t1,non,vecr,veci,mu_eg,pos,sign);
+              } else if (non->Npsites<non->singles){
+                projection(mu_eg,non);
+              /* Find response with projection on single segment */
+                calc_CD1(re_S_1j,im_S_1j,t1,non,vecr,veci,mu_eg,pos,sign);
+              } else {
+              /* Find response with projection on multiple segments */
+                for (ip=0;ip<pro_dim;ip++){
+                   multi_projection(mu_eg,mu_p,non,ip);
+                   calc_CD1(re_S_1j+non->tmax*N*ip,im_S_1j+non->tmax*N*ip,t1,non,vecr,veci,mu_eg,pos,sign);
+               }
               }
 	      
               sign=0;
@@ -212,7 +246,7 @@ void calc_CD(t_non *non){
               }
 
 	      // Find response
-              calc_CD1(re_S_1j,im_S_1j,t1,non,vecr,veci,mu_eg,pos,sign);
+//              calc_CD1(re_S_1j,im_S_1j,t1,non,vecr,veci,mu_eg,pos,sign);
 	    }
           }
           
@@ -256,11 +290,13 @@ void calc_CD(t_non *non){
   free(mu_eg);
   free(Hamil_i_e);
 
-  // Sum over results from different chrompohores
+  // Sum over results from different chromophores
   for (t1=0;t1<non->tmax;t1++){
     for (j=0;j<N;j++){
-      re_S_1[t1]+=re_S_1j[t1+j*non->tmax];
-      im_S_1[t1]+=im_S_1j[t1+j*non->tmax]; 
+      for (ip=0;ip<pro_dim;ip++){
+         re_S_1[t1+ip*non->tmax]+=re_S_1j[t1+j*non->tmax+ip*N*non->tmax];
+         im_S_1[t1+ip*non->tmax]+=im_S_1j[t1+j*non->tmax+ip*N*non->tmax]; 
+      }
     }
   } 
 
@@ -286,7 +322,12 @@ void calc_CD(t_non *non){
 
   outone=fopen("TD_CD.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
+/*    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples); */
+      fprintf(outone,"%f ",t1*non->deltat);
+      for (ip=0;ip<pro_dim;ip++){
+         fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
+      }
+      fprintf(outone,"\n");
   }
   fclose(outone);
 
