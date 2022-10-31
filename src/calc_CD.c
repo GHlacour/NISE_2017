@@ -228,7 +228,7 @@ void calc_CD(t_non *non){
               /* Find response with projection on multiple segments */
                 for (ip=0;ip<pro_dim;ip++){
                    multi_projection(mu_eg,mu_p,non,ip);
-                   calc_CD1(re_S_1j+non->tmax*N*ip,im_S_1j+non->tmax*N*ip,t1,non,vecr,veci,mu_eg,pos,sign);
+                   calc_CD1(re_S_1j+non->tmax*N*ip,im_S_1j+non->tmax*N*ip,t1,non,vecr,veci,mu_p,pos,sign);
                }
               }
 	      

@@ -236,7 +236,7 @@ void calc_DOS(t_non *non){
   free(re_S_1),free(im_S_1);
 
   printf("----------------------------------------------\n");
-  printf(" Absorption calculation succesfully completed\n");
+  printf(" DOS calculation succesfully completed\n");
   printf("----------------------------------------------\n\n");
 
   return;
