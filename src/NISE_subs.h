@@ -25,6 +25,8 @@ void muread(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj);
 void mureadE(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj,float *mu,float *pol);
 int read_cluster(t_non *non,int pos,int *cl,FILE *FH);
 void propagate_vec_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
+void propagate_t2_T1(t_non *non,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi);
+void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi);
 void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign);
 int propagate_vec_DIA_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
 void propagate_vec_coupling_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);

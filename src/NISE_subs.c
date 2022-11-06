@@ -582,6 +582,24 @@ void propagate_vec_DIA(t_non* non, float* Hamiltonian_i, float* cr, float* ci, i
     return;
 }
 
+// Copy initial vectors for t2 propagation with temperature correction
+void propagate_t2_T1(t_non *non,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi){
+    int N,t1;
+    N=non->singles;
+    copyvec(cr,icr,N);
+    copyvec(ci,ici,N);
+    for (t1=0;t1<non->tmax1;t1++){
+        copyvec(vr[t1],ivr[t1],N);
+        copyvec(vi[t1],ivi[t1],N);
+    }
+    return;
+}
+
+// Perform Thermal Correction for t2 propagation
+void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi){
+    return;
+}
+
 // Do the propagation for t2 using the matrix exponent and using a single diagonalization
 // for all vectors
 void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign){

@@ -174,8 +174,12 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
         float* leftrr = calloc(non->singles, sizeof(float));
         float* leftri = calloc(non->singles, sizeof(float));
+        float* ileftrr = calloc(non->singles, sizeof(float));
+        float* ileftri = calloc(non->singles, sizeof(float));
         float** leftnr = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
         float** leftni = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+       float** ileftnr = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
+        float** ileftni = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
         float** rightrr = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
         float** rightri = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
         float* rightnr = calloc(non->singles, sizeof(float));
@@ -281,6 +285,11 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
         /* Calculate evolution during t2 */
         mureadE(non, leftrr, tj, px[1], mu_traj, mu_xyz, pol);
         clearvec(leftri, non->singles);
+        /* Copy initial wave functions to intermediate arrays */
+        /* for thermal scaling */
+        if (non->tmax2>0 && non->temperature>0){
+           propagate_t2_T1(non,leftrr,leftri,leftnr,leftni,ileftrr,ileftri,ileftnr,ileftni);
+        }
         for (int t2 = 0; t2 < non->tmax2; t2++) {
             int tm = tj + t2;
             if (read_He(non, Hamil_i_e, H_traj, tm) != 1) {
@@ -304,6 +313,10 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 );
             }*/
 	     
+        }
+        /* Perform Thermal correction for T2 propagation */
+        if (non->tmax2>0 && non->temperature>0){
+           propagate_t2_T2(non,Hamil_i_e,leftrr,leftri,leftnr,leftni,ileftrr,ileftri,ileftnr,ileftni);
         }
 
         /* Read dipole for third interaction */
