@@ -9,6 +9,7 @@
 #include "NISE_subs.h"
 #include "absorption.h"
 #include "1DFFT.h"
+#include "project.h"
 
 // This subroutine is for calculating the Linear Absorption
 // both for IR and UVvis
@@ -16,6 +17,7 @@ void absorption(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
+  float *mu_p;
   float *mu_xyz;
   // Aid arrays
   float *vecr,*veci;
@@ -40,6 +42,7 @@ void absorption(t_non *non){
   int t1,fft;
   int elements;
   int cl,Ncl;
+  int pro_dim,ip;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -50,9 +53,12 @@ void absorption(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
 
+  // Check for projection
+  pro_dim=project_dim(non);
+
   // Allocate memory
-  re_S_1=(float *)calloc(non->tmax,sizeof(float));
-  im_S_1=(float *)calloc(non->tmax,sizeof(float));
+  re_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
@@ -110,6 +116,7 @@ void absorption(t_non *non){
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
+  mu_p=(float *)calloc(non->singles,sizeof(float)); 
   mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
   /* Read coupling, this is done if the coupling and transition-dipoles are *
@@ -196,12 +203,23 @@ void absorption(t_non *non){
           }
 
 	  // Do projection on selected sites if asked
-	  if (non->Npsites>0){
-	    projection(mu_eg,non);
+	  if (non->Npsites==0){
+             // Find response without projection
+             calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+          } else if (non->Npsites<non->singles){
+             projection(mu_eg,non);
+             // Find response with projection on single segment
+             calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+          } else {
+             // Find response with projection on multiple segments
+             for (ip=0;ip<pro_dim;ip++){
+                multi_projection(mu_eg,mu_p,non,ip);
+                calc_S1(re_S_1+non->tmax*ip,im_S_1+non->tmax*ip,t1,non,vecr,veci,mu_p);
+             }
 	  }
 	
  	  // Find response
-	  calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+	  //calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
 
 	  // Probagate vector
 	  if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
@@ -262,7 +280,12 @@ void absorption(t_non *non){
   /* Save time domain response */
   outone=fopen("TD_Absorption.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
+//    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples);
+     fprintf(outone,"%f ",t1*non->deltat);
+     for (ip=0;ip<pro_dim;ip++){
+        fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
+     }
+     fprintf(outone,"\n");
   }
   fclose(outone);
 

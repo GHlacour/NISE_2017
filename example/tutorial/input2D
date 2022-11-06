@@ -9,6 +9,8 @@ Length 100000
 #Length 10000
 Samplerate 100
 Lifetime 1000
+Homogeneous 0.0
+Inhomogeneous 0.0
 Timestep 10
 Trotter 5
 Anharmonicity 20
