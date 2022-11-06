@@ -597,6 +597,68 @@ void propagate_t2_T1(t_non *non,float *cr,float *ci,float **vr,float **vi,float 
 
 // Perform Thermal Correction for t2 propagation
 void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi){
+    int index, N;
+    int a,b,c;
+    float *H,*e,*B;
+    float Z;
+    float PN,PI,wj,aaa,ir,ii;
+    float *phir,*phii;
+    float iNorm;
+
+    N = non->singles;
+    H = (float *)calloc(N * N, sizeof(float));
+    e = (float *)calloc(N, sizeof(float));
+    B = (float *)calloc(N, sizeof(float));
+    phir = (float *)calloc(N, sizeof(float));
+    phii = (float *)calloc(N, sizeof(float));
+
+    /* Build Hamiltonian */
+    for (a = 0; a < N; a++) {
+        H[a + N * a] = Hamiltonian_i[a + N * a - (a * (a + 1)) / 2]; // Diagonal
+        for (b = a + 1; b < N; b++) {
+            H[a + N * b] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
+            H[b + N * a] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
+        }
+    }
+    diagonalizeLPD(H, e, N);
+    /* Find Boltzmann factors */
+    for (a = 0; a < N; a++) {
+        B[a]=exp(-e[a]/k_B/non->temperature);
+        Z=Z+B[a];
+    }
+    for (a = 0; a < N; a++) {
+        B[a]=B[a]/Z;
+    }
+
+    /* Correct cr and ci */
+    iNorm=0;
+    for (a = 0; a < N; a++) {
+        iNorm=iNorm+cr[a]*cr[a]+ci[a]*ci[a];
+    }
+    /* Find contribution from each eigenfunction at t2 */
+    for (a = 0; a < N; a++) {
+        ii=0,ir=0;
+        for (b = 0; b < N; b++) {
+            ir=ir+H[b,a]*cr[b];
+            ii=ii+H[b,a]*ci[b];
+        }
+        PN=ir*ir+ii*ii; /* NISE population */
+        ii=0,ir=0;
+        for (b = 0; b < N; b++) {
+            ir=ir+H[b,a]*icr[b];
+            ii=ii+H[b,a]*ici[b];
+        }
+        PI=ir*ir+ii*ii; /* Initial population */
+        aaa=-log(N*B[a])/log(N*PI/iNorm);
+        wj=pow(PN/PI,aaa)*PN;
+        if (wj<0) wj=0;
+        for (b = 0; b < N; b++) {
+            phir[b]=phir[b]+sqrt(wj)*H[b,a]; // Continue here
+        }
+    }
+    clearvec(phir,N);
+    clearvec(phii,N);
+    free(H), free(e), free(B);
     return;
 }
 
