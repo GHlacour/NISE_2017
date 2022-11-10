@@ -604,6 +604,7 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
     float PN,PI,wj,aaa,ir,ii;
     float *phir,*phii;
     float iNorm;
+    float rphase,iphase;
 
     N = non->singles;
     H = (float *)calloc(N * N, sizeof(float));
@@ -638,11 +639,13 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
     /* Find contribution from each eigenfunction at t2 */
     for (a = 0; a < N; a++) {
         ii=0,ir=0;
+        rphase=0,iphase=0;       
         for (b = 0; b < N; b++) {
             ir=ir+H[b,a]*cr[b];
             ii=ii+H[b,a]*ci[b];
         }
         PN=ir*ir+ii*ii; /* NISE population */
+        rphase=ir/sqrt(PN),iphase=ii/sqrt(PN);
         ii=0,ir=0;
         for (b = 0; b < N; b++) {
             ir=ir+H[b,a]*icr[b];
@@ -653,7 +656,8 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
         wj=pow(PN/PI,aaa)*PN;
         if (wj<0) wj=0;
         for (b = 0; b < N; b++) {
-            phir[b]=phir[b]+sqrt(wj)*H[b,a]; // Continue here
+            phir[b]=phir[b]+sqrt(wj)*H[b,a]*rphase;
+            phii[b]=phii[b]+sqrt(wj)*H[b,a]*iphase;
         }
     }
     clearvec(phir,N);
