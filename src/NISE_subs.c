@@ -598,12 +598,12 @@ void propagate_t2_T1(t_non *non,float *cr,float *ci,float **vr,float **vi,float 
 // Perform Thermal Correction for t2 propagation
 void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,float *icr,float *ici,float **ivr,float **ivi){
     int index, N;
-    int a,b,c;
+    int a,b,c,t1;
     float *H,*e,*B;
     float Z;
     float PN,PI,wj,aaa,ir,ii;
     float *phir,*phii;
-    float iNorm;
+    float iNorm,n;
     float rphase,iphase;
 
     N = non->singles;
@@ -631,6 +631,28 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
         B[a]=B[a]/Z;
     }
 
+    /* Correct t1 independent wavefunction */
+    correct_wavefunction(H,B,cr,ci,icr,ici,N);
+    /* Correct t1 dependent wavefunction */
+    for (t1 = 0;t1<non->tmax1;t1++){
+        correct_wavefunction(H,B,vr[t1],vi[t1],ivr[t1],ivi[t1],N);
+    }
+
+    free(H), free(e), free(B);
+    return;
+}
+
+void correct_wavefunction(float *H,float *B,float *cr,float *ci,float *icr,float *ici,int N){
+    float iNorm,ii,ir,n;
+    float rphase,iphase;
+    float PN,PI;
+    float wj,aaa;
+    int a,b;
+    float *phir,*phii; 
+
+    phir = (float *)calloc(N, sizeof(float));
+    phii = (float *)calloc(N, sizeof(float));  
+
     /* Correct cr and ci */
     iNorm=0;
     for (a = 0; a < N; a++) {
@@ -641,28 +663,35 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
         ii=0,ir=0;
         rphase=0,iphase=0;       
         for (b = 0; b < N; b++) {
-            ir=ir+H[b,a]*cr[b];
-            ii=ii+H[b,a]*ci[b];
+            ir=ir+H[a+N*b]*cr[b];
+            ii=ii+H[a+N*b]*ci[b];
         }
         PN=ir*ir+ii*ii; /* NISE population */
         rphase=ir/sqrt(PN),iphase=ii/sqrt(PN);
         ii=0,ir=0;
         for (b = 0; b < N; b++) {
-            ir=ir+H[b,a]*icr[b];
-            ii=ii+H[b,a]*ici[b];
+            ir=ir+H[a+N*b]*icr[b];
+            ii=ii+H[a+N*b]*ici[b];
         }
         PI=ir*ir+ii*ii; /* Initial population */
         aaa=-log(N*B[a])/log(N*PI/iNorm);
-        wj=pow(PN/PI,aaa)*PN;
+        wj=pow(PN/PI,aaa)*PN; /* Determine corected  weight of eigenstate */
         if (wj<0) wj=0;
         for (b = 0; b < N; b++) {
-            phir[b]=phir[b]+sqrt(wj)*H[b,a]*rphase;
-            phii[b]=phii[b]+sqrt(wj)*H[b,a]*iphase;
+            phir[b]=phir[b]+sqrt(wj)*H[a+N*b]*rphase;
+            phii[b]=phii[b]+sqrt(wj)*H[a+N*b]*iphase;
         }
     }
-    clearvec(phir,N);
-    clearvec(phii,N);
-    free(H), free(e), free(B);
+    /* Renormalize and return corrected wavefunction */
+    n=0;
+    for (a=0;a<N;a++){
+       n=n+phir[b]*phir[b]+phii[b]+phii[b];       
+    }    
+    for (a=0;a<N;a++){
+       icr[b]=phir[b]*sqrt(iNorm/n);
+       ici[b]=phii[b]*sqrt(iNorm/n);
+    }
+    free(phir),free(phii);
     return;
 }
 
