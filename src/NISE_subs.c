@@ -623,6 +623,7 @@ void propagate_t2_T2(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float *
     }
     diagonalizeLPD(H, e, N);
     /* Find Boltzmann factors */
+    Z=0;
     for (a = 0; a < N; a++) {
         B[a]=exp(-e[a]/k_B/non->temperature);
         Z=Z+B[a];
@@ -653,7 +654,7 @@ void correct_wavefunction(float *H,float *B,float *cr,float *ci,float *icr,float
     phir = (float *)calloc(N, sizeof(float));
     phii = (float *)calloc(N, sizeof(float));  
 
-    /* Correct cr and ci */
+    /* Find original norm */
     iNorm=0;
     for (a = 0; a < N; a++) {
         iNorm=iNorm+cr[a]*cr[a]+ci[a]*ci[a];
@@ -667,16 +668,25 @@ void correct_wavefunction(float *H,float *B,float *cr,float *ci,float *icr,float
             ii=ii+H[a+N*b]*ci[b];
         }
         PN=ir*ir+ii*ii; /* NISE population */
-        rphase=ir/sqrt(PN),iphase=ii/sqrt(PN);
+        rphase=ir/sqrt(PN),iphase=ii/sqrt(PN); /* NISE phase */
+        PN=PN/iNorm;
         ii=0,ir=0;
         for (b = 0; b < N; b++) {
             ir=ir+H[a+N*b]*icr[b];
             ii=ii+H[a+N*b]*ici[b];
         }
         PI=ir*ir+ii*ii; /* Initial population */
-        aaa=-log(N*B[a])/log(N*PI/iNorm);
+        PI=PI/iNorm;
+        aaa=-log(N*B[a])/log(N*PI);
         wj=pow(PN/PI,aaa)*PN; /* Determine corected  weight of eigenstate */
+        
+        if (wj>1){
+           wj=1;
+//           printf("PN %f PI %f B %f aaa %f wj %f\n",PN,PI,B[a],aaa,wj);
+//           printf("NN %d N %f D %f\n",N,log(N*B[a]),log(N*PI));
+        }
         if (wj<0) wj=0;
+//        if (wj>1) wj=1;
         for (b = 0; b < N; b++) {
             phir[b]=phir[b]+sqrt(wj)*H[a+N*b]*rphase;
             phii[b]=phii[b]+sqrt(wj)*H[a+N*b]*iphase;
@@ -685,11 +695,11 @@ void correct_wavefunction(float *H,float *B,float *cr,float *ci,float *icr,float
     /* Renormalize and return corrected wavefunction */
     n=0;
     for (a=0;a<N;a++){
-       n=n+phir[b]*phir[b]+phii[b]+phii[b];       
+       n=n+phir[a]*phir[a]+phii[a]*phii[a];       
     }    
     for (a=0;a<N;a++){
-       icr[b]=phir[b]*sqrt(iNorm/n);
-       ici[b]=phii[b]*sqrt(iNorm/n);
+       cr[a]=phir[a]*sqrt(iNorm/n);
+       ci[a]=phii[a]*sqrt(iNorm/n);
     }
     free(phir),free(phii);
     return;
