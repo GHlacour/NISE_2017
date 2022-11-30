@@ -19,6 +19,7 @@
 #include "calc_Diffusion.h"
 #include "population.h"
 #include "anisotropy.h"
+#include "mcfret.h"
 #include <mpi.h>
 
 /* This is the 2017 version of the NISE program
@@ -158,11 +159,21 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Call the Linear DOS Routine
+    /* Call the Linear DOS Routine */
     if (!strcmp(non->technique, "DOS")) {
-        // Does not support MPI
+        /* Does not support MPI */
         if (parentRank == 0) {
                 calc_DOS(non);
+        }
+    }
+
+    /* Call the MCFRET Routine */
+    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
+	|| (!strcmp(non->technique, "MCFRET-Emission")) || (!strcmp(non->technique, "MCFRET-Coupling")) || (!strcmp(non->technique, 
+	"MCFRET-Rate")) || (!strcmp(non->technique, "MCFRET-Analyse")) ) {
+        /* Does not support MPI */
+        if (parentRank == 0) {
+                mcfret(non);
         }
     }
 
