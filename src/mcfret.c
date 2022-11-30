@@ -10,6 +10,7 @@
 #include "mcfret.h"
 #include "project.h"
 
+/* Distribute the MCFRET calculations */
 void mcfret(t_non *non){
     /* Define variables and arrays */
     int N;
