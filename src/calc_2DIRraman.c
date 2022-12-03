@@ -228,7 +228,7 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
                 /* Read Hamiltonian */
                 if (read_He(non, Hamil_i_e, H_traj, tj - t1 + tm) != 1) {
                     printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                    exit(1); 
+                    exit(1);
                 }
 
                 /* Propagation of singles for kI*/
