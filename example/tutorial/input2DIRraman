@@ -1,0 +1,26 @@
+Propagation Coupling
+Couplingcut 0.1
+Threshold 0.001
+Hamiltonianfile Energy.bin
+Dipolefile Dipole.bin
+Alphafile RamanTensor.bin
+Anharmonicfile Anharmonicity.bin
+Overtonedipolefile OvertoneDipole.bin
+#Length 100000
+Length 10000
+Samplerate 100
+Lifetime 1000
+Timestep 10
+Trotter 5
+Anharmonicity 20
+Format Gnuplot
+#Format Dislin
+MinFrequencies 1000 1000 1000
+MaxFrequencies 1200 1200 1200
+Technique 2DIRraman3
+FFT 1028
+#BeginPoint 0
+#EndPoint 1
+RunTimes 128 0 128
+Singles 2
+PrintLevel 1
