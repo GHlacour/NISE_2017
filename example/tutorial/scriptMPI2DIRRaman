@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name NISE-2DIRRaman-Tutorial
+#SBATCH --nodes=1
 #SBATCH --ntasks=2
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --time=0-00:30:00
 #SBATCH --partition=short
 #SBATCH --mem=6000
@@ -13,11 +14,13 @@ export OMP_NUM_THREADS=2
 cd $SLURM_SUBMIT_DIR
 
 # You may need to change the module name for the compiler libraries
-module load foss
+module load foss/2021a
 
 # It is assumed that the bin files are already in your home
 # You may have to change the location of the programme
 time srun ../../bin/NISE input2DIRraman
-../../bin/2DFFT input2DIRraman
+
+# This script does not perform the 2DFFT you can do that after the calculation finished
+#../../bin/2DFFT input2DIRraman
 
 
