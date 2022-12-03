@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name NISE-Xlong
+#SBATCH --job-name NISE-2DIR-Tutorial
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=4
 #SBATCH --time=0-00:30:00

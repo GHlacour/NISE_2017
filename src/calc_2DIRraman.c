@@ -217,7 +217,7 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
 
             /*Double excitation for kII */
             if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))||
-            (!strcmp(non->technique, "2DIRraman3"))) {
+            (!strcmp(non->technique, "2DIRraman3")) || (!strcmp(non->technique, "2DIRramanII"))) {
                 //! Generates double excited state (ft1r) from single excited state (leftnr) via: mu_eg = sqrt(2) mu_fg
                 //! ft1i is 0's due to excitation from the ground state
                 dipole_double_ground(non, leftnr[t1],ft1r[t1], ft1i[t1],over);
@@ -232,7 +232,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
                 }
 
                 /* Propagation of singles for kI*/
-                if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))) {
+                if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))|| 
+                    (!strcmp(non->technique, "2DIRramanI"))) {
                     if (non->propagation == 1) {
                         propagate_vec_coupling_S(non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1);
                     } else if (non->propagation == 0) {
@@ -242,7 +243,7 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
 
                 /* Propagation of doubles for kII */
                 if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2")) ||
-                (!strcmp(non->technique, "2DIRraman3"))) {
+                    (!strcmp(non->technique, "2DIRraman3"))|| (!strcmp(non->technique, "2DIRramanII"))) {
 
                     if (non->anharmonicity == 0) {
                         printf("Anharmonicity feature for Raman not implemented yet");
@@ -279,7 +280,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
         }
 
         /*Double excitation for kI */
-        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))) {
+        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1")) 
+            || (!strcmp(non->technique, "2DIRramanI"))) {
             dipole_double_ground(non, mut3r, fr, fi,over);
             //! Transpose dipoles of t1 from left-side array to right-side array to align with Diagram 1
             memcpy(rightrr[0], leftnr[0], non->tmax1 * non->singles * sizeof(float));
@@ -288,7 +290,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
         }
 
         /* Excitation on right side for Diagram 2 (kII)*/
-        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))) {
+        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))||
+            (!strcmp(non->technique, "2DIRramanII"))) {
             //! Transpose dipoles of t3 to right-side array to align with Diagram 2
             //! rightni is zero since mut3 has no imaginary part, due to excitation from the ground state
             memcpy(rightnr, mut3r, non->singles * sizeof(float));
@@ -299,7 +302,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
         float** t1ni = (float**)calloc2D(non->tmax1, non->singles, sizeof(float), sizeof(float*));
 
         /* De-excitation on left side for Diagram 3 (kII)*/
-        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))) {
+        if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))||
+            (!strcmp(non->technique, "2DIRramanII"))) {
             for(int t1 = 0; t1 < non->tmax1; t1++) {
             //! Multiply double excited states (ft1) with double exciton dipole mut3r, new state is t1n
             dipole_double_last(non, mut3r, ft1r[t1], ft1i[t1],t1nr[t1], t1ni[t1],over);
@@ -324,7 +328,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
             }
 
             /* Multiply with the Raman tensor and Calculate Diagram 1 response */
-            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))) {
+            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))
+                || (!strcmp(non->technique, "2DIRramanI"))) {
                 //! since step at t1 (g -> e) is on right side, no t1 dependence for leftrr/leftri
                 dipole_double_last(non, alpha4, fr, fi, leftrr, leftri,over);
                 for (int t1 = 0; t1 < non->tmax1; t1++) {
@@ -347,7 +352,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
             }
 
             /* Multiply with the Raman tensor and Calculate Diagram 2 response */
-            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))) {
+            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))
+                || (!strcmp(non->technique, "2DIRramanII"))) {
                 for (int t1 = 0; t1 < non->tmax1; t1++) {
                     //! since step at t1 (g -> f) is on left side, t1 dependence for leftnr/leftni
                     dipole_double_last(non, alpha4, ft1r[t1], ft1i[t1], leftnr[t1], leftni[t1],over);
@@ -371,7 +377,8 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
             }
 
             /* Multiply with the Raman tensor and Calculate Diagram 3 response */
-            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))) {
+            if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))
+                || (!strcmp(non->technique, "2DIRramanII"))) {
                 for (int t1 = 0; t1 < non->tmax1; t1++) {
                     //! since step at t1 (g -> f) is on left side, t1 dependence for leftnr/leftni
 
@@ -580,7 +587,8 @@ void propagate_0(t_non* non, float* Hamil_i_e, int currentSample, int molPol, in
     );
 
     int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))
+        || (!strcmp(non->technique, "2DIRramanII"))) {
         #pragma omp parallel for \
             shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
             schedule(static, 1)
@@ -593,7 +601,8 @@ void propagate_0(t_non* non, float* Hamil_i_e, int currentSample, int molPol, in
         }
     }
 
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))
+        || (!strcmp(non->technique, "2DIRramanII"))) {
         for(t1 = 0; t1 < non->tmax1; t1++) {
             propagate_vec_DIA_S(non, Hamil_i_e, t1nr[t1], t1ni[t1], -1);
         }
@@ -602,7 +611,8 @@ void propagate_0(t_non* non, float* Hamil_i_e, int currentSample, int molPol, in
     // Key parallel loop 2
     // Initial step
 
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))
+        || (!strcmp(non->technique, "2DIRramanI"))) {
         propagate_vec_DIA_S(non, Hamil_i_e, rightnr, rightni, -1);
 
         for(t1 = 0; t1 < non->tmax1; t1++) {
@@ -617,7 +627,8 @@ void propagate_1(t_non* non, float* Hamil_i_e, float* fr, float* fi,float** ft1r
 
     int t1;
     //Propagate left and right side diagram 2, during t3
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman2"))
+        || (!strcmp(non->technique, "2DIRramanII"))) {
         #pragma omp parallel for \
             shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
             schedule(static, 1)
@@ -630,7 +641,8 @@ void propagate_1(t_non* non, float* Hamil_i_e, float* fr, float* fi,float** ft1r
     }
 
     //Propagate left side diagram 3, during t3 (no right side propagation due to ground state)
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman3"))
+        || (!strcmp(non->technique, "2DIRramanII"))) {
 
         for (t1 = 0; t1 < non->tmax1; t1++) {
             //! sign +1 for left side needed
@@ -639,7 +651,8 @@ void propagate_1(t_non* non, float* Hamil_i_e, float* fr, float* fi,float** ft1r
     }
 
     //Propagate right and left side of diagram 1, during t3
-    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))) {
+    if ((!strcmp(non->technique, "2DIRraman")) || (!strcmp(non->technique, "2DIRraman1"))
+        || (!strcmp(non->technique, "2DIRraman2"))) {
         propagate_vec_coupling_S_doubles(non, Hamil_i_e, fr, fi, non->ts,Anh);
 
         for (t1 = 0; t1 < non->tmax1; t1++) {

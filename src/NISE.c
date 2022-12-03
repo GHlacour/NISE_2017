@@ -208,7 +208,8 @@ int main(int argc, char* argv[]) {
 
     // Call the 2DIRraman calculation routine
     if (!strcmp(non->technique, "2DIRraman") || (!strcmp(non->technique, "2DIRraman1")) ||
-    (!strcmp(non->technique, "2DIRraman2"))||(!strcmp(non->technique, "2DIRraman3")) ) {
+    (!strcmp(non->technique, "2DIRraman2"))||(!strcmp(non->technique, "2DIRraman3")) ||
+    (!strcmp(non->technique, "2DIRramanI"))||(!strcmp(non->technique, "2DIRramanII")) ) {
         // Does support MPI
         calc_2DIRraman(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
