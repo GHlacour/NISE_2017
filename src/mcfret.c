@@ -13,7 +13,8 @@
 /* Distribute the MCFRET calculations */
 void mcfret(t_non *non){
     /* Define variables and arrays */
-    int N;
+    /*Number of molecules*/
+    int nn2;
     /* Response functions for emission and absorption: real and imaginary part*/
     float *re_S_Abs,*im_S_Abs;
     float *re_S_Emi,*im_S_Emi;
@@ -23,12 +24,13 @@ void mcfret(t_non *non){
 
     /*Allocate memory for all the variables*/
     /*Allocate memory for the response functions*/
-    re_S_Abs=(float *)calloc(N*N*non->tmax,sizeof(float));
-    im_S_Abs=(float *)calloc(N*N*non->tmax,sizeof(float));
-    re_S_Emi=(float *)calloc(N*N*non->tmax,sizeof(float));
-    im_S_Emi=(float *)calloc(N*N*non->tmax,sizeof(float));
+    nn2=non->singles*(non->singles+1)/2;
+    re_S_Abs=(float *)calloc(nn2*nn2*non->tmax,sizeof(float));
+    im_S_Abs=(float *)calloc(nn2*nn2*non->tmax,sizeof(float));
+    re_S_Emi=(float *)calloc(nn2*nn2*non->tmax,sizeof(float));
+    im_S_Emi=(float *)calloc(nn2*nn2*non->tmax,sizeof(float));
     /*Allocate memory for the Hamiltonian matrix*/
-    Hamil_i_e=(float *)calloc()
+    Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
     /* Call the MCFRET Routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
@@ -41,6 +43,7 @@ void mcfret(t_non *non){
     if (!strcmp(non->technique, "MCFRET") || !strcmp(non->technique, "MCFRET-Absorption")  ){
         printf("Calculation Absortion Matrix for MCFRET.\n");
         mcfret_response_function(non,re_S_Abs,im_S_Abs,0);
+        
     }
 
     /* Call the MCFRET Response for Absorption matrix */
