@@ -14,13 +14,21 @@
 void mcfret(t_non *non){
     /* Define variables and arrays */
     int N;
+    /* Response functions for emission and absorption: real and imaginary part*/
     float *re_S_Abs,*im_S_Abs;
     float *re_S_Emi,*im_S_Emi;
+    /*Hamiltonian of the whole system */
+    float *Hamil_i_e;
 
+
+    /*Allocate memory for all the variables*/
+    /*Allocate memory for the response functions*/
     re_S_Abs=(float *)calloc(N*N*non->tmax,sizeof(float));
     im_S_Abs=(float *)calloc(N*N*non->tmax,sizeof(float));
     re_S_Emi=(float *)calloc(N*N*non->tmax,sizeof(float));
     im_S_Emi=(float *)calloc(N*N*non->tmax,sizeof(float));
+    /*Allocate memory for the Hamiltonian matrix*/
+    Hamil_i_e=(float *)calloc()
 
     /* Call the MCFRET Routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
