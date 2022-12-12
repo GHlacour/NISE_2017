@@ -114,7 +114,7 @@ The NISE program use the following input:\\
 \begin{description}
 \item [Hamiltonianfile] [File name]
 \item [Dipolefile] [File name]
-\item [Alphafile] [File name] (Only needed for SFG calculations)
+\item [Alphafile] [File name] (Transition polarizability file. Only needed for Raman and 2DIRRaman calculations)
 \item [Anharmonicfile] [File name]
 \item [Overtonedipolefile] [File name]
 \item [HamiltonianType] [Full/Coupling/TransitionDipole/ExtendedDipole] (Full is the default)
@@ -140,7 +140,7 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
 %\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
-\item [Technique] [Absorption / DOS / Luminescence / CD / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
+\item [Technique] [Absorption / DOS / Luminescence / CD / Raman / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / 2DIRraman / 2DIRramanI / 2DIRramanII / 2DIRraman1 / 2DIRraman2 / 2DIRraman3 / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
 \item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
@@ -207,6 +207,13 @@ The two last columns are the real and imaginary parts of the response functions.
 response functions are found using a double Fourier transform (see section \ref{sec:Fourier}).
 It is recommended to check that the response function has decayed within the calculated time intervals.
 
+The 2DIRraman calculations provides the files R(par/per/cro).IRraman.(I/II).dat. These files contain the time domain
+third-order response functions for different polarization directions \cite{Hochstrasser.2001.CP.266.273,Zanni.2001.PNAS.98.11265}.
+The first three columns are the times t1, t2, and t2 in femtoseconds.
+The two last columns are the real and imaginary parts of the response functions. The frequency domain
+response functions are found using a double Fourier transform (see section \ref{sec:Fourier}).
+It is recommended to check that the response function has decayed within the calculated time intervals. 
+
 %The 2DSFG calculation stores the $\chi^{(4)}_{zzzzz}$ signal in Rpar(I/II).dat, while the $\chi^{(4)}_{zzzyy}$ signal is stored in Rper(I/II).dat. The files are essentially identical to the normal 2D response files and are Fourier transformed in the same way (see section \ref{sec:Fourier}).
 
 The population transfer calculation provides two files. Pop.dat contain two columns. The first is the
@@ -228,8 +235,8 @@ inition of Thouless \cite{Thouless.1974.PR.13.93} directly in the program standa
 
 \section{Fourier transform \label{sec:Fourier}}
 The 2DFFT program use the same input as the NISE program.
-Fourier transformed response is written in files named Rw(par/per/cro).(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2D.(par/per/cro).dat and the 'broad pump narrow probe' pump probe signal is stored in PP.(par/per/cro).dat.
-The first column is $\omega_1$, the second is $\omega_2$, the third is the dispersive signal, and the
+For 2DIR and 2DUVvis the Fourier transformed response is written in files named Rw(par/per/cro).(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2D.(par/per/cro).dat and the 'broad pump narrow probe' pump probe signal is stored in PP.(par/per/cro).dat. 
+The first column is $\omega_1$, the second is $\omega_3$, the third is the dispersive signal, and the
 last column is the absorptive signal. Perl scripts connected with Dislin are available for plotting or the
 user can use his or her favorite plotting program. The Dislin format is also used by the python plotting code included in the tutorial files.
 The Gunplot output is only differing from the Dislin format in an empty line following ach new value of $\omega_1$. A Gnuplot example file is included in the tutorial. A python plotting script which use the Dislin output format file is included. The cover picture 
@@ -238,4 +245,5 @@ of the manual is generated with this python script.
 then contain a matrix with the response. An additional file waxis.dat is created with the values of the
 frequencies.
 
-
+For 2DIRraman the Fourier transformed response is written in files named Rw(par/per/cro)IRraman.(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2DIRraman.(par/per/cro).(I/II).dat and signal integrated over $\omega_1$ is stored in PPIRraman.(I/II).(par/per/cro).dat.                  
+The first column is $\omega_1$, the second is $\omega_3$, the third is the dispersive signal, and the last column is the absorptive signal. Note that 2DIRraman rephaing and non-rephasing signals cannot be added directly and are therefore stored separately. The non-rephasing $\omega_1$ frequencies are about twice that of the single excitation transition frequency as first coherence coresponds to a coherence between a double excited state and the ground state.

@@ -164,12 +164,14 @@ Some considerations and examples to achieve higher performance:
 
 \section{Changelog}
 \subsection{Version 3.4 in progress}
-{\small Work by Thomas Jansen and Kim van Adrichem}
+{\small Work by Thomas Jansen, Carleen D. N. van Hengel, and Kim van Adrichem}
 \begin{itemize}
+\item The 2DFFT code was cleaned up
+\item Raman and 2DIRraman techniques were added (Carleen D. N. van Hengel)
 \item openMP parallel CD and DOS were implemented
 \item Diffusion calculations were added
 \item On the fly transition-dipole and extended-dipole coupling schemes were impemented
-\item Added project file option to project on substructures
+\item Added project file option to project on substructures - including multi segment options for linear techniques
 \item Added inhomogeneous and homogeneous apodization functions
 \item Added automatic check on Singles keyword providing warning to user if it may be incorrect
 \item Implemented speed-up (x2) of 2D calculations by removing if statements in propagation of double excited states (2DIR by Kim van Adrichem)
@@ -206,7 +208,7 @@ Some considerations and examples to achieve higher performance:
 
 \chapter{Acknowledgement}
 The following people are kindly acknowledged for their contribution through helpful discussions, ideas, and feedback:
-Foppe de Haan, Arend Dijkstra, Alexander Paarmann, Carsten Olbrich, Jim Skinner and his group, Carlos Baiz, Chungwen Liang, Santanu Roy, Ana V. Cunha, Andy Sardjan, and Ariba Javad. 
+Foppe de Haan, Arend Dijkstra, Alexander Paarmann, Carsten Olbrich, Jim Skinner and his group, Lu Wang, Carlos Baiz, Chungwen Liang, Santanu Roy, Ana V. Cunha, Andy Sardjan, and Ariba Javad. 
 
 The NWO is gratefully acknowledged
 for financial support making is possible to write the initial versions of this code through VENI and VIDI grants. 
