@@ -524,13 +524,13 @@ void calc_2DIRraman(t_non* non, int parentRank, int parentSize, int subRank, int
 
 
         /* Print 2D */
-            print2D("RparIraman.dat", rrIpar, riIpar, non, sampleCount);
-            print2D("RperIraman.dat", rrIper, riIper, non, sampleCount);
-            print2D("RcroIraman.dat", rrIcro, riIcro, non, sampleCount);
+            print2D("RparI.IRraman.dat", rrIpar, riIpar, non, sampleCount);
+            print2D("RperI.IRraman.dat", rrIper, riIper, non, sampleCount);
+            print2D("RcroI.IRraman.dat", rrIcro, riIcro, non, sampleCount);
 
-            print2D("RparIIraman.dat", rrIIpar, riIIpar, non, sampleCount);
-            print2D("RperIIraman.dat", rrIIper, riIIper, non, sampleCount);
-            print2D("RcroIIraman.dat", rrIIcro, riIIcro, non, sampleCount);
+            print2D("RparII.IRraman.dat", rrIIpar, riIIpar, non, sampleCount);
+            print2D("RperII.IRraman.dat", rrIIper, riIIper, non, sampleCount);
+            print2D("RcroII.IRraman.dat", rrIIcro, riIIcro, non, sampleCount);
 
         printf("----------------------------------------\n");
         printf(" 2DIR-Raman calculation succesfully completed\n");

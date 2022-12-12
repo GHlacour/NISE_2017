@@ -9,9 +9,13 @@
 
 #define round(x) ((x)>0?(long)(x+0.5):(long)(x-0.5))
 
-/* This program takes the Fourier transform of kI and kII processes */
-/* and adds up the results to get the absorptive 2D spectra. */
-/* The process is identical for 2DIR and 2DUVvis type spectra. */
+/* This program takes the Fourier transform of kI and kII processes
+   and adds up the results to get the absorptive 2D spectra. 
+   The process is identical for 2DIR and 2DUVvis type spectra. 
+   For 2DIRraman the rephasing and non-rephasing results are 
+   stored separately. The function takes the original NISE input
+   file as input. */
+
 int main(int argc,char *argv[]){
   int fft;
   fftw_complex *fftIn,*fftOut;
@@ -44,8 +48,8 @@ int main(int argc,char *argv[]){
   int pol;
   // Add
   char kIFName[256],kIIFName[256];
-  char twoDFName[256];
-  char pPFName[256];
+  char twoDFName[256],twoDFName2[256];
+  char pPFName[256],pPFName2[256];
   int p1I,p3I,p1II,p3II;
   float **kI,**kI1,**kI3;
   float **kII,**kII1,**kII3;
@@ -63,11 +67,12 @@ int main(int argc,char *argv[]){
 
   fixedtime=-1;
 
-  // Defaults
+  /* Defaults for Homogenous and Inhomogeneous broadening
+     is that none is added. */
   homo=0.0;
   inhomo=0.0;
 
-  // Read input
+  /* Read input */
   if (argc!=2){
     printf("Specify input file name on command line!\n");
     printf("Program terminated!\n");
@@ -77,24 +82,28 @@ int main(int argc,char *argv[]){
     printf("Using input file '%s'.\n",inputFName);
   }
 
-  // Open input file
+  /* Open input file */
   fileHandle=fopen(inputFName, "r");
   if (fileHandle == NULL) {
     printf("File not found!\n");
     exit(1);
   }
 
-  form=0; // Default format is Dislin
+  /* Default format is Dislin which also corresponds to easy
+     python/numpy format. */
+  form=0;
+
+  /* Read input file line by line */
   do {
     pStatus = fgets(&Buffer[0],sizeof(Buffer),fileHandle);
     if (pStatus == NULL) {
       break;
     }
 
-    // Compute LabelLength
+    /* Compute LabelLength */
     LabelLength = strcspn(&Buffer[0], " ");
 
-    // FFT keyword
+    /* FFT keyword */
     if (!strncmp(&Buffer[0],"FFT",LabelLength)){
       printf("FFT: ");
       pValue = &Buffer[LabelLength];
@@ -107,9 +116,9 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-    // Timestep keyword
+    /* Timestep keyword */
     if (!strncmp(&Buffer[0],"Timestep",LabelLength)){
-      printf("Timestep: ");
+      printf("Timestep in fs: ");
       pValue = &Buffer[LabelLength];
       while (*pValue == ' '){
         pValue++;
@@ -120,7 +129,7 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-    // Homogen keyword
+    /* Homogeneous keyword */
     if (!strncmp(&Buffer[0],"Homogeneous",LabelLength)){
       printf("Homogeneous Lifetime: ");
       pValue = &Buffer[LabelLength];
@@ -133,7 +142,7 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-    // Inhomogen keyword
+    /* Inhomogeneous keyword */
     if (!strncmp(&Buffer[0],"Inhomogeneous",LabelLength)){
       printf("Inhomogeneous Lifetime: ");
       pValue = &Buffer[LabelLength];
@@ -146,54 +155,27 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-    // Format
+    /* Format */
     if (!strncmp(&Buffer[0],"Format",LabelLength)){
       printf("Format:");
 
       sscanf(Buffer,"%s %s",format,format);
       if (!strcmp(&format[0],"Dislin")) form=0;
+      if (!strcmp(&format[0],"Python")) form=0;
       if (!strcmp(&format[0],"Matlab")) form=1;
       if (!strcmp(&format[0],"Gnuplot")) form=2;
-      if (form==0) printf("Dislin\n");
+      if (form==0) printf("Dislin/Python\n");
       if (form==1) printf("Matlab\n");
       if (form==2) printf("Gnuplot\n");
       continue;
     }
 
-    // Timevariables keyword
+    /* Timevariables keyword */
     tv1=1,tv2=3;
     tv3=2;
-    /*    if (!strncmp(&Buffer[0],"Timevariables",LabelLength)){
-      printf("Timevariables:");
+    
 
-      sscanf(Buffer,"%s %d %d",Dummy,&tv1,&tv2);
-
-      printf(" t%d t%d\n",tv1,tv2);
-      // tv1+tv2+tv3=1+2+3=6
-      if (tv1==tv2){
-	printf("The two time variables must be different!\n");
-	exit(0);
-      }
-      if (tv1<1 || tv1>3 || tv2<1 || tv2>3){
-	printf("The time variables must equal 1, 2 or 3!\n");
-	exit(0);
-      }
-      tv3=6-tv1-tv2;
-      printf("Fixed time: t%d\n",tv3);
-      continue;
-      }*/
-
-    // Fixedtime keyword
-    /*    if (!strncmp(&Buffer[0],"Fixedtime",LabelLength)){
-      printf("Fixedtime:");
-
-      sscanf(Buffer,"%s %f",Dummy,&fixedtime);
-
-      printf(" %f fs\n",fixedtime);
-      continue;
-      }*/
-
-    // RunTimes keyword
+    /* RunTimes keyword */
     if (!strncmp(&Buffer[0],"RunTimes",LabelLength)){
       printf("RunTimes:");
 
@@ -203,27 +185,10 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-    // TimeIncrement keyword
-    /*    if (!strncmp(&Buffer[0],"TimeIncrement",LabelLength)){
-      printf("TimeIncrement:");
-
-      sscanf(Buffer,"TimeIncrement %d %d %d",&(t.dt[1]),&(t.dt[2]),&(t.dt[3]));
-
-      printf(" %f %f %f (in fs)\n",(t.dt[1])*(deltat),(t.dt[2])*(deltat),(t.dt[3])*(deltat));
-      continue;
-      }*/
+    /* TimeIncrement keyword */
     t.dt[1]=t.dt[2]=t.dt[3]=1;
 
-    // MinTimes keyword
-    /*    if (!strncmp(&Buffer[0],"MinTimes",LabelLength)){
-      printf("MinTimes:");
-
-      sscanf(Buffer,"MinTimes %d %d %d",&(t.tmin1),&(t.tmin2),&(t.tmin3));
-
-      printf(" %f %f %f (in fs)\n",t.tmin1*(deltat),t.tmin2*(deltat),t.tmin3*(deltat));
-      continue;
-      }*/
-    // MinFrequencies keyword
+    /* MinFrequencies keyword */
     if (!strncmp(&Buffer[0],"MinFrequencies",LabelLength)){
       printf("MinFrequencies:");
 
@@ -231,7 +196,7 @@ int main(int argc,char *argv[]){
       printf(" w1: %f  w2: %f  w3: %f\n",w.min1,w.min2,w.min3);
       continue;
     }
-    // MaxFrequencies keyword
+    /* MaxFrequencies keyword */
     if (!strncmp(&Buffer[0],"MaxFrequencies",LabelLength)){
       printf("MaxFrequencies:");
 
@@ -240,18 +205,19 @@ int main(int argc,char *argv[]){
       continue;
     }
 
-      /*Read in techique name to determine if which technique is used*/
+    /* Read in techique name to determine which technique is used
+       this is needed to distinguish between the 2DIR/2DUVvis and
+       the 2DIRraman technique, where the later require special
+       treatment. */
+
     if (!strncmp(&Buffer[0],"Technique",LabelLength)){
       printf("Technique: ");
 
       sscanf(Buffer,"Technique %s",TechniqueName);
       printf("%s \n",TechniqueName);
-      if(!strcmp(TechniqueName, "2DIRraman")){
-      printf("WARNING: 2DIRraman technique input used for 2DFFT!\n");
-      printf("Make sure your input is Rephasing or Non-rephasing only!\n");
-      }
-      else if ((!strcmp(TechniqueName, "2DIRraman1")) || (!strcmp(TechniqueName, "2DIRraman2"))||
-            (!strcmp(TechniqueName, "2DIRraman3"))) {
+      if ((!strcmp(TechniqueName, "2DIRraman1")) || (!strcmp(TechniqueName, "2DIRraman2"))||
+            (!strcmp(TechniqueName, "2DIRraman3")) || (!strcmp(TechniqueName, "2DIRramanI")) ||
+            !strcmp(TechniqueName, "2DIRramanII")) {
         strcpy(TechniqueName,"2DIRraman");
       }
       continue;
@@ -267,15 +233,6 @@ int main(int argc,char *argv[]){
     printf("The max frequency must be larger than the min frequency!\n");
     exit(0);
   }
-
-  /*
-  if (tv1==0 || tv2==0){
-    printf("Warning!\n");
-    printf("The Timevariable keyword was not specified!\n");
-    tv1=1,tv2=3;
-    printf("Using default. T2 - waiting time\n");
-    tv3=6-tv1-tv2;
-    }*/
 
   shift1=0.5*(w.min1+w.max1),shift3=-0.5*(w.min3+w.max3);
 
@@ -295,18 +252,17 @@ int main(int argc,char *argv[]){
   for (pol=0;pol<3;pol++){
     /* Compare technique name from input file with raman technique name,
     to determine which variation of the files needs to be read and written */
-    if(!strcmp(TechniqueName, "2DIRraman")){
-      if (pol==0) sprintf(timeFName,"RparIraman.dat"),sprintf(frequencyFName,"RwparRaman.I.dat");
-      if (pol==1) sprintf(timeFName,"RperIraman.dat"),sprintf(frequencyFName,"RwperRaman.I.dat");
-      if (pol==2) sprintf(timeFName,"RcroIraman.dat"),sprintf(frequencyFName,"RwcroRaman.I.dat");
-    }
-    else{
+    if (!strcmp(TechniqueName, "2DIRraman")){
+      if (pol==0) sprintf(timeFName,"RparI.IRraman.dat"),sprintf(frequencyFName,"RwparIRraman.I.dat");
+      if (pol==1) sprintf(timeFName,"RperI.IRraman.dat"),sprintf(frequencyFName,"RwperIRraman.I.dat");
+      if (pol==2) sprintf(timeFName,"RcroI.IRraman.dat"),sprintf(frequencyFName,"RwcroIRraman.I.dat");
+    } else {
       if (pol==0) sprintf(timeFName,"RparI.dat"),sprintf(frequencyFName,"Rwpar.I.dat");
       if (pol==1) sprintf(timeFName,"RperI.dat"),sprintf(frequencyFName,"Rwper.I.dat");
       if (pol==2) sprintf(timeFName,"RcroI.dat"),sprintf(frequencyFName,"Rwcro.I.dat");
     }
 
-    // Clear array
+    /* Clear array */
     for (i=0;i<fft;i++){
       for (j=0;j<fft;j++){
         index=j+fft*i;
@@ -315,13 +271,13 @@ int main(int argc,char *argv[]){
       }
     }
 
-    // Read response function
+    /* Read response function */
     input=fopen(timeFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",timeFName);
-      //      exit(0); Changed April 2021 to simply skip to the next polarization
-      //      if the response function is missing for this one. TLC
-      printf("Warning: Skipping this response function polarization!\n");
+      /*      exit(0); Changed April 2021 to simply skip to the next polarization
+              if the response function is missing for this one. TLC */
+      printf(YELLOW "Warning: Skipping this response function polarization!\n" RESET);
 	    continue;
     }
 
@@ -329,40 +285,35 @@ int main(int argc,char *argv[]){
     for (i=0;i<t.tmax1;i+=t.dt[1]){
       j=t.tmax2;
       for (k=0;k<t.tmax3;k+=t.dt[3]){
-	fscanf(input,"%f %f %f %e %e",&ti[1],&ti[2],&ti[3],&rr,&ir);
+	        fscanf(input,"%f %f %f %e %e",&ti[1],&ti[2],&ti[3],&rr,&ir);
 
-  /* Raman technique: Diagram detection.
-  Determine if rr is nonzero (exclude first time step, since it can be zero)
-  and store this information by setting the check integer to 1*/
-  if(rr != 0.000000 && k!= 0)RamanDiagramCheck += 1;
-	// Test is the fixed time is right
-	if (round(ti[tv3]/deltat)==round(fixedtime/deltat) || fixedtime<-.5){
-	  index=round(ti[tv2]/(deltat*t.dt[tv2])+fft*ti[tv1]/(deltat*t.dt[tv1]));
-	  /* Apply appodization */
-	  if (homo>0.0){
-	     rr=rr*exp(-(ti[1]+ti[3])/2/homo);
-             ir=ir*exp(-(ti[1]+ti[3])/2/homo);
-	  }
-          if (inhomo>0.0){
-             rr=rr*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
-             ir=ir*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
+
+	/* Test is the fixed time is right */
+	        if (round(ti[tv3]/deltat)==round(fixedtime/deltat) || fixedtime<-.5){
+	           index=round(ti[tv2]/(deltat*t.dt[tv2])+fft*ti[tv1]/(deltat*t.dt[tv1]));
+	/* Apply appodization */
+	            if (homo>0.0){
+	                rr=rr*exp(-(ti[1]+ti[3])/2/homo);
+                  ir=ir*exp(-(ti[1]+ti[3])/2/homo);
+	            }
+              if (inhomo>0.0){
+                  rr=rr*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
+                  ir=ir*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
+              }
+	            if (index<fft*fft){
+	                fftIn[index][0]=rr;
+	                fftIn[index][1]=ir;
+	            }
           }
-	     if (index<fft*fft){
-	      fftIn[index][0]=rr;
-	      fftIn[index][1]=ir;
-	      }
-    	}
       }
     }
     fclose(input);
     printf("Response function (kI) file read!\n");
 
-    // Do fft
+    /* Do fft */
     fftw_execute(fftPlan);
 
-    // Fix units
-
-    // Write response function
+    /* Write response function */
     output=fopen(frequencyFName,"w");
 
     for (i=fft/2;i<fft;i++){
@@ -397,7 +348,7 @@ int main(int argc,char *argv[]){
         }
       }
       if ((form==1 || form==2) && w1>-w.max1 && w1<-w.min1){
-	fprintf(output,"\n");
+	       fprintf(output,"\n");
       }
 
     }
@@ -436,22 +387,19 @@ int main(int argc,char *argv[]){
     fclose(output);
   }
 
-
-
-  // Loop over response functions kII
+  /* Loop over response functions kII */
   shift3=-shift3;
   for (pol=0;pol<3;pol++){
     if(!strcmp(TechniqueName, "2DIRraman")){
-      if (pol==0) sprintf(timeFName,"RparIIraman.dat"),sprintf(frequencyFName,"RwparRaman.II.dat");
-      if (pol==1) sprintf(timeFName,"RperIIraman.dat"),sprintf(frequencyFName,"RwperRaman.II.dat");
-      if (pol==2) sprintf(timeFName,"RcroIIraman.dat"),sprintf(frequencyFName,"RwcroRaman.II.dat");
-    }
-    else{
+      if (pol==0) sprintf(timeFName,"RparII.IRraman.dat"),sprintf(frequencyFName,"RwparIRraman.II.dat");
+      if (pol==1) sprintf(timeFName,"RperII.IRraman.dat"),sprintf(frequencyFName,"RwperIRraman.II.dat");
+      if (pol==2) sprintf(timeFName,"RcroII.IRraman.dat"),sprintf(frequencyFName,"RwcroIRraman.II.dat");
+    } else {
       if (pol==0) sprintf(timeFName,"RparII.dat"),sprintf(frequencyFName,"Rwpar.II.dat");
       if (pol==1) sprintf(timeFName,"RperII.dat"),sprintf(frequencyFName,"Rwper.II.dat");
       if (pol==2) sprintf(timeFName,"RcroII.dat"),sprintf(frequencyFName,"Rwcro.II.dat");
     }
-    // Clear array
+    /* Clear array */
     for (i=0;i<fft;i++){
       for (j=0;j<fft;j++){
         index=j+fft*i;
@@ -460,7 +408,7 @@ int main(int argc,char *argv[]){
       }
     }
 
-    // Read response function kII
+    /* Read response function kII */
     input=fopen(timeFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",timeFName);
@@ -475,27 +423,14 @@ int main(int argc,char *argv[]){
       j=t.tmax2;
       for (k=0;k<t.tmax3;k+=t.dt[3]){
 	      fscanf(input,"%f %f %f %e %e",&ti[1],&ti[2],&ti[3],&rr,&ir);
-         /* Raman technique: Diagram detection.
-        Determine if rr is nonzero and compare with result rr */
-        if(!strcmp(TechniqueName, "2DIRraman")){
-          if(rr != 0.000000 && RamanDiagramCheck >= 1 && k!=0){
-            RamanDiagramCheck +=1;
-            //printf(" after %i\n",RamanDiagramCheck);
-            if(RamanDiagramCheck > 5){
-              Raman2D = 2;
-            //printf("2DIRraman: Rephasing and Non-rephasing diagrams cannot be Fourier transformed togheter!\n");
-            //printf("Make sure that one of the pathways (I or II) has 0.00000 values\n");
-            //exit(0);
-            }
-          }
-        }
-      	// Test is the fixed time is right
+                 
+      	// Test if the fixed time is right
         if (round(ti[tv3]/deltat)==round(fixedtime/deltat) || fixedtime<-.5){
           if (ti[tv1]==0){
             index=round((ti[tv2])/(deltat*t.dt[tv2])+fft*(ti[tv1]/(deltat*t.dt[tv1])));
           } else {
             index=round((ti[tv2])/(deltat*t.dt[tv2])+fft*((ti[tv1])/(deltat*t.dt[tv1])));
-	  }
+	        }
 	  /* Apply appodization */
           if (homo>0.0){
              rr=rr*exp(-(ti[1]+ti[3])/2/homo);
@@ -515,14 +450,13 @@ int main(int argc,char *argv[]){
     fclose(input);
     printf("Response function kII file read!\n");
 
-    // Do fft
+    /* Do fft */
     fftw_execute(fftPlan);
     //      printf("%f %f\n",1/deltat/c_v/fft,1/deltat/c_v);
     sw=1/deltat/c_v;
-    // Fix units
-
+  
     rwma1=shift1,rwmi1=shift1,rwma3=shift3,rwmi3=shift3;
-    // Write response function
+    /* Write response function */
     output=fopen(frequencyFName,"w");
     if (form==1) axisFH=fopen("waxis.dat","w");
     for (i=fft/2;i<fft;i++){
@@ -539,6 +473,7 @@ int main(int argc,char *argv[]){
             if (w1>rwma1) rwma1=w1;
             if (w3<rwmi3) rwmi3=w3;
             if (w3>rwma3) rwma3=w3;
+            if(!strcmp(TechniqueName, "2DIRraman")) w1=w1+shift1;
             if (form==0 || form==2) fprintf(output,"%f %f %e %e\n",w1,w3,
               fftOut[index][0],fftOut[index][1]);
             if (form==1) fprintf(output,"%e ",fftOut[index][1]);
@@ -559,6 +494,7 @@ int main(int argc,char *argv[]){
             if (w1>rwma1) rwma1=w1;
             if (w3<rwmi3) rwmi3=w3;
             if (w3>rwma3) rwma3=w3;
+            if(!strcmp(TechniqueName, "2DIRraman")) w1=w1+shift1;
             if (form==0 || form==2) fprintf(output,"%f %f %e %e\n",w1,w3,
               fftOut[index][0],fftOut[index][1]);
             if (form==1) fprintf(output,"%e ",fftOut[index][1]);
@@ -585,6 +521,7 @@ int main(int argc,char *argv[]){
             if (w1>rwma1) rwma1=w1;
             if (w3<rwmi3) rwmi3=w3;
             if (w3>rwma3) rwma3=w3;
+            if(!strcmp(TechniqueName, "2DIRraman")) w1=w1+shift3;
             if (form==0 || form==2) fprintf(output,"%f %f %e %e\n",w1,w3,
               fftOut[index][0],fftOut[index][1]);
             if (form==1) fprintf(output,"%e ",fftOut[index][1]);
@@ -605,6 +542,7 @@ int main(int argc,char *argv[]){
             if (w1>rwma1) rwma1=w1;
             if (w3<rwmi3) rwmi3=w3;
             if (w3>rwma3) rwma3=w3;
+            if(!strcmp(TechniqueName, "2DIRraman")) w1=w1+shift1;
             if (form==0 || form==2) fprintf(output,"%f %f %e %e\n",w1,w3,
               fftOut[index][0],fftOut[index][1]);
             if (form==1) fprintf(output,"%e ",fftOut[index][1]);
@@ -623,26 +561,23 @@ int main(int argc,char *argv[]){
     //    printf("z\n");
   }
 
-  // Exit if printing in matlab format (user should add S1 and S2 in matlab);
+  /* Exit if printing in matlab format (user should add S1 and S2 in matlab) */
   if (form==1) exit(0);
-
-  // Add S1 and S2 for dislin use
+  
+  /* Add S1 and S2 for dislin/python/gnuplot use */
   dw1=1/deltat/c_v/fft;
   dw3=1/deltat/c_v/fft;
-  //  rwma1=1/deltat/c_v/2-shift1;
-  //  rwmi1=-1/deltat/c_v/2-shift1;
-  //  rwma3=1/deltat/c_v/2-shift3;
-  //  rwmi3=-1/deltat/c_v/2-shift3;
-  // Find dimensions
-  //  p1I=p1II=p2D1=round((w.max1-w.min1)/dw1-0.5);
-  //  p3I=p3II=p2D3=round((w.max3-w.min3)/dw3-0.5);
+ 
+  /* Find dimensions */
   p1I=p1II=p2D1=round((rwma1-rwmi1)/dw1+1);
   p3I=p3II=p2D3=round((rwma3-rwmi3)/dw3+1);
-  //  printf("A1 %d A2 %d %f %f %f %f %f %f\n",p1I,p3I,(w.max1-w.min1)/dw1,(w.max3-w.min3)/dw3,rwma1,rwmi1,rwma3,rwmi3);
-  //  p2D1--,p2D3--;
-  printf("Adding rephasing and nonrephasing contributions!\n");
+  
+  if (!strcmp(TechniqueName, "2DIRraman")){
+  } else {
+      printf("Adding rephasing and nonrephasing contributions!\n");
+  }
 
-  // Define arrays
+  /* Define arrays */
   kI=matrix(1,p1I,1,p3I);
   kI1=matrix(1,p1I,1,p3I);
   kI3=matrix(1,p1I,1,p3I);
@@ -656,44 +591,47 @@ int main(int argc,char *argv[]){
   kIIi=matrix(1,p1II,1,p3II);
   IRi=matrix(1,p2D1,1,p2D3);
 
+  /* Define File Names */
   for (pol=0;pol<3;pol++){
-    if(!strcmp(TechniqueName, "2DIRraman")){
-      if (pol==0) sprintf(kIFName,"RwparRaman.I.dat"),sprintf(kIIFName,"RwparRaman.II.dat");
-      if (pol==0 && Raman2D != 2) sprintf(twoDFName,"2Draman.par.dat"),sprintf(pPFName,"PPraman.par.dat");
-      if (pol==1) sprintf(kIFName,"RwperRaman.I.dat"),sprintf(kIIFName,"RwperRaman.II.dat");
-      if (pol==1 && Raman2D != 2) sprintf(twoDFName,"2Draman.per.dat"),sprintf(pPFName,"PPraman.per.dat");
-      if (pol==2) sprintf(kIFName,"RwcroRaman.I.dat"),sprintf(kIIFName,"RwcroRaman.II.dat");
-      if (pol==2 && Raman2D != 2) sprintf(twoDFName,"2Draman.cro.dat"),sprintf(pPFName,"PPraman.cro.dat");
-    }
-    else{
+    if (!strcmp(TechniqueName, "2DIRraman")){
+      if (pol==0) sprintf(kIFName,"RwparIRraman.I.dat"),sprintf(kIIFName,"RwparIRraman.II.dat"),
+          sprintf(twoDFName,"2DIRraman.I.par.dat"),sprintf(pPFName,"PPIRraman.I.par.dat"),
+          sprintf(twoDFName2,"2DIRraman.II.par.dat"),sprintf(pPFName2,"PPIRraman.II.par.dat");
+      if (pol==1) sprintf(kIFName,"RwperIRraman.I.dat"),sprintf(kIIFName,"RwperIRraman.II.dat"),
+          sprintf(twoDFName,"2DIRraman.I.per.dat"),sprintf(pPFName,"PPIRraman.I.per.dat"),
+          sprintf(twoDFName2,"2DIRraman.II.per.dat"),sprintf(pPFName2,"PPIRraman.II.per.dat");
+      if (pol==2) sprintf(kIFName,"RwcroIRraman.I.dat"),sprintf(kIIFName,"RwcroIRraman.II.dat"),
+          sprintf(twoDFName,"2DIRraman.I.cro.dat"),sprintf(pPFName,"PPIRraman.I.cro.dat"),
+          sprintf(twoDFName2,"2DIRraman.II.cro.dat"),sprintf(pPFName2,"PPIRraman.II.cro.dat"); 
+     } else {
       if (pol==0) sprintf(kIFName,"Rwpar.I.dat"),sprintf(kIIFName,"Rwpar.II.dat"),sprintf(twoDFName,"2D.par.dat"),sprintf(pPFName,"PP.par.dat");
       if (pol==1) sprintf(kIFName,"Rwper.I.dat"),sprintf(kIIFName,"Rwper.II.dat"),sprintf(twoDFName,"2D.per.dat"),sprintf(pPFName,"PP.per.dat");
       if (pol==2) sprintf(kIFName,"Rwcro.I.dat"),sprintf(kIIFName,"Rwcro.II.dat"),sprintf(twoDFName,"2D.cro.dat"),sprintf(pPFName,"PP.cro.dat");
     }
-    // Read files
-    // Read response function kI
+
+    /* Read files  for adding */
+
+    /* Read response function kI */
     input=fopen(kIFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",kIFName);
-      //exit(0);
-      printf("Warning: Skipping this response function polarization!\n");
+      printf(YELLOW "Warning: Skipping this response function polarization!\n" RESET);
       continue;
     }
     printf("Reading response function file (kI)!\n");
     for (i=1;i<=p1I;i++){
       for (j=1;j<=p3I;j++){
 	      fscanf(input,"%f %f %e %e",&kI1[i][j],&kI3[i][j],&kIi[i][j],&kI[i][j]);
-	      kI1[i][j]=-kI1[i][j];
+	      kI1[i][j]=-kI1[i][j]; /* Change sign of w1 frequency */
       }
     }
     fclose(input);
 
-    // Read response function kII
+    /* Read response function kII */
     input=fopen(kIIFName,"r");
     if (input==NULL){
       printf("The response function file %s was not found!\n",kIIFName);
-      //exit(0);
-      printf("Warning: Skipping this response function polarization!\n");
+      printf(YELLOW "Warning: Skipping this response function polarization!\n" RESET);
     }
     printf("Reading response function file (kII)!\n");
     for (i=1;i<=p1II;i++){
@@ -703,33 +641,94 @@ int main(int argc,char *argv[]){
     }
     fclose(input);
 
-    // Find grid frequencies
-    // Loop over grid points
+    /* Find grid frequencies
+       Loop over grid points */
     for (k=1;k<=p2D1;k++){
       for (l=1;l<=p2D3;l++){
-        //	IR1[k][l]=w.min1+(w.max1-w.min1)*k/(p2D1);
-        //	IR3[k][l]=w.min3+(w.max3-w.min3)*l/(p2D3);
         IR1[k][l]=rwmi1+(rwma1-rwmi1)*k/(p2D1);
         IR3[k][l]=rwmi3+(rwma3-rwmi3)*l/(p2D3);
       }
     }
 
-    // Add contributions from kI
-    for (i=1;i<=p1I;i++){
-      for (j=1;j<=p3I;j++){
-        IR[i][j]=kI[p1I-i+1][j]+kII[i][j];
-        IRi[i][j]=kIi[p1I-i+1][j]+kIIi[i][j];
+    /* Add contributions from kI and kII unless 2DIRraman */
+    if (!strcmp(TechniqueName, "2DIRraman")){
+    } else {
+        for (i=1;i<=p1I;i++){
+           for (j=1;j<=p3I;j++){
+              IR[i][j]=kI[p1I-i+1][j]+kII[i][j];
+              IRi[i][j]=kIi[p1I-i+1][j]+kIIi[i][j];
+           }
       }
     }
 
-    // Save 2DIR spectrum
-    output=fopen(twoDFName,"w");
-    if (Raman2D ==2){
-      printf("2DIRraman: Rephasing and Non-rephasing diagrams cannot be Fourier transformed togheter!\n");
-      printf("Make sure that one of the pathways (I or II) has 0.00000 values\n");
-      printf("2D and PP files will not be written, frequency file for polarisation %i will still be calculated.\n", pol);
+    /* Save 2D spectrum */
+    
+    /* For 2DIRraman rephasing and non-rephasing are stored separately */
+    if(!strcmp(TechniqueName, "2DIRraman")){
+      /* TLC Here write the Rephasing and Non-Rephasing to separate files instead */
+      output=fopen(twoDFName,"w");
+      /* Loop over grid points */
+      for (k=1;k<=p2D1;k++){
+        for (l=1;l<=p2D3;l++){
+          fprintf(output,"%f %f %e %e\n",kI1[k][l],kI3[k][l],kIi[k][l],kI[k][l]);
+        }
+        if (form==2) fprintf(output,"\n");
+      }
+      fclose(output);
+ 
+      output=fopen(twoDFName2,"w");
+      /* Loop over grid points */
+      for (k=1;k<=p2D1;k++){
+        for (l=1;l<=p2D3;l++){
+          fprintf(output,"%f %f %e %e\n",kII1[k][l],kII3[k][l],kIIi[k][l],kII[k][l]);
+        }
+        if (form==2) fprintf(output,"\n");
+      }
+      fclose(output);
+
+     /* Calculate 'broad pump - pump probe' spectrum rephasing */
+      output=fopen(pPFName,"w");
+
+      if (output==NULL){
+        printf("Name for broadband pump probe not given.\n");
+        printf("Skipping pump probe calculation.\n");
+      } else {
+        fprintf(output,"### Broadband pump probe spectrum\n");
+        /* Calculate pump probe spectrum */
+        for (l=1;l<=p2D3;l++){
+          pumpProbe=0;
+          for (k=1;k<=p2D1;k++){
+            pumpProbe+=kI[k][l];
+          }
+          fprintf(output,"%f %e\n",kI3[1][l],pumpProbe);
+          //    fprintf(output,"%f %f\n",IR3[k][l],pumpProbe);
+        }
+        fclose(output);
+      }
+
+      /* Calculate 'broad pump - pump probe' spectrum non-rephasing */
+      output=fopen(pPFName2,"w");
+
+      if (output==NULL){
+        printf("Name for broadband pump probe not given.\n");
+        printf("Skipping pump probe calculation.\n");
+      } else {
+        fprintf(output,"### Broadband pump probe spectrum\n");
+        /* Calculate pump probe spectrum */
+        for (l=1;l<=p2D3;l++){
+          pumpProbe=0;
+          for (k=1;k<=p2D1;k++){
+            pumpProbe+=kII[k][l];
+          }
+          fprintf(output,"%f %e\n",kII3[1][l],pumpProbe);
+          //    fprintf(output,"%f %f\n",IR3[k][l],pumpProbe);
+        }
+        fclose(output);
+      }
+
     } else{
-      // Loop over grid points
+      output=fopen(twoDFName,"w");
+      /* Loop over grid points */
       for (k=1;k<=p2D1;k++){
         for (l=1;l<=p2D3;l++){
           fprintf(output,"%f %f %e %e\n",kII1[k][l],kII3[k][l],IRi[k][l],IR[k][l]);
@@ -738,8 +737,7 @@ int main(int argc,char *argv[]){
       }
       fclose(output);
 
-      // Calculate broad pump - pump probe spectrum
-
+      /* Calculate broad pump - pump probe spectrum */
       output=fopen(pPFName,"w");
 
       if (output==NULL){
@@ -747,7 +745,7 @@ int main(int argc,char *argv[]){
         printf("Skipping pump probe calculation.\n");
       } else {
         fprintf(output,"### Broadband pump probe spectrum\n");
-        // Calculate pump probe spectrum
+        /* Calculate pump probe spectrum */
         for (l=1;l<=p2D3;l++){
           pumpProbe=0;
           for (k=1;k<=p2D1;k++){
