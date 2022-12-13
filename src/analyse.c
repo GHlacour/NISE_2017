@@ -18,8 +18,11 @@ void analyse(t_non *non){
   float *fluctuation;
   float *Jfluctuation;
   float *mu_eg,*Hamil_i_e,*H,*e;
+  float *mu_xyz;
   float participation_ratio;
   float local_participation_ratio;
+  float spectral_participation_ratio;
+  float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
   float *rho,*local_rho,*spec_rho;
 
@@ -33,6 +36,7 @@ void analyse(t_non *non){
 
   /* File handles */
   FILE *H_traj,*mu_traj,*PDF_traj;
+  FILE *C_traj;
   FILE *outone,*log;
   FILE *Cfile;
 
@@ -46,6 +50,7 @@ void analyse(t_non *non){
   int Nsam;
   int counts;
   int cl,Ncl;
+  int xx;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -73,6 +78,7 @@ void analyse(t_non *non){
   rho=(float *)calloc(N*N,sizeof(float));
   local_rho=(float *)calloc(N*N,sizeof(float));
   spec_rho=(float *)calloc(N*N,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
   /* Open Trajectory files */
   H_traj=fopen(non->energyFName,"rb");
@@ -127,10 +133,35 @@ void analyse(t_non *non){
 
   participation_ratio=0;
   local_participation_ratio=0;
+  spectral_participation_ratio=0;
+  local_spectral_participation_ratio=0;
   avall=0;
   flucall=0;
   counts=0;
   Ncl=0;
+
+  /* Read coupling, this is done if the coupling and transition-dipoles are *
+   * time-independent and only one snapshot is stored */
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    C_traj=fopen(non->couplingFName,"rb");
+    if (C_traj==NULL){
+      printf("Coupling file not found!\n");
+      exit(1);
+    }
+    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
+      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
+      exit(1);
+    }
+    fclose(C_traj);
+    /* Reading in single fixed transition dipole vector matrix */
+    for (xx=0;xx<3;xx++){
+      if (read_mue(non,mu_xyz+non->singles*xx,mu_traj,0,xx)!=1){
+         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+         printf("ITIME %d %d\n",0,xx);
+         exit(1);
+      }
+    }
+  }
 
   // Loop over samples first time
   for (samples=non->begin;samples<non->end;samples++){
@@ -149,18 +180,28 @@ void analyse(t_non *non){
       }
     }
     if (non->cluster==-1 || non->cluster==cl){
-    // Read Hamiltonian
-    if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-      printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
+    /* Read Hamiltonian */
+    if (!strcmp(non->hamiltonian,"Coupling")){
+        if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
+            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+            exit(1);
+        }
+    } else {
+	      if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
+	          printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+	          exit(1);
+  	    }
     }
+
     build_diag_H(Hamil_i_e,H,e,N);
     participation_ratio+=calc_participation_ratio(N,H);
     local_participation_ratio+=calc_local_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
-    find_dipole_mag(non,dip2,samples,mu_traj,H);
+    spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
+    local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
+    find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
     calc_densitymatrix(non,rho,local_rho,spec_rho,H,e,dip2);
     counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
-    // Find Averages
+    /* Find Averages */
     for (i=0;i<non->singles;i++){
       average_frequency[i]+=Hamil_i_e[Sindex(i,i,N)];
       avall+=Hamil_i_e[Sindex(i,i,N)];
@@ -176,7 +217,7 @@ void analyse(t_non *non){
   }
   }
   if (Ncl>0) Nsam=Ncl;
-  // Normalize average_frequencies
+  /* Normalize average_frequencies */
   for (i=0;i<non->singles;i++){
     average_frequency[i]/=Nsam;
     average_coupling[i]/=Nsam;
@@ -200,11 +241,19 @@ void analyse(t_non *non){
     }
     if (non->cluster==-1 || non->cluster==cl){
 
-    // Read Hamiltonian
-    if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-      printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
+    /* Read Hamiltonian */
+    if (!strcmp(non->hamiltonian,"Coupling")){
+        if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
+            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+            exit(1);
+        }
+    } else {
+	      if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
+	          printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+	          exit(1);
+  	    }
     }
+
     // Find standard deviation for frequencies
     for (i=0;i<non->singles;i++){
       x=(Hamil_i_e[Sindex(i,i,N)]-average_frequency[i]);
@@ -220,7 +269,7 @@ void analyse(t_non *non){
     }
   }
   }
-  // Normalize fluctuations and take square root
+  /* Normalize fluctuations and take square root */
   for (i=0;i<non->singles;i++){
     fluctuation[i]/=Nsam;
     fluctuation[i]=sqrt(fluctuation[i]);
@@ -230,7 +279,7 @@ void analyse(t_non *non){
   flucall/=(Nsam*non->singles);   
   flucall=sqrt(flucall);
 
-  // Write Average Hamiltonian in GROASC format
+  /* Write Average Hamiltonian in GROASC format */
   outone=fopen("Av_Hamiltonian.txt","w");
     if (outone==NULL){
     printf("Problem encountered opening Analyse.dat for writing.\n");
@@ -256,6 +305,8 @@ void analyse(t_non *non){
 
   participation_ratio/=(non->singles*Nsam);
   local_participation_ratio/=counts;
+  spectral_participation_ratio/=(non->singles*Nsam);
+  local_spectral_participation_ratio/=counts;
   printf("===================================\n");
   printf("Result of Hamiltonian analysis:\n");
   printf("Delocalization size according to\n");
@@ -265,11 +316,19 @@ void analyse(t_non *non){
   printf("for selected frequency range\n");
   printf("(%f to %f) cm-1:\n",non->min1,non->max1);
   printf("R=%f\n",local_participation_ratio);
+  printf("Delocalization size according to\n");
+  printf("Spectral Population Ratio\n");
+  printf("for full Hamiltonian:\n");
+  printf("S=%f\n",spectral_participation_ratio);
+  printf("for selected frequency range\n");
+  printf("(%f to %f) cm-1:\n",non->min1,non->max1);
+  printf("S=%f\n",local_spectral_participation_ratio);
   printf("Average site frequency %f cm-1.\n",avall+non->shifte);
   printf("Overall standard deviation of site\n");
   printf("frequencies from overall average:\n");
   printf("%f cm-1.\n",flucall);
   printf("===================================\n");
+  printf("\n");
 
   // Print output to file
   fprintf(outone,"# Using frequency range %f to %f cm-1\n",non->min1,non->max1);
@@ -317,6 +376,7 @@ void analyse(t_non *non){
   free(Jfluctuation);
   // free(mu_eg);
   free(Hamil_i_e);
+  free(mu_xyz);
   free(average_H);
   free(cEig);
   free(cDOS);
@@ -346,6 +406,7 @@ void analyse(t_non *non){
   return;
 }	
 
+/* Calculate Thouless Partition  Ratio */
 float calc_participation_ratio(int N,float *H){
   int i,j,a,b;
   float inter,parti;
@@ -383,6 +444,44 @@ float calc_local_participation_ratio(int N,float *H,float min,float max,float *e
   return parti;
 }
 
+/* Calculate Spectral Partition  Ratio */
+float calc_spectral_participation_ratio(int N,float *H){
+  int i,j,a,b;
+  float inter,parti;
+
+  parti=0;
+  for (i=0;i<N;i++){
+    inter=0;
+    // Loop over sites
+    for (j=0;j<N;j++){
+      inter+=fabs(H[i+N*j]);
+    }
+    parti+=inter*inter;
+  }
+
+  return parti;
+}
+
+/* Find Spectral Participation Ratio for states in given energy range */
+float calc_local_spectral_participation_ratio(int N,float *H,float min,float max,float *e,float shift){
+  int i,j,a,b;
+  float inter,parti;
+
+  parti=0;
+  for (i=0;i<N;i++){
+    inter=0;
+    // Loop over sites
+    if (e[i]>min-shift && e[i]<max-shift){
+      for (j=0;j<N;j++){
+          inter+=fabs(H[i+N*j]);
+      }
+      parti+=inter*inter;
+    }
+  }
+ 
+  return parti;
+}
+
 int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float min,float max,int counts,float shift){
   int i,j;
   
@@ -402,7 +501,7 @@ int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float 
 }  
 
 // Find dipole magnitude
-void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H){
+void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz){
   float *dip,*dipeb;
   int i,j,x,N;
 
@@ -414,17 +513,22 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H){
     dip2[i]=0;
   }
   for (x=0;x<3;x++){
-    // Read mu(ti)
-    if (read_mue(non,dip,mu_traj,step,x)!=1){
-      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-      printf("ITIME %d %d\n",step,x);
-      exit(1);
-    }
+     	/* Read mu(tj) */
+      if (!strcmp(non->hamiltonian,"Coupling")){
+          copyvec(mu_xyz+non->singles*x,dip,non->singles);
+      } else {
+	        if (read_mue(non,dip,mu_traj,step,x)!=1){
+	            printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	            printf("JTIME %d %d\n",step,x);
+	            exit(1);
+	        }
+      }
+    
     // Transform to eigen basis
     for (i=0;i<N;i++){
       dipeb[i]=0;
       for (j=0;j<N;j++){
-	dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
+	        dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
       }
     }
     for (i=0;i<N;i++){
