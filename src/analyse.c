@@ -317,7 +317,7 @@ void analyse(t_non *non){
   printf("(%f to %f) cm-1:\n",non->min1,non->max1);
   printf("R=%f\n",local_participation_ratio);
   printf("Delocalization size according to\n");
-  printf("Spectral Population Ratio\n");
+  printf("the Manhattan Exciton Size\n");
   printf("for full Hamiltonian:\n");
   printf("S=%f\n",spectral_participation_ratio);
   printf("for selected frequency range\n");
