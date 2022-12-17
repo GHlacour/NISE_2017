@@ -32,6 +32,6 @@ New York, 1995.
 19. P. Hamm and M. T. Zanni. Concepts and Methods of 2D Infrared Spectroscopy. Cambridge University Press, Cambridge, 2011.
 20. T. L. C. Jansen J. Chem. Phys. 155 (17): 170901, (2021)
 21. A. S. Sardjan, F. P. Westerman, J. P. Ogilvie, and T. L. C. Jansen, J. Phys. Chem. B 124: 9420-9427 (2020).
-22. K. E. van Adrichem and Thomas L. C. Jansen, J. Chem. Theory Comput. 18: 3089–3098 (2022).
+22. K. E. van Adrichem and T. L. C. Jansen, J. Chem. Theory Comput. 18: 3089–3098 (2022).
 23. AIM: [https://github.com/Kimvana/AIM](https://github.com/Kimvana/AIM) 
 24. NISE Tutorials: [https://github.com/GHlacour/NISE_Tutorials](https://github.com/GHlacour/NISE_Tutorials)
