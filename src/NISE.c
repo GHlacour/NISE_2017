@@ -11,7 +11,9 @@
 //#include "c_absorption.h"
 #include "calc_DOS.h"
 #include "luminescence.h"
+#include "raman.h"
 #include "calc_2DIR.h"
+#include "calc_2DIRraman.h"
 #include "calc_2DES.h"
 #include "analyse.h"
 #include "calc_CD.h"
@@ -84,7 +86,7 @@ int main(int argc, char* argv[]) {
         readInput(argc, argv, non);
 
         // Do initial check of the configuration
-        initResult = control(non);        
+        initResult = control(non);
         initResult = autodetect_singles(non);
 
         // Create new log file
@@ -188,7 +190,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Raman Routine
-    if (!strcmp(non->technique, "Raman")) { }
+    if (!strcmp(non->technique, "Raman")) {
+        //Does not support MPI
+        if (parentRank == 0)
+            raman(non);
+     }
 
     // Call the Sum Frequency Generation Routine
     if (!strcmp(non->technique, "SFG")) { }
@@ -198,6 +204,14 @@ int main(int argc, char* argv[]) {
         strcmp(non->technique, "EA")) || (!strcmp(non->technique, "noEA"))) {
         // Does support MPI
         calc_2DIR(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
+    }
+
+    // Call the 2DIRraman calculation routine
+    if (!strcmp(non->technique, "2DIRraman") || (!strcmp(non->technique, "2DIRraman1")) ||
+    (!strcmp(non->technique, "2DIRraman2"))||(!strcmp(non->technique, "2DIRraman3")) ||
+    (!strcmp(non->technique, "2DIRramanI"))||(!strcmp(non->technique, "2DIRramanII"))) {
+        // Does support MPI
+        calc_2DIRraman(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
     // Call the 2DSFG calculation routine

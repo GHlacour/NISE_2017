@@ -29,7 +29,7 @@ void free2D(void** arr) {
     free(arr);
 }
 
-// Copy a vector 
+// Copy a vector
 void copyvec(float* a, float* b, int N) {
     int i;
     for (i = 0; i < N; i++) b[i] = a[i];
@@ -259,7 +259,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         }
     }
     /* Find the couplings from the TDC 'on the fly' scheme  */
-    A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */ 
+    A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */
     if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
         R = (float *)calloc(3*non->singles, sizeof(float));
         mu = (float *)calloc(3*non->singles, sizeof(float));
@@ -296,7 +296,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
                 f2=-3*(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
                 He[Sindex(i,j,non->singles)] = A*(f1+f2)*idist3;
 	    }
-        }   
+        }
        free(R);
        free(mu);
        fclose(pos_traj);
@@ -451,6 +451,29 @@ int read_mue(t_non* non, float* mue, FILE* FH, int pos, int x) {
     return control;
 }
 
+/* Read Raman */
+int read_alpha(t_non* non, float* alpha, FILE* FH, int pos, int x) {
+    int control;
+    int t;
+    //int N;
+    control = 0;
+
+    if (non->doubles == 0){
+        //Find position in file to read from
+        fseek(FH, pos * (sizeof(int) + sizeof(float) * 6 * non->singles) + sizeof(float)
+          * x * non->singles,SEEK_SET); //6 due to six elements for Raman tensor
+        /* Read time */
+        if (fread(&t, sizeof(int), 1, FH)) control = 1;
+        // Read single excitation raman tensor values
+        fread(alpha, sizeof(float), non->singles, FH);
+    }
+    else{
+        printf("Doubles not equal to zero, Raman 1D does not support double excited states");
+        exit(-1);
+    }
+    return control;
+}
+
 /* Read Dipole for Sequence Transtions */
 int read_over(t_non* non, float* over, FILE* FH, int pos, int x) {
     int control;
@@ -466,7 +489,7 @@ int read_over(t_non* non, float* over, FILE* FH, int pos, int x) {
     return control;
 }
 
-// Read transition dipole 
+// Read transition dipole
 void muread(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj) {
     /* Read mu(ti) */
     if (read_mue(non, leftnr, mu_traj, ti, x) != 1) {
@@ -477,7 +500,7 @@ void muread(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj) {
     return;
 }
 
-// Read transition dipole (including option for Coupling storrage) 
+// Read transition dipole (including option for Coupling storrage)
 void mureadE(t_non* non, float* leftnr, int ti, int x, FILE* mu_traj, float* mu, float* pol) {
     if (!strcmp(non->hamiltonian, "Coupling")) {
         copyvec(mu + non->singles * x, leftnr, non->singles);
@@ -597,7 +620,7 @@ void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float 
     re_U = (float *)calloc(N, sizeof(float));
     im_U = (float *)calloc(N, sizeof(float));
     e = (float *)calloc(N, sizeof(float));
-   
+
     // Build Hamiltonian
     for (a = 0; a < N; a++) {
         H[a + N * a] = Hamiltonian_i[a + N * a - (a * (a + 1)) / 2]; // Diagonal
@@ -938,7 +961,7 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
                 float ci2 = co * oci[index2] + si * ocr[index1];
                 ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
             }
-            
+
         }
 
         /* Multiply on vector second time */
@@ -1004,15 +1027,15 @@ void propagate_vec_coupling_S_doubles_ES(t_non* non, float* Hamiltonian_i, float
             ocr[a] = cr[a] * re_U[a] - ci[a] * im_U[a];
             oci[a] = cr[a] * im_U[a] + ci[a] * re_U[a];
         }
-        
-        // Account for couplings 
-        // Loop over couplings 
+
+        // Account for couplings
+        // Loop over couplings
         for (int k = 0; k < kmax; k++) {
             int a = col[k];
             int b = row[k];
             float J = H1[k] * f;
 
-            // Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> 
+            // Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca>
             // TODO speedup
             int c=0;
             int aNsum = a * ((N << 1) - a - 1) / 2;  // copied part of Sindex
@@ -1032,11 +1055,11 @@ void propagate_vec_coupling_S_doubles_ES(t_non* non, float* Hamiltonian_i, float
                 float ci2 = co * oci[index2] + si * ocr[index1];
                 ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
             }
-     
+
                                                                                             // c == a
             for (; c == a; c++) {  // yeah, one iteration. but loop for consistency across all 5
             }
-            
+
             // a < c < b
             si = -sinf(J);
             co = sqrtf(1 - si * si);
@@ -1067,14 +1090,14 @@ void propagate_vec_coupling_S_doubles_ES(t_non* non, float* Hamiltonian_i, float
                 ocr[index1] = cr1, oci[index1] = ci1, ocr[index2] = cr2, oci[index2] = ci2;
             }
         }
-	
-        // Multiply on vector second time 
+
+        // Multiply on vector second time
         for (int a = 0; a < N2; a++) {
             cr[a] = ocr[a] * re_U[a] - oci[a] * im_U[a];
             ci[a] = ocr[a] * im_U[a] + oci[a] * re_U[a];
         }
     }
-    
+
     free(ocr), free(oci), free(re_U), free(im_U), free(H1), free(H0);
     free(col), free(row);
 }
@@ -1138,7 +1161,7 @@ void build_diag_H(float* Hamiltonian_i, float* H, float* e, int N) {
 }
 
 // This subroutine generates vectors with a coordinate transformation
-// corresponding to a randomly selected isotropic orientation  
+// corresponding to a randomly selected isotropic orientation
 void generateCS(float* X, float* Y, float* Z) {
     int no;
     // Generate X vector
@@ -1351,6 +1374,27 @@ void dipole_double(t_non* non, float* dipole, float* cr, float* ci, float* fr, f
             fr[index] += dipole[j] * cr[i];
             fi[index] += dipole[j] * ci[i];
         }
+    }
+    return;
+}
+
+/* Multiply with double exciton dipole mu_ef on ground states */
+void dipole_double_ground(t_non* non, float* dipole, float* fr, float* fi, float* over) {
+    int N;
+    int i, j, k, index;
+    N = non->singles * (non->singles + 1) / 2;
+    for (i = 0; i < N; i++) fr[i] = 0, fi[i] = 0;
+    if (non->anharmonicity != 0) {
+        for (i = 0; i < non->singles; i++) {
+            over[i] = sqrt2 * dipole[i];
+        }
+    }
+
+    for (i = 0; i < non->singles; i++) {
+        index = Sindex(i, i, non->singles);
+        fr[index] = over[i] ;
+        //! no fi since double excitation from ground state,
+        //no i,j loop due to double excitation on one state only
     }
     return;
 }

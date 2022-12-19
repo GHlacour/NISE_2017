@@ -187,7 +187,7 @@ void readInput(int argc, char* argv[], t_non* non) {
 
         // Read double excited states
         if (keyWordI("PrintLevel", Buffer, &non->printLevel, LabelLength) == 1) continue;
-       
+
 
     }
     while (1 == 1);
@@ -241,7 +241,8 @@ void readInput(int argc, char* argv[], t_non* non) {
     if ((!strcmp(non->technique, "2DIR")) || (!strcmp(non->technique, "GBIR")) || (!strcmp(non->technique, "SEIR")) ||
      (!strcmp(non->technique, "EAIR")) || (!strcmp(non->technique, "noEAIR")) || (!strcmp(non->technique, "2DUVvis")) ||
      (!strcmp(non->technique, "EAUVvis")) || (!strcmp(non->technique, "noEAUVvis")) || (!strcmp(non->technique, "2DSFG")) ||
-     (!strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "GBUVvis"))) {
+     (!strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "GBUVvis"))|| (!strcmp(non->technique, "2DIRraman"))||
+     (!strcmp(non->technique, "2DIRraman1"))|| (!strcmp(non->technique, "2DIRraman2"))|| (!strcmp(non->technique, "2DIRraman3"))) {
         printf("\nThe waiting time will be %f fs.\n\n", non->tmax2 * non->deltat);
     }
 
@@ -369,7 +370,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
            exit(0);
         }
         /* Less sites specified than available */
-        if (NN<N){ 
+        if (NN<N){
                for (i = 0; i < NN; i++) {
                    if (NN != N) {
                        fscanf(inputFile, "%d ", &j);
@@ -396,7 +397,7 @@ int keyWordProject(char* keyWord, char* Buffer, size_t LabelLength, int* singles
                    non->psites[i] = j;
                    printf("%d ", j);
         }
-        }    
+        }
 
            /* Proceed here if site numbers are provided in a separate file */
            } else if (!strncmp(&Buf[0], "Projectfile", 11)) {

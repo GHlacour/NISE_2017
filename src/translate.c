@@ -100,7 +100,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
     fread(&ham->mu_ef[0],sizeof(float),N,FH->ID);
     if (FH->IALP!=NULL){
       fread(&ham->t,sizeof(int),1,FH->IALP);
-      N=tdat->singles*3;
+      N=tdat->singles*6; //Raman 3 to 6
       fread(&ham->alpha[0],sizeof(float),N,FH->IALP);
     }
   }
@@ -114,7 +114,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
     fread(&ham->t,sizeof(int),1,FH->ID);
     N=tdat->singles*3;
     fread(&ham->mu_ge[0],sizeof(float),N,FH->ID);
-    
+
     fread(&ham->t,sizeof(int),1,FH->IA);
     N=tdat->singles;
     fread(&ham->Anh[0],sizeof(float),N,FH->IA);
@@ -138,7 +138,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
 	  index=l+tdat->singles*k-(k*(k+1)/2);
 	  ham->He[index]=f;
 	}
-	j=j+fLength+1;    
+	j=j+fLength+1;
       }
       j++;
     }
@@ -183,7 +183,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
 	if (k<=l){
 	  index=l+tdat->singles*k-(k*(k+1)/2);
 	  ham->He[index]=f;
-	}	
+	}
       }
     }
     fscanf(FH->ID,"%d",&t);
@@ -196,7 +196,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
     }
     if (FH->IALP!=NULL){
       fscanf(FH->IALP,"%d",&t);
-      for (x=0;x<3;x++){
+      for (x=0;x<6;x++){ // Raman x from 3 to 6
 	for (k=0;k<tdat->singles;k++){
 	  fscanf(FH->IALP,"%f",&f);
 	  index=x*tdat->singles+k;
@@ -214,7 +214,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
 	if (k<=l){
 	  index=l+tdat->singles*k-(k*(k+1)/2);
 	  ham->He[index]=f;
-	}	
+	}
       }
     }
     for (k=0;k<tdat->singles;k++){
@@ -235,7 +235,7 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
 	if (k>=l){
 	  index=k+tdat->singles*l-(l*(l+1)/2);
 	  ham->He[index]=f;
-	}	
+	}
       }
     }
     fscanf(FH->ID,"%s %d",dum,&t);
@@ -256,9 +256,9 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
   int index,x;
   // Write GROBIN format
   if (strcmp(tdat->outputFormat,"GROBIN")==0){
-    
+
     //    printf("X %f\n",ham->He[1]);
-    
+
     fwrite(&ham->t,sizeof(int),1,FH->OE);
     N=tdat->singles*(tdat->singles+1)/2;
     fwrite(&ham->He[0],sizeof(float),N,FH->OE);
@@ -281,17 +281,17 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     }
     if (FH->IALP!=NULL){
       fwrite(&ham->t,sizeof(int),1,FH->OALP);
-      N=tdat->singles*3;
+      N=tdat->singles*6; //Raman 3 to 6
       fwrite(&ham->alpha[0],sizeof(float),N,FH->OALP);
     }
   }
 
   // Write SKIBIN format
-  if (strcmp(tdat->outputFormat,"SKIBIN")==0){    
+  if (strcmp(tdat->outputFormat,"SKIBIN")==0){
     fwrite(&ham->t,sizeof(int),1,FH->OE);
     N=tdat->singles*(tdat->singles+1)/2;
     fwrite(&ham->He[0],sizeof(float),N,FH->OE);
-    
+
     fwrite(&ham->t,sizeof(int),1,FH->OD);
     N=tdat->singles*3;
     fwrite(&ham->mu_ge[0],sizeof(float),N,FH->OD);
@@ -299,7 +299,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fwrite(&ham->t,sizeof(int),1,FH->OA);
     N=tdat->singles;
     fwrite(&ham->Anh[0],sizeof(float),N,FH->OA);
-    
+
     fwrite(&ham->t,sizeof(int),1,FH->OO);
     N=tdat->singles*3;
     fwrite(&ham->Over[0],sizeof(float),N,FH->OO);
@@ -346,7 +346,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
 
     if (FH->IALP!=NULL){
       fprintf(FH->OALP,"%d ",0);
-      for (x=0;x<3;x++){
+      for (x=0;x<6;x++){ //Raman x changed from 3 to 6 polarizations
 	for (k=0;k<tdat->singles;k++){
 	  fprintf(FH->OALP,"%f ",ham->alpha[x*tdat->singles+k]);
 	}
@@ -374,7 +374,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     }
     fprintf(FH->OD,"\n");
   }
-  
+
   // Write SPECTRON
   if (strcmp(tdat->outputFormat,"SPECTRON")==0){
     fprintf(FH->OE,"SNAPSHOT %d\n",snapshot+1);
@@ -479,9 +479,9 @@ void constructHf(t_trans *tdat,t_ham *ham){
   }
 
   // Doubly excited dipole
-  for (x=0;x<3;x++){ 
+  for (x=0;x<3;x++){
     for (i=0;i<Ne;i++){
-      for (j=0;j<Nf;j++){	 
+      for (j=0;j<Nf;j++){
 	w=0;
 	// i->2i
 	if (iA[j]==iB[j] && i==iA[j]){
@@ -537,7 +537,7 @@ void transinput(int argc,char *argv[],t_trans *tdat,t_modify *modify){
     if (pStatus == NULL) {
       break;
     }
-    
+
     // Compute LabelLength
     LabelLength = strcspn(&Buffer[0], " ");
 
@@ -571,7 +571,7 @@ void transinput(int argc,char *argv[],t_trans *tdat,t_modify *modify){
     if (keyWordI("Singles",Buffer,&tdat->singles,LabelLength)==1) continue;
     if (keyWordI("Length",Buffer,&tdat->length,LabelLength)==1) continue;
     if (keyWordI("Doubles",Buffer,&tdat->doubles,LabelLength)==1) continue;
-    
+
     if (keyWordF("Anharmonicity",Buffer,&tdat->anharmonicity,LabelLength)==1) continue;
     if (keyWordS("InputFormat",Buffer,tdat->inputFormat,LabelLength)==1) continue;
 
@@ -580,13 +580,13 @@ void transinput(int argc,char *argv[],t_trans *tdat,t_modify *modify){
     if (keyWordS("Skip",Buffer,tdat->skipDoubles,LabelLength)==1) continue;
     // Modifications
     if (keyWordModify("Modify",Buffer,&tdat->modify,LabelLength,modify,inputFile,tdat->singles,tdat)==1) continue;
-    
+
   } while (1==1);
   fclose(inputFile);
 
   // Standard peptide
   if (tdat->doubles==-1) tdat->doubles=(tdat->singles*(tdat->singles+1))/2;
-  
+
   // Test format validity
   if (strcmp(tdat->inputFormat,"GROBIN")==0) control++;
   if (strcmp(tdat->inputFormat,"GROASC")==0) control++;
@@ -612,7 +612,7 @@ void transinput(int argc,char *argv[],t_trans *tdat,t_modify *modify){
   return;
 }
 
-void openInOutput(t_trans *tdat,t_files *HANDLES){ 
+void openInOutput(t_trans *tdat,t_files *HANDLES){
 
   // Input
 
@@ -695,7 +695,7 @@ void openInOutput(t_trans *tdat,t_files *HANDLES){
     exit(0);
   }
   //  printf("T3\n");
-  if (strcmp(tdat->inputFormat,"GROBIN")==0 || strcmp(tdat->inputFormat,"GROASC")==0 || strcmp(tdat->inputFormat,"SPECTRON")==0 || strcmp(tdat->inputFormat,"MITTXT")==0|| strcmp(tdat->inputFormat,"SKIBIN")==0){  
+  if (strcmp(tdat->inputFormat,"GROBIN")==0 || strcmp(tdat->inputFormat,"GROASC")==0 || strcmp(tdat->inputFormat,"SPECTRON")==0 || strcmp(tdat->inputFormat,"MITTXT")==0|| strcmp(tdat->inputFormat,"SKIBIN")==0){
     if (HANDLES->ID==NULL){
       printf("Problem opening dipole input file\n");
       exit(0);
@@ -715,7 +715,7 @@ void openInOutput(t_trans *tdat,t_files *HANDLES){
   } else {
     if (HANDLES->ODx==NULL || HANDLES->ODy==NULL || HANDLES->ODz==NULL){
       printf("Problem opening dipole output file\n");
-      exit(0);      
+      exit(0);
     }
   }
   if (HANDLES->IALP==NULL){
@@ -762,7 +762,7 @@ void initializeHam(t_trans *tdat,t_ham *ham){
   ham->mu_ef=(float *)calloc(tdat->singles*Nf*3,sizeof(float));
   ham->Anh=(float *)calloc(tdat->singles,sizeof(float));
   ham->Over=(float *)calloc(tdat->singles*3,sizeof(float));
-  ham->alpha=(float *)calloc(tdat->singles*3,sizeof(float));
+  ham->alpha=(float *)calloc(tdat->singles*6,sizeof(float)); //Raman 6 in stead of 3 polarizations
   return;
 }
 
@@ -809,9 +809,9 @@ int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_mo
 
   if (!strncmp(&Buffer[0],&keyWord[0],6)){
     printf("%s:\n",keyWord);
- 
+
     *ivalue=1;
-    
+
     // Read modification information
     // Select
     pStatus = fgets(&Buf[0],sizeof(Buf),inputFile);
@@ -825,7 +825,7 @@ int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_mo
       }
       modify->select=(int *)calloc(modify->singles,sizeof(int));
       modify->label=(int *)calloc(modify->singles,sizeof(int));
-      modify->shift=(float *)calloc(modify->singles,sizeof(float));	
+      modify->shift=(float *)calloc(modify->singles,sizeof(float));
       for (i=0;i<modify->singles;i++){
 	if (modify->singles!=N){
 	  fscanf(inputFile,"%d ",&modify->select[i]);
@@ -848,7 +848,7 @@ int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_mo
       printf("Label keyword not found in Modify!\n");
       exit(-1);
     }
-   
+
     // Shift
     pStatus = fgets(&Buf[0],sizeof(Buf),inputFile);
     if (!strncmp(&Buf[0],"Shift",5)){
@@ -861,7 +861,7 @@ int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_mo
     }
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -878,7 +878,7 @@ void modifyHam(t_trans *tdat,t_modify *modify,t_ham *ham){
   dim=(modify->singles*(modify->singles+1))/2;
   He=(float *)calloc(dim,sizeof(float));
   mu_ge=(float *)calloc(modify->singles*3,sizeof(float));
-  alpha=(float *)calloc(modify->singles*3,sizeof(float));
+  alpha=(float *)calloc(modify->singles*6,sizeof(float)); //Raman 3 to 6 (not too sure about this one)
   Anh=(float *)calloc(modify->singles,sizeof(float));
   Over=(float *)calloc(modify->singles*3,sizeof(float));
 
@@ -911,6 +911,8 @@ void modifyHam(t_trans *tdat,t_modify *modify,t_ham *ham){
     for (x=0;x<3;x++){
       mu_ge[modify->singles*x+i]=ham->mu_ge[tdat->singles*x+modify->select[i]];
       Over[modify->singles*x+i]=ham->Over[tdat->singles*x+modify->select[i]];
+    }
+    for (x=0;x<6;x++){ //Raman added new loop with 6 polarizations
       alpha[modify->singles*x+i]=ham->alpha[tdat->singles*x+modify->select[i]];
     }
   }
@@ -932,30 +934,32 @@ void modifyHam(t_trans *tdat,t_modify *modify,t_ham *ham){
   //  ham->mu_ge=(float *)calloc(tdat->singles*3,sizeof(float));
   //  ham->mu_ef=(float *)calloc(tdat->singles*tdat->doubles*3,sizeof(float));
   // Copy Hamiltonians
- 
+
   index=0;
   for (i=0;i<tdat->singles;i++){
     for (j=i;j<tdat->singles;j++){
       ham->He[index]=He[index];
 
       //      printf("E %d %d %f\n",i,j,ham->He[index]);
-      
+
       index++;
     }
     ham->Anh[i]=Anh[i];
     for (x=0;x<3;x++){
       ham->mu_ge[x*tdat->singles+i]=mu_ge[x*tdat->singles+i];
       ham->Over[x*tdat->singles+i]=Over[x*tdat->singles+i];
-      ham->alpha[x*tdat->singles+i]=alpha[x*tdat->singles+i];
+    }
+    for (x=0;x<6;x++){
+      ham->alpha[x*tdat->singles+i]=alpha[x*tdat->singles+i]; //Raman added loop over 6 polarizations
     }
   }
-  
+
   free(He);
   free(mu_ge);
   free(Anh);
   free(Over);
   free(alpha);
-  
+
 }
 
 void revMod(t_trans *tdat,t_modify *modify){

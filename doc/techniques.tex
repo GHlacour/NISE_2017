@@ -45,7 +45,11 @@ The circular dichroism is calculated using the first-order response function
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. Note that the positions of the chromophores must be provided in the Positions file. The calculation does \textit{not} account for periodic boundary positions and the positions must at all times along the position trajectory be specified accordingly.
 \section{Raman}
-Not implemented yet
+The Raman response is calculared as 
+\begin{equation}
+        I(t)=\sum_{a}^{xyz}\langle\alpha_{a}(t)U(t,0)\alpha_{a}(0)\rangle\exp(-t/T_1).
+\end{equation}
+Both the all parallel and perpendicular components are calculated. The calculation require that the transition-polarizability file is provided with all six independent components stored. The data are stored in the files Raman\_VV.dat and Raman\_VH.dat.
 \section{SFG (sum-frequency generation)}
 Not implemented yet (check NISE\_2015)
 \section{2DIR$^{*}$ (two-dimensional infrared)}
@@ -54,5 +58,7 @@ This calculates the two-dimensional infrared spectra assuming coupled three leve
  Not implemented yet (check NISE\_2015)
 \section{2DUVvis$^{*}$ (two-dimensional electronic\\ spectroscopy)}
 This calculates the two-dimensional infrared spectra assuming coupled two level systems. The techniques GBUVvis (ground state bleach), SEUVvis (stimulated emission), and EAUVvis (excited state absorption) provides these contributions separetely. Furthermore the sum of the ground state bleach and the stimulated emission can be calculated with the noEAUVvis technique keyword. 
+\section{2DIRRaman$^{*}$}
+This calculates the two-dimensional infrared raman spectra assuming coupled three level systems. The techniques 2DIRraman1 (rephasing), 2DIRraman2 (non-rephasing 1), 2DIRraman3 (non-repasing 2) provides these contributions separetely. The rephasing diagram and the non-rephasing diagrams are stored separately as they cannot be directly added. % The expressions for the response functions are given in ref. \cite{}.
 \section{2DFD (fluorescence detected two-dimensional\\ spectroscopy)}
  The 2DFD spectrum can be calculated in the approximation that all exciton pairs annihilate to produce a single exciton long before fluorescence occur with the noEAUVvis technique. The response functions governing this technique are provided in ref. \cite{Kunsel_2018}.
