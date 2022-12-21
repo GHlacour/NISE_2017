@@ -189,9 +189,9 @@ int main(int argc, char* argv[]) {
             calc_CD(non);
     }
 
-    // Call the Raman Routine
+    /* Call the Raman Routine */
     if (!strcmp(non->technique, "Raman")) {
-        //Does not support MPI
+        /* Does not support MPI */
         if (parentRank == 0)
             raman(non);
      }
@@ -224,6 +224,13 @@ int main(int argc, char* argv[]) {
         non->technique, "noEAUVvis"))) {
         // Does support MPI
         calc_2DES(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
+    }
+
+    /* Call the Raman Routine */
+    if (!strcmp(non->technique, "CG_2DES")) {
+        /* Does not support MPI */
+        if (parentRank == 0)
+            calc_CG_2DES(non);
     }
 
     // Call the 2DFD calculation routine

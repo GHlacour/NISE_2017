@@ -14,7 +14,7 @@ add_executable(NISE
     calc_2DIR.c calc_2DIRraman.h calc_2DIRraman.c calc_2DES.h calc_2DES.c
     luminescence.c calc_Diffusion.h calc_Diffusion.c anisotropy.c
     anisotropy.h calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c
-    analyse.h readinput.c readinput.h
+    analyse.h readinput.c readinput.h calc_CG_2DES.c calc_CG_2DES.h
     project.c project.h types_MPI.h types_MPI.c
     $<TARGET_OBJECTS:random_lib>
 )
