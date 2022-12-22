@@ -82,12 +82,15 @@ As some FFTW3 installations do not come with the correct CMake compatibility, it
 \section{Building}
 In order to build and compile the NISE software, it is recommended to use the CMake build system. This will try to automatically link the libraries and pick the correct compiler settings.
 \begin{enumerate}
-\item Extract the source code files
-\item Create a \texttt{build} directory in the main folder
+\item Extract the source code files.
+\item Create a \texttt{build} directory in the main folder.
 \item Run \texttt{cmake ..} inside this new {\tt build} directory.
 \item If {\tt cmake} was successful, run {\tt make} in the same directory to start compilation.
 \item All executables should be available in a new {\tt bin} directory in the main folder.
 \end{enumerate}
+
+\noindent
+Additional steps to install on MacOS and Windows can be found in section 2.2.\\
 
 There are several options you can provide to the {\tt cmake} command in order to customize your build:
 \begin{itemize}
@@ -139,6 +142,8 @@ sudo apt install libopenmpi-dev
 sudo apt install python3-matplotlib
 \end{verbatim}
 When running on this system one needs to keep in mind the limited disk space and memory of the system. However, the NISE program itself easily installs and run on this system. 
+
+The program can also be installed with Windows 10 and newer, using the Windows Subsystem for Linux (WSL). This is a feature built into Windows that allows users to run Linux virtual machines. To install WSL, follow the instructions at \url{https://learn.microsoft.com/en-us/windows/wsl/install}. After that, a Linux terminal can be opened from the Start Menu. The process to install NISE will be identical to the installation process on Raspberry Pi 4.
 
 \section{Parallelization}
 NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, both the time consuming 2DIR and 2DUVvis techniques support MPI. The linear techniques do not have a parallel implementation as they are generally fast. (Techniques relying on LAPACK including Luminescence may use the MLK OpenMP support for limited speedup.)
