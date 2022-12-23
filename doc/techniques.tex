@@ -45,11 +45,12 @@ The circular dichroism is calculated using the first-order response function
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. Note that the positions of the chromophores must be provided in the Positions file. The calculation does \textit{not} account for periodic boundary positions and the positions must at all times along the position trajectory be specified accordingly.
 \section{Raman}
-The Raman response is calculared as 
+The Raman response is calculated as \cite{Torii.2002.J.Phys.Chem.A.106.3281,Shi.2012.J.Phys.Chem.B.116.13821}
 \begin{equation}
-        I(t)=\sum_{a}^{xyz}\langle\alpha_{a}(t)U(t,0)\alpha_{a}(0)\rangle\exp(-t/T_1).
+        I^{VV/VH}(t)=\sum_{a,b,c,d}^{xyz}A^{VV/VH}_{abcd}\langle\alpha_{ab}(t)U(t,0)\alpha_{cd}(0)\rangle\exp(-t/T_1),
 \end{equation}
-Both the all parallel and perpendicular components are calculated. The calculation require that the transition-polarizability file is provided with all six independent components stored. The data are stored in the files Raman\_VV.dat and Raman\_VH.dat.
+where $A^{VV/VH}_{abcd}$ is the orientational weighting factor as defined in Ref. \citenum{Shi.2012.J.Phys.Chem.B.116.13821}. 
+Both the all parallel (VV) and perpendicular (VH) components are calculated. The calculation require that the transition-polarizability file is provided with all six independent components stored. The data are stored in the files Raman\_VV.dat and Raman\_VH.dat.
 \section{SFG (sum-frequency generation)}
 Not implemented yet (check NISE\_2015)
 \section{2DIR$^{*}$ (two-dimensional infrared)}

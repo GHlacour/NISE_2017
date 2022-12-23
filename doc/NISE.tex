@@ -52,7 +52,8 @@ Front cover:
 
 \chapter{Introduction}
 The main developer of the NISE3 code is Thomas la Cour Jansen. Please, cite the appropriate
-references \cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
+references 
+\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
 when publishing work using this code. The code allows the calculation of the linear absorption,linear dichroism, sum-frequency generation, two-dimensional spectra (IR,UVvis, and SFG), population transfer, exciton diffusion and integrated anisotropy using the full nonadiabatic semi-classical numerical integration of the Schr\"{o}dinger equation approach
 \cite{Jansen.2009.ACR.42.1405} and the sparse matrix optimization approach \cite{Liang.2012.JCTC.8.1706}. The code allows treating spectra of diverse systems involving
 intra- and intermolecular energy transfer\cite{Jansen.2006.JPCB.110.22910,Cringus.2007.JCP.127.084507,Jansen.2008.BJ.94.1818,Dijkstra.2010.JPCA.114.7315,Jansen.2010.JCP.132.224503}, non-Gaussian dynamics \cite{Jansen.2009.JPCA.113.6260,Roy.2011.JPCB.115.5431}, surfaces \cite{Liang.2013.JPCL.4.448}, and chemical exchange \cite{Jansen.2007.JCP.127.234502}. This manual is not intended as an introduction to two-dimensional
@@ -169,8 +170,9 @@ Some considerations and examples to achieve higher performance:
 
 \section{Changelog}
 \subsection{Version 3.4 in progress}
-{\small Work by Thomas Jansen, Carleen D. N. van Hengel, and Kim van Adrichem}
+{\small Work by Thomas Jansen, Carleen D. N. van Hengel, Hoang Long Nguyen, and Kim van Adrichem}
 \begin{itemize}
+\item Improve manual for Windows 10 installation. (Hoang Long Nguyen)
 \item The 2DFFT code was cleaned up
 \item Raman and 2DIRraman techniques were added (Carleen D. N. van Hengel)
 \item openMP parallel CD and DOS were implemented
@@ -218,5 +220,5 @@ Foppe de Haan, Arend Dijkstra, Alexander Paarmann, Carsten Olbrich, Jim Skinner 
 The NWO is gratefully acknowledged
 for financial support making is possible to write the initial versions of this code through VENI and VIDI grants. 
 
-\bibliography{Merged2016}%Rochester-9.bib}
+\bibliography{doc/Merged2016,doc/My_Library}
 \end{document} 
