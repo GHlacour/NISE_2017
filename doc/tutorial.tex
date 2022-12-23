@@ -28,7 +28,7 @@ important that the response function has decayed almost completely within the si
 time to avoid ringing and other artifact in the spectrum. The program should finish in a 
 about 10 seconds. The python script plot.py will plot both the response function and the absorption spectrum. Simply type {\tt python plot.py} assuming that python 3 is installed. Alternatively, you can plot the two first columns of each file with your own favourite plotting programme.
 
-The linear dichroism signal can be calculated by changing the the {\tt Technique} to {\tt LD} which generate corresponding files with the names TD\_LD.dat and LD.dat. In the turotial this is 
+The linear dichroism signal can be calculated by changing the {\tt Technique} to {\tt LD} which generate corresponding files with the names TD\_LD.dat and LD.dat. In the turotial this is 
 not so interesting as it is simply minus half of the absorption signal, since the dipoles are in the 
 x, y plane and the unique angle for linear dichroism is defined to be the z-axis.
 
@@ -65,5 +65,5 @@ max] should be 1.
 \end{verbatim}
 %A separate tutorial exists for the SFG part of the code. The script for creating the  trajectory is called runSFG. The input files for the translate and NISE3 programs are  called inpTraSFG, and input(2D)SFG, respectively. In this tutorial two sites are given. The  transition dipole of the first is parallel to the z-axis and pointing in the positive direction. The angle with the other dipole can be specified in the script. The transition polarizability components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation parameters can be specified as in the main tutorial.
 
-A more extensive set of tutorials can be found at https://github.com/GHlacour/NISE\_Tutorials. This include examples for the LH2 light-harvesting system.
+A more extensive set of tutorials can be found at \url{https://github.com/GHlacour/NISE\_Tutorials}. This include examples for the LH2 light-harvesting system.
 This tutorial repository also contains useful scripts for plotting the spectra calculated with this code.

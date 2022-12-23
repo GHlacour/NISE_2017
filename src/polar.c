@@ -104,4 +104,13 @@ void polar(int xp[],int x){
   return;
 }
 
-
+int find_raman_pol(int p2, int p3, int alphapol){
+    //Combination of px[2] and px[3] gives term of Raman tensor
+    if (p2==0 && p3 ==0) alphapol =0; //xx
+    else if ((p2 == 0 && p3 == 1) || (p2 == 1 && p3 == 0)) alphapol = 1; //xy
+    else if ((p2 == 0 && p3 == 2) || (p2 == 2 && p3 == 0)) alphapol = 2; //xz
+    else if (p2 == 1 && p3 == 1) alphapol = 3; //yy
+    else if ((p2 == 1 && p3 == 2) || (p2 == 2 && p3 == 1)) alphapol = 4; //yz
+    else if (p2 == 2 && p3 == 2) alphapol = 5; //zz
+    return alphapol;
+}
