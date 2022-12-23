@@ -4,7 +4,7 @@ This is the current development version of a quantum classical package for calcu
 The NISE3.1 code was originally developed by Thomas la Cour Jansen. Please, cite the appropriate references [1–6] when publishing work using this code. The code allows the calculation of the linear absorption,linear dichroism, sum-frequency generation, two-dimensional spectra (IR,UVvis, and SFG), population transfer, exciton diffusion and integrated anisotropy using the full nonadiabatic semi-classical numerical integration of the Schrödinger equation approach [2] and the sparse matrix optimization approach [4]. The code allows treating spectra of diverse systems involving intra- and intermolecular energy transfer [1,3,7–9], non-Gaussian dynamics [10, 11], surfaces [5], and chemical exchange [12]. This manual is not intended as an introduction to two-dimensional spectroscopy. The user is directed to the references including recent reviews [2,13–16,20] and books for more information [17–19]. The code use wavenumbers for frequencies and times are femtoseconds. The transition dipoles and transition polarizabilities may be given in any desired units. This version has MPI and OpenMP implementation for parallel use for all 2D methods [21].
 Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.nl or contribute an issue on the gitHub repository. Change in the code is allowed, but on own risk, and should be reported clearly in publications. Redistribution of the code must happen in accordance with the license.
 
-Hamiltonians for the NISE code can be created with the AIM program [22,23]. An external tutorial is available [24].
+Hamiltonians for the NISE code can be created with the AIM program [22,23]. An external tutorial is available [24] and a YouTube video demonstration of the installation of the programme [25].
 
 # References
 1. T. L. C. Jansen and J. Knoester. J. Phys. Chem. B, 110:22910–22916, (2006).
@@ -35,3 +35,4 @@ New York, 1995.
 22. K. E. van Adrichem and T. L. C. Jansen, J. Chem. Theory Comput. 18: 3089–3098 (2022).
 23. AIM: [https://github.com/Kimvana/AIM](https://github.com/Kimvana/AIM) 
 24. NISE Tutorials: [https://github.com/GHlacour/NISE_Tutorials](https://github.com/GHlacour/NISE_Tutorials)
+25. NISE installation video: [YouTube](https://www.youtube.com/watch?v=npvV9UOFmDg) 
