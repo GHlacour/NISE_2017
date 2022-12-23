@@ -84,7 +84,7 @@ The transition polarizability file which is not available in the SKIBIN format
 has the following format. For each snapshot in the trajectory they contain first an integer 
 typically containing the number of the snapshot. This integer is not used in the calculation, 
 but can be used for control purposes. Then the xx components of the transition polarizability
-matrix are given in floats, followed by the yy and zz components. 
+matrix are given in floats, followed by the xy, xz, yy, yz, and zz components. 
 
 The position files are available in the GROBIN format and used to store either the center positions of the chromophores or the positions of the two sites in each chromophore defining the extended dipole coupling. This file is used when calculating CD spectra, excition diffusion, or when using the on-the-fly coupling calculations. The structure of the file is as for the dipole files (see Figure \ref{fig:filestructure}).
 
@@ -143,7 +143,7 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [Technique] [Absorption / DOS / Luminescence / CD / Raman / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / 2DIRraman / 2DIRramanI / 2DIRramanII / 2DIRraman1 / 2DIRraman2 / 2DIRraman3 / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
-\item [Format] [Matlab/Dislin/Gnuplot For Matlab format rephasing and non-rephasing spectra are not added] 
+\item [Format] [Matlab/Dislin/Python/Gnuplot Different output formats for the 2D spectral files. For Matlab format rephasing and non-rephasing spectra are not added. The Matlab format refer to a format used by the Tokmakoff group. Dislin and Python are the same and the format used in the tutorials within the package. Gnuplot is suited for gnuplot and an example is given in the tutorial. Details are given in the section on Fourier transforms.] 
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
 \item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read Projectfile [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers.)
@@ -245,5 +245,5 @@ of the manual is generated with this python script.
 then contain a matrix with the response. An additional file waxis.dat is created with the values of the
 frequencies.
 
-For 2DIRraman the Fourier transformed response is written in files named Rw(par/per/cro)IRraman.(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2DIRraman.(par/per/cro).(I/II).dat and signal integrated over $\omega_1$ is stored in PPIRraman.(I/II).(par/per/cro).dat.                  
+For 2DIRraman the Fourier transformed response is written in files named\\ Rw(par/per/cro)IRraman.(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2DIRraman.(par/per/cro).(I/II).dat and signal integrated over $\omega_1$ is stored in PPIRraman.(I/II).(par/per/cro).dat.                  
 The first column is $\omega_1$, the second is $\omega_3$, the third is the dispersive signal, and the last column is the absorptive signal. Note that 2DIRraman rephaing and non-rephasing signals cannot be added directly and are therefore stored separately. The non-rephasing $\omega_1$ frequencies are about twice that of the single excitation transition frequency as first coherence coresponds to a coherence between a double excited state and the ground state.

@@ -64,10 +64,11 @@ The code is made available as open source on github.com as link {\tt GHlacour/NI
 
 Current developers include: Thomas la Cour Jansen (main developer), Floris Westerman (cmake and MPI implementation), and members of the Computational Spectroscopy group at the University of Groningen.
 
-The code use wavenumbers for frequencies and times are femtoseconds. The transition
-dipoles and transition polarizabilities may be given in any desired units.
+The code use wavenumbers (cm$^{-1}$) for frequencies and times are femtoseconds (fs). The transition
+dipoles and transition polarizabilities may be given in any desired units in most cases, but Debye is recommended for transition dipoles and required for the coupling on the fly methods. Distances in that case should be given in Ångstrøm.
 
 \chapter{Installation and options}
+A demonstration for installing NISE can be found on YouTube: \url{https://www.youtube.com/watch?v=npvV9UOFmDg&t=7s}.
 NISE has a number of dependencies:
 \begin{itemize}
 \item FFTW3 library, possibly with OpenMP/MPI support. See \url{http://www.fftw.org/}.
