@@ -34,20 +34,18 @@ void multi_projection(float *phi_in,float *phi_out,t_non *non,int ip){
 
 /*This subroutine will nullify all the excitonic couplings between different segments*/
 
-void multiprojection (float *Hamil_i_e, t_non *non, int ip){
-   /*Defining a double loop because we are checking the couplings between the pairs of molecules */
+void multi_projection_Hamiltonian (float *Hamil_i_e, t_non *non, int ip){
+   /*Double loop: checking the couplings between the pairs of molecules */
     int i;
     int j;
-    for (i=0,i<non->singles;i++){
-        for (j>i,j<non->singles;j++){
-            if (non->psites[i]==ip and non->psites[j]=!ip){
-               He[Sindex(i,j,non->singles)]==0;
+    for (i=0;i<non->singles;i++){
+        for (j=i+1;j<non->singles;j++){
+            if (non->psites[i] != non->psites[j]){
+               Hamil_i_e[Sindex(i,j,non->singles)] =0;
 
-            } else {
-                  He[Sindex(i,j,non->singles)]==He[Sindex(i,j,non->singles)]
+            } 
       
-    }
-    }
+    	}
     }
 }
     

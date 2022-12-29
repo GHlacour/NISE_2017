@@ -146,7 +146,7 @@ void calc_DOS(t_non *non){
       }
       clearvec(veci,non->singles*non->singles);
 
-      /* Loop over delay */
+      // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
 	/* Read Hamiltonian */
@@ -162,10 +162,10 @@ void calc_DOS(t_non *non){
   	  }
         }
 	
-	/* Find response */
+	// Find response
 	c_calc_DOS(re_S_1,im_S_1,t1,non,vecr,veci);
 
-	/* Loop over vectors to propagate */
+	// Loop over vectors to propagate
 #pragma omp parallel for
 	for (i=0; i<non->singles; i++){
 	  j=i*non->singles;
@@ -189,7 +189,7 @@ void calc_DOS(t_non *non){
 	}
       }
     }
-    } /* Cluster loop */
+    } // Cluster loop
   
     // Log time
     log=fopen("NISE.log","a");
