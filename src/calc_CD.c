@@ -17,11 +17,11 @@ void calc_CD(t_non *non){
   float *re_S_1j,*im_S_1j; // Before avaraging
   float *mu_eg,*Hamil_i_e;
   float *mu_p;
-  float *pos;
+  float *mu_xyz;
+  float *pos,*pos_xyz;
   float posj;
   // Aid arrays
   float *vecr,*veci;
-  //,*vecr_old,*veci_old;
 
   /* Floats */
   float shift1;
@@ -31,6 +31,7 @@ void calc_CD(t_non *non){
 
   /* File handles */
   FILE *H_traj,*mu_traj,*pos_traj;
+  FILE *C_traj;
   FILE *outone,*log;
   FILE *Cfile;
 
@@ -130,16 +131,48 @@ void calc_CD(t_non *non){
   veci=(float *)calloc(non->singles*non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
   mu_p=(float *)calloc(non->singles,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
   pos=(float *)calloc(non->singles,sizeof(float));
+  pos_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
   printf("\n Note that the CD implementation assumes that the positions of\n");
   printf("the full system specified in the Position file is contained\n");
   printf("in a box as periodic boundary contitions are NOT applied.\n\n");
 
-  // Loop over samples
+/* Read coupling, this is done if the coupling and transition-dipoles are */    /* time-independent and only one snapshot is stored */
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    C_traj=fopen(non->couplingFName,"rb");
+    if (C_traj==NULL){
+      printf("Coupling file not found!\n");
+      exit(1);
+    }
+    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
+      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
+      exit(1);
+    }
+    fclose(C_traj);
+    /* Reading in single fixed transition dipole vector matrix */
+    for (x=0;x<3;x++){
+      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
+         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+         printf("ITIME %d %d\n",0,x);
+         exit(1);
+      }
+    }
+    /* Reading in single fixed position vector matrix */
+    for (x=0;x<3;x++){
+      if (read_mue(non,pos_xyz+non->singles*x,pos_traj,0,x)!=1){
+         printf("Position trajectory file to short, could not fill buffer!!!\n");
+         printf("ITIME %d %d\n",0,x);
+         exit(1);
+      }
+    } 
+  }
+
+  /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
 
-    // Calculate linear response    
+    /* Calculate linear response */   
     ti=samples*non->sample;
     if (non->cluster!=-1){
       if (read_cluster(non,ti,&cl,Cfile)!=1){
@@ -155,14 +188,18 @@ void calc_CD(t_non *non){
     }
     if (non->cluster==-1 || non->cluster==cl){
 
-      // Loop over polarizations of the initial excitation      
+      /* Loop over polarizations of the initial excitation */
       for (x=0;x<3;x++){
-        // Read mu(ti)
-        if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
-  	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	  printf("ITIME %d %d\n",ti,x);
-	  exit(1);
-        }
+          /* Read mu(ti) */
+          if (!strcmp(non->hamiltonian,"Coupling")){
+              copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
+          } else {
+             if (read_mue(non,mu_eg,mu_traj,ti,x)!=1){
+  	         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	         printf("ITIME %d %d\n",ti,x);
+	         exit(1);
+             }
+          }
         // Initialize excitation on initial site
         clearvec(vecr,non->singles*non->singles);
         clearvec(veci,non->singles*non->singles);
@@ -172,38 +209,51 @@ void calc_CD(t_non *non){
           vecr[j+j*N]=mu_eg[j];
         }
         
-        // Loop over delay
+        /* Loop over delay */
         for (t1=0;t1<non->tmax;t1++){
-	  tj=ti+t1;
-	  // Read Hamiltonian
-	  if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-            exit(1);
-	  }
+	    tj=ti+t1;
+	    /* Read Hamiltonian */
+            if (!strcmp(non->hamiltonian,"Coupling")){
+                if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
+                    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+                    exit(1);
+                }
+            } else {
+	        if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
+	            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+                    exit(1);
+	        }
+            }
 
-          // Loop over polarization values y for mu
-          for (y=0;y<3;y++){
-            // Exclude values taken up by the first interaction
-            if (y!=x){	
-              // Find corresponding value for the polarization used for the distance matrix
-              z=3-x-y;
-	      // Read mu(tj)
-	      if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
-	        printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	        printf("JTIME %d %d\n",tj,y);
-	        exit(1);
-              }
-              // Read positions
-              if (read_mue(non,pos,pos_traj,tj,z)!=1){
-                printf("Position trajectory file to short, could not fill buffer!!!\n");
-                printf("JTIME %d %d\n",tj,z);
-                exit(1);
-              }
- //             posj=pos[j];
-              // Do projection on selected sites if asked
-/*	      if (non->Npsites>0){
-	        projection(mu_eg,non);
-              }*/
+            /* Loop over polarization values y for mu */
+            for (y=0;y<3;y++){
+                /* Exclude values taken up by the first interaction */
+                if (y!=x){	
+                /* Find corresponding value for the polarization used for the distance matrix */
+                    z=3-x-y;
+	      /* Read mu(tj) */
+                    if (!strcmp(non->hamiltonian,"Coupling")){
+                        copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
+                    } else {
+	                if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
+	                    printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	                    printf("JTIME %d %d\n",tj,y);
+	                    exit(1);
+                        }
+                    }
+              
+              /* Read positions */
+                    if (!strcmp(non->hamiltonian,"Coupling")){
+                        copyvec(pos_xyz+non->singles*z,pos,non->singles);
+                    } else {
+                        if (read_mue(non,pos,pos_traj,tj,z)!=1){
+                            printf("Position trajectory file to short, could not fill buffer!!!\n");
+                            printf("JTIME %d %d\n",tj,z);
+                            exit(1);
+                        }
+                    }
+              
+              /* Do projection on selected sites if asked */
               sign=0;
               // Determine the sign
               if (z==0 & y==1 & x==2){sign=1;}//{sign=1;}
@@ -288,6 +338,9 @@ void calc_CD(t_non *non){
   free(vecr);
   free(veci);
   free(mu_eg);
+  free(mu_xyz);
+  free(pos);
+  free(pos_xyz);
   free(Hamil_i_e);
 
   // Sum over results from different chromophores
