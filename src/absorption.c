@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "read_trajectory.h"
 #include "propagate.h"
 #include "absorption.h"
 #include "1DFFT.h"
@@ -64,30 +65,12 @@ void absorption(t_non *non){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
 
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
+  if (non->cluster!=-1){
+     Ncl=0;
   }
   
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
-
   // Here we want to call the routine for checking the trajectory files
   control(non);
 
@@ -122,26 +105,7 @@ void absorption(t_non *non){
 
   /* Read coupling, this is done if the coupling and transition-dipoles are *
    * time-independent and only one snapshot is stored */
-  if (!strcmp(non->hamiltonian,"Coupling")){
-    C_traj=fopen(non->couplingFName,"rb");
-    if (C_traj==NULL){
-      printf("Coupling file not found!\n");
-      exit(1);
-    }
-    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
-    }
-    fclose(C_traj);
-    /* Reading in single fixed transition dipole vector matrix */
-    for (x=0;x<3;x++){
-      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
-         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-         printf("ITIME %d %d\n",0,x);
-         exit(1);
-      }
-    }
-  }
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
   /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
@@ -180,28 +144,10 @@ void absorption(t_non *non){
         for (t1=0;t1<non->tmax;t1++){
 	  tj=ti+t1;
 	  /* Read Hamiltonian */
-	  if (!strcmp(non->hamiltonian,"Coupling")){
-            if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-            }
-          } else {
-	    if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	      printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	      exit(1);
-  	    }
-          }
+          read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
 	
   	  /* Read mu(tj) */
-          if (!strcmp(non->hamiltonian,"Coupling")){
-            copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
-          } else {
-	    if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
-	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	      printf("JTIME %d %d\n",tj,x);
-	      exit(1);
-	    }
-          }
+          read_dipole(non,mu_traj,mu_eg,mu_xyz,x,tj);
 
 	  // Do projection on selected sites if asked
 	  if (non->Npsites==0){
