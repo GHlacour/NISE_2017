@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "propagate.h"
 #include "absorption.h"
 #include "luminescence.h"
 #include "1DFFT.h"

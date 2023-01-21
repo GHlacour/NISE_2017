@@ -11,6 +11,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "propagate.h"
 #include "polar.h"
 #include "calc_2DES.h"
 #include <stdarg.h>

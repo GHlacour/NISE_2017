@@ -21,6 +21,7 @@
 #include "calc_Diffusion.h"
 #include "population.h"
 #include "anisotropy.h"
+#include "propagate.h"
 #include <mpi.h>
 
 /* This is the 2017 version of the NISE program
