@@ -143,6 +143,33 @@ time_t log_time(time_t t0, FILE* log) {
     return t1;
 }
 
+/* Determine number of samples to use and write to log file */
+int determine_samples (t_non *non){
+  FILE *log;
+  int N_samples;
+  N_samples=(non->length-non->tmax1-1)/non->sample+1;
+  if (N_samples>0) {
+    printf("Making %d samples!\n",N_samples);
+  } else {
+    printf(RED "Insufficient data to calculate spectrum.\n" RESET);
+    printf(RED "Please, lower max times or provide longer\n" RESET);
+    printf(RED "trajectory.\n" RESET);
+    exit(1);
+  }
+
+  if (non->end==0) non->end=N_samples;
+  if (non->end>N_samples){
+    printf(RED "Endpoint larger than number of samples was specified.\n" RESET);
+    printf(RED "Endpoint was %d but cannot be larger than %d.\n" RESET,non->end,N_samples);
+    exit(0);
+  }
+  log=fopen("NISE.log","a");
+  fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
+  fclose(log);
+
+  return N_samples;
+}
+
 // Forms a string with the time difference between the given times
 char* time_diff(time_t t0, time_t t1) {
     int s = difftime(t1, t0);
