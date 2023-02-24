@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "propagate.h"
 #include "calc_DOS.h"
 #include "1DFFT.h"
 #include "project.h"
@@ -166,29 +167,8 @@ void calc_DOS(t_non *non){
 	c_calc_DOS(re_S_1,im_S_1,t1,non,vecr,veci);
 
 	// Loop over vectors to propagate
-#pragma omp parallel for
-	for (i=0; i<non->singles; i++){
-	  j=i*non->singles;
-	  // Probagate vector
-	  if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr+j,veci+j,non->ts,1);
-	  if (non->propagation==0){
-	    if (non->thres==0 || non->thres>1){
-	      propagate_vec_DIA(non,Hamil_i_e,vecr+j,veci+j,1);
-	    } else {
-	      elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr+j,veci+j,1);
-	    if (samples==non->begin){
-	      if (t1==0){
-		if (x==0){
-		  printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
-		  printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
-		  printf("Suggested truncation %f.\n",0.001);
-		}
-	      }
-	    }
-	  }
-	}
+	propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
       }
-    }
     } // Cluster loop
   
     // Log time

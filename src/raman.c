@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "propagate.h"
 #include "raman.h"
 #include "1DFFT.h"
 #include "project.h"
@@ -214,23 +215,7 @@ void raman(t_non *non){
           //if(x==1 || x==2 || x==4) calc_Ram_VH(VH_re_S_1,VH_im_S_1,t1,non,vecr,veci,alpha);
 
 	        // Probagate vector
-	        if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
-	        if (non->propagation==0){
-	          if (non->thres==0 || non->thres>1){
-	            propagate_vec_DIA(non,Hamil_i_e,vecr,veci,1);
-	          } else {
-	            elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr,veci,1);
-	            if (samples==non->begin){
-	              if (t1==0){
-		              if (x==0){
-		                printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
-		                printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
-		                printf("Suggested truncation %f.\n",0.001);
-		              }
-	              }
-	            }
-	          }
-          }
+	  propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
         }
       }
     } // Cluster loop

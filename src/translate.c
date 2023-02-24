@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "read_trajectory.h"
 #include "readinput.h"
 
 /* This code translate the Hamiltonian between different formats */
