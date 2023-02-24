@@ -38,7 +38,7 @@ void absorption(t_non *non){
 
   /* Integers */
   int nn2;
-  int itime,N_samples;
+  int N_samples;
   int samples;
   int x,ti,tj,i;
   int t1,fft;
@@ -80,7 +80,6 @@ void absorption(t_non *non){
   /* before we start the calculation */   
   control(non);
 
-  itime=0;
   /* Initialize sample numbers */
   N_samples=determine_samples(non);
   Ncl=0;
@@ -127,7 +126,7 @@ void absorption(t_non *non){
           
           /* Do projection on selected sites if asked and calculate response function */
           if (non->Npsites==0){
-            /* Find response without projection */
+            /* Find response without projection option */
             calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
           } else if (non->Npsites<non->singles){
             projection(mu_eg,non);
@@ -141,7 +140,7 @@ void absorption(t_non *non){
             }
           }
           
-          /* Probagate vector */
+          /* Propagate vector */
           propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
         }
       }

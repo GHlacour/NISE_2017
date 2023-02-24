@@ -15,7 +15,8 @@
 
 
 /* Standard propagation of a single vector */
-/* display is t1*x for displaying info at first step */
+/* display is t1*x for displaying info at first step, that is when t1 and x are both zero */
+/* and we have the first sample */
 void propagate_vector(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int sign,int samples,int display){
    int elements;
    if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,sign);
