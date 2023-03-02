@@ -62,7 +62,7 @@ void mcfret(t_non *non){
 
     FILE *H_traj,*mu_traj;
     FILE *C_traj;
-    FILE *outone,*log;
+    FILE *absorption_matrix, *emission_matrix,*log;
     FILE *Cfile;
 
     /*Allocate memory for all the variables*/
@@ -217,6 +217,49 @@ void mcfret(t_non *non){
          fclose(log);
     }/*Closing the loop over samples*/
     
+    /*The calculation is finished, lets write output*/
+    log=fopen("NISE.log","a");
+    fprintf(log,"Finished Calculating Response!\n");
+    fprintf(log,"Writing to file!\n");  
+    fclose(log);
+
+    if (non->cluster!=-1){
+        printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
+        if (samples==0){ /*Avoid dividing by zero*/ 
+            samples=1;
+        }
+    }
+
+    fclose(H_traj);
+    if (non->cluster!=-1){
+        fclose(Cfile);
+    }
+
+  /* Save time domain response */
+    absorption_matrix=fopen("TD_absorption_matrix.dat","w");
+    emission_matrix=fopen("TD_emission_matrix.dat","w");
+    for (t1=0;t1<non->tmax1;t1+=non->dt1){
+        fprintf(absorption_matrix,"%f %e %e\n",t1*non->deltat,re_S_Abs[t1]/samples,im_S_Abs[t1]/samples);
+        fprintf(emission_matrix, "%f %e %e\n",t1*non->deltat,re_S_Emi[t1]/samples,im_S_Emi[t1]/samples);
+    }
+    fclose(absorption_matrix);
+    fclose(emission_matrix);
+    
+    
+    /*Free the memory*/
+    
+    free(re_S_Abs);
+    free(im_S_Abs);
+    free(re_S_Emi);
+    free(im_S_Emi);
+
+    
+    free(vecr);	
+    free(veci);
+
+    free(dens_mat);
+
+    
 }
 void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
   /*This function will create a density matrix where every term is weighted with a Boltzmann weight*/
@@ -312,8 +355,11 @@ void mcfret_response_function(float* Hamiltonian, float *re_S_1,float *im_S_1,in
 return;
 }
 
-void mcfret_coupling(t_non *non);
+void mcfret_coupling(t_non *non){
 
+
+return;
+}
 void mcfret_rate(t_non *non);
 
 void mcfret_validate(t_non *non);
