@@ -52,7 +52,8 @@ Front cover:
 
 \chapter{Introduction}
 The main developer of the NISE3 code is Thomas la Cour Jansen. Please, cite the appropriate
-references \cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
+references 
+\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405,Jansen.2010.JCP.132.224503,Liang.2012.JCTC.8.1706,Liang.2013.JPCL.4.448}
 when publishing work using this code. The code allows the calculation of the linear absorption,linear dichroism, sum-frequency generation, two-dimensional spectra (IR,UVvis, and SFG), population transfer, exciton diffusion and integrated anisotropy using the full nonadiabatic semi-classical numerical integration of the Schr\"{o}dinger equation approach
 \cite{Jansen.2009.ACR.42.1405} and the sparse matrix optimization approach \cite{Liang.2012.JCTC.8.1706}. The code allows treating spectra of diverse systems involving
 intra- and intermolecular energy transfer\cite{Jansen.2006.JPCB.110.22910,Cringus.2007.JCP.127.084507,Jansen.2008.BJ.94.1818,Dijkstra.2010.JPCA.114.7315,Jansen.2010.JCP.132.224503}, non-Gaussian dynamics \cite{Jansen.2009.JPCA.113.6260,Roy.2011.JPCB.115.5431}, surfaces \cite{Liang.2013.JPCL.4.448}, and chemical exchange \cite{Jansen.2007.JCP.127.234502}. This manual is not intended as an introduction to two-dimensional
@@ -63,10 +64,11 @@ The code is made available as open source on github.com as link {\tt GHlacour/NI
 
 Current developers include: Thomas la Cour Jansen (main developer), Floris Westerman (cmake and MPI implementation), and members of the Computational Spectroscopy group at the University of Groningen.
 
-The code use wavenumbers for frequencies and times are femtoseconds. The transition
-dipoles and transition polarizabilities may be given in any desired units.
+The code use wavenumbers (cm$^{-1}$) for frequencies and times are femtoseconds (fs). The transition
+dipoles and transition polarizabilities may be given in any desired units in most cases, but Debye is recommended for transition dipoles and required for the coupling on the fly methods. Distances in that case should be given in Ångstrøm.
 
 \chapter{Installation and options}
+A demonstration for installing NISE can be found on YouTube: \url{https://www.youtube.com/watch?v=npvV9UOFmDg&t=7s}.
 NISE has a number of dependencies:
 \begin{itemize}
 \item FFTW3 library, possibly with OpenMP/MPI support. See \url{http://www.fftw.org/}.
@@ -82,12 +84,15 @@ As some FFTW3 installations do not come with the correct CMake compatibility, it
 \section{Building}
 In order to build and compile the NISE software, it is recommended to use the CMake build system. This will try to automatically link the libraries and pick the correct compiler settings.
 \begin{enumerate}
-\item Extract the source code files
-\item Create a \texttt{build} directory in the main folder
+\item Extract the source code files.
+\item Create a \texttt{build} directory in the main folder.
 \item Run \texttt{cmake ..} inside this new {\tt build} directory.
 \item If {\tt cmake} was successful, run {\tt make} in the same directory to start compilation.
 \item All executables should be available in a new {\tt bin} directory in the main folder.
 \end{enumerate}
+
+\noindent
+Additional steps to install on MacOS and Windows can be found in section 2.2.\\
 
 There are several options you can provide to the {\tt cmake} command in order to customize your build:
 \begin{itemize}
@@ -140,6 +145,8 @@ sudo apt install python3-matplotlib
 \end{verbatim}
 When running on this system one needs to keep in mind the limited disk space and memory of the system. However, the NISE program itself easily installs and run on this system. 
 
+The program can also be installed with Windows 10 and newer, using the Windows Subsystem for Linux (WSL). This is a feature built into Windows that allows users to run Linux virtual machines. To install WSL, follow the instructions at \url{https://learn.microsoft.com/en-us/windows/wsl/install}. After that, a Linux terminal can be opened from the Start Menu. The process to install NISE will be identical to the installation process on Raspberry Pi 4.
+
 \section{Parallelization}
 NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, both the time consuming 2DIR and 2DUVvis techniques support MPI. The linear techniques do not have a parallel implementation as they are generally fast. (Techniques relying on LAPACK including Luminescence may use the MLK OpenMP support for limited speedup.)
 
@@ -164,12 +171,15 @@ Some considerations and examples to achieve higher performance:
 
 \section{Changelog}
 \subsection{Version 3.4 in progress}
-{\small Work by Thomas Jansen and Kim van Adrichem}
+{\small Work by Thomas Jansen, Carleen D. N. van Hengel, Hoang Long Nguyen, and Kim van Adrichem}
 \begin{itemize}
+\item Improve manual for Windows 10 installation. (Hoang Long Nguyen)
+\item The 2DFFT code was cleaned up
+\item Raman and 2DIRraman techniques were added (Carleen D. N. van Hengel)
 \item openMP parallel CD and DOS were implemented
 \item Diffusion calculations were added
 \item On the fly transition-dipole and extended-dipole coupling schemes were impemented
-\item Added project file option to project on substructures
+\item Added project file option to project on substructures - including multi segment options for linear techniques
 \item Added inhomogeneous and homogeneous apodization functions
 \item Added automatic check on Singles keyword providing warning to user if it may be incorrect
 \item Implemented speed-up (x2) of 2D calculations by removing if statements in propagation of double excited states (2DIR by Kim van Adrichem)
@@ -206,10 +216,10 @@ Some considerations and examples to achieve higher performance:
 
 \chapter{Acknowledgement}
 The following people are kindly acknowledged for their contribution through helpful discussions, ideas, and feedback:
-Foppe de Haan, Arend Dijkstra, Alexander Paarmann, Carsten Olbrich, Jim Skinner and his group, Carlos Baiz, Chungwen Liang, Santanu Roy, Ana V. Cunha, Andy Sardjan, and Ariba Javad. 
+Foppe de Haan, Arend Dijkstra, Alexander Paarmann, Carsten Olbrich, Jim Skinner and his group, Lu Wang, Carlos Baiz, Chungwen Liang, Santanu Roy, Ana V. Cunha, Andy Sardjan, and Ariba Javad. 
 
 The NWO is gratefully acknowledged
 for financial support making is possible to write the initial versions of this code through VENI and VIDI grants. 
 
-\bibliography{Merged2016}%Rochester-9.bib}
+\bibliography{doc/Merged2016,doc/My_Library}
 \end{document} 

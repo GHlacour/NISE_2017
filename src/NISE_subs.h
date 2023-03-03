@@ -13,6 +13,7 @@ void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
+int determine_samples (t_non *non);
 char* time_diff(time_t t0, time_t t1);
 char* MPI_time(double t0);
 int Eindex(int a,int b,int N);
@@ -20,30 +21,32 @@ int read_He(t_non *non,float *He,FILE *FH,int pos);
 int read_Dia(t_non *non,float *He,FILE *FE,int pos);
 int read_A(t_non *non,float *Anh,FILE *FH,int pos);
 int read_mue(t_non *non,float *mue,FILE *FH,int pos,int x);
+int read_alpha(t_non *non,float *alpha,FILE *FH,int pos,int x);
 int read_over(t_non *non,float *over,FILE *FH,int pos,int x);
 void muread(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj);
 void mureadE(t_non *non,float *leftnr,int ti,int x,FILE *mu_traj,float *mu,float *pol);
 int read_cluster(t_non *non,int pos,int *cl,FILE *FH);
 void propagate_vec_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
-void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign);
+/*void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float **vr,float **vi,int sign);
 int propagate_vec_DIA_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
 void propagate_vec_coupling_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);
-void propagate_vec_coupling_S_doubles(t_non *non,float *Hamiltonian_i,float *cr,float 
+void propagate_vec_coupling_S_doubles(t_non *non,float *Hamiltonian_i,float *cr,float
 *ci,int m,float *Anh);
 void propagate_vec_coupling_S_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m);
 void diagonalizeLPD(float *H,float *v,int N);
-void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);
+void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);*/
 void generateCS(float *X,float *Y,float *Z);
 //void projection(float *phi,t_non *non);
 int control(t_non *non);
 int autodetect_singles(t_non* non);
 void dipole_double(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
+void dipole_double_ground(t_non *non,float *dipole,float *fr,float *fi,float *over);
 void dipole_double_ES(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi);
 void dipole_double_last(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi,float *over);
 void dipole_double_last_ES(t_non *non,float *dipole,float *cr,float *ci,float *fr,float *fi);
-int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
+/*int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
 void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m,float *Anh);
-void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);
+void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);*/
 float distance(float *rf,float *ri,int a,int b,int N,float box);
 float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x);
 float distance3(float *rf,float *ri,int a,int b,int N,float *box);

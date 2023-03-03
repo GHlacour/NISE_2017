@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "propagate.h"
 #include "absorption.h"
 #include "luminescence.h"
 #include "1DFFT.h"
@@ -16,7 +17,7 @@ void luminescence(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
   float *mu_eg,*Hamil_i_e;
-
+  float *mu_xyz;
   // Aid arrays
   float *vecr,*veci;
   //,*vecr_old,*veci_old;
@@ -30,6 +31,7 @@ void luminescence(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj;
   FILE *outone,*log;
+  FILE *C_traj;
 
   /* Integers */
   int nn2;
@@ -99,6 +101,31 @@ void luminescence(t_non *non){
 //  vecr_old=(float *)calloc(non->singles,sizeof(float));
 //  veci_old=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+
+/* Read coupling, this is done if the coupling and transition-dipoles are *
+ *    * time-independent and only one snapshot is stored */
+  if (!strcmp(non->hamiltonian,"Coupling")){
+    C_traj=fopen(non->couplingFName,"rb");
+    if (C_traj==NULL){
+      printf("Coupling file not found!\n");
+      exit(1);
+    }
+    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
+      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
+      exit(1);
+    }
+    fclose(C_traj);
+    /* Reading in single fixed transition dipole vector matrix */
+    for (x=0;x<3;x++){
+      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
+         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+         printf("ITIME %d %d\n",0,x);
+         exit(1);
+      }
+    }
+  }
+
 
   // Loop over samples
   for (samples=non->begin;samples<non->end;samples++){
@@ -106,11 +133,15 @@ void luminescence(t_non *non){
     // Calculate linear response    
     ti=samples*non->sample;
     for (x=0;x<3;x++){
-      // Read mu(ti)
-      if (read_mue(non,vecr,mu_traj,ti,x)!=1){
-	printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	printf("ITIME %d %d\n",ti,x);
-	exit(1);
+      /* Read mu(ti) */
+      if (!strcmp(non->hamiltonian,"Coupling")){
+          copyvec(mu_xyz+non->singles*x,vecr,non->singles);
+      } else {
+          if (read_mue(non,vecr,mu_traj,ti,x)!=1){
+	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	      printf("ITIME %d %d\n",ti,x);
+	      exit(1);
+          }
       }
       clearvec(veci,non->singles);
 //      copyvec(vecr,vecr_old,non->singles);
@@ -122,18 +153,29 @@ void luminescence(t_non *non){
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
-	// Read Hamiltonian
-	if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	  exit(1);
+	/* Read Hamiltonian */
+        if (!strcmp(non->hamiltonian,"Coupling")){
+            if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
+              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+              exit(1);
+            }
+        } else {
+	    if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
+	        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+	        exit(1);
+           }
 	}
 	
-	// Read mu(tj)
-	if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
-	  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	  printf("JTIME %d %d\n",tj,x);
-	  exit(1);
-	}
+        /* Read mu(tj) */
+        if (!strcmp(non->hamiltonian,"Coupling")){
+          copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
+        } else {
+	    if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
+	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	      printf("JTIME %d %d\n",tj,x);
+	      exit(1);
+	    }
+        }
 
 	// Do projection on selected sites if asked
 	if (non->Npsites>0){
@@ -146,24 +188,9 @@ void luminescence(t_non *non){
 	// Find response
 	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
 
-	// Probagate vector
-	if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,1);
-	if (non->propagation==0){
-	  if (non->thres==0 || non->thres>1){
-	    propagate_vec_DIA(non,Hamil_i_e,vecr,veci,1);
-	  } else {
-	    elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr,veci,1);
-	    if (samples==non->begin){
-	      if (t1==0){
-		if (x==0){
-		  printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
-		  printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
-		  printf("Suggested truncation %f.\n",0.001);
-		}
-	      }
-	    }
-	  }
-	}
+	/* Probagate vector */
+        propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
+	
       }
     }
   
@@ -179,6 +206,7 @@ void luminescence(t_non *non){
 //  free(vecr_old);
 //  free(veci_old);
   free(mu_eg);
+  free(mu_xyz);
   free(Hamil_i_e);
 
   // The calculation is finished, lets write output
