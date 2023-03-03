@@ -12,10 +12,11 @@ add_executable(NISE
     MPI_subs.c MPI_subs.h 1DFFT.c 1DFFT.h absorption.h absorption.c
     population.c population.h calc_DOS.h calc_DOS.c calc_2DIR.c calc_2DES.c
     luminescence.c calc_Diffusion.h calc_Diffusion.c anisotropy.c anisotropy.h
-    calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c analyse.h mcfret.c mcfret.h
-    readinput.c readinput.h propagate.c propagate.h
-    read_trajectory.c read_trajectory.h
-    project.c project.h types_MPI.h types_MPI.c
+    calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c analyse.h
+    mcfret.c mcfret.h readinput.c readinput.h propagate.c propagate.h
+    raman.c raman.h calc_2DIRraman.c calc_2DIRraman.h
+    read_trajectory.c read_trajectory.h project.c project.h
+    types_MPI.h types_MPI.c
     $<TARGET_OBJECTS:random_lib>
 )
 

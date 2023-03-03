@@ -8,6 +8,7 @@
 #include "NISE_subs.h"
 #include "mcfret.h"
 #include "project.h"
+#include "propagate.h"
 
 /* Main MCFRET routine only calling and combining the other subroutines */ 
 void mcfret(t_non *non){
