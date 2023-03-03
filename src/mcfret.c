@@ -9,6 +9,7 @@
 #include "mcfret.h"
 #include "project.h"
 #include "propagate.h"
+#include "read_trajectory.h"
 
 /* Main MCFRET routine only calling and combining the other subroutines */ 
 void mcfret(t_non *non){
@@ -207,46 +208,17 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
       /*Loop over delay*/ 
         for (t1=0;t1<non->tmax;t1++){
 	          tj=ti+t1;
-	    /* Read Hamiltonian */
-	          if (!strcmp(non->hamiltonian,"Coupling")){
-                if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                    exit(1);
-                }
-            } else {
-	              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	                  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                    exit(1);
-  	            }
-            }
-                /* Remove couplings between segments */
+	          /* Read Hamiltonian */
+            read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+	          
+            /* Remove couplings between segments */
             multi_projection_Hamiltonian(Hamil_i_e,non);
                 
-                /* Update the MCFRET Response  */
+            /* Update the MCFRET Response  */
             mcfret_response_function_sub(re_S_1, im_S_1,t1,non,vecr,veci);        
-        
-            #pragma omp parallel for
-	          for (i=0; i<non->singles; i++){
-	              j=i*non->singles;
-	              /* Propagate vector*/
-	              if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr+j,veci+j,non->ts,1);
-	                  if (non->propagation==0){
-	                      if (non->thres==0 || non->thres>1){
-	                          propagate_vec_DIA(non,Hamil_i_e,vecr+j,veci+j,1);
-	                      } else {
-	                          elements=propagate_vec_DIA_S(non,Hamil_i_e,vecr+j,veci+j,1);
-	                          if (samples==non->begin){
-	                              if (t1==0){
-		                                if (x==0){
-		                                    printf("Sparce matrix efficiency: %f pct.\n",(1-(1.0*elements/(non->singles*non->singles)))*100);
-		                                    printf("Pressent tuncation %f.\n",non->thres/((non->deltat*icm2ifs*twoPi/non->ts)*(non->deltat*icm2ifs*twoPi/non->ts)));
-		                                    printf("Suggested truncation %f.\n",0.001);
-		                                }
-	                              }
-	                          }
-	                      }
-	                  }
-                }            
+            
+            propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
+                        
             }/*We are closing the loop over time delays -t1 times*/
         } /*We are closing the cluster loop*/
 

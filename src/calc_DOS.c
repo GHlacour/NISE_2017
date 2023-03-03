@@ -167,7 +167,7 @@ void calc_DOS(t_non *non){
 	c_calc_DOS(re_S_1,im_S_1,t1,non,vecr,veci);
 
 	// Loop over vectors to propagate
-	propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
+	       propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1);
       }
     } // Cluster loop
   
