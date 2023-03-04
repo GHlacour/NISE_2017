@@ -97,6 +97,8 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     float *Hamil_i_e;
     /*Vectors representing time dependent states: real and imaginary part*/
     float *vecr, *veci;
+    /* Transition dipoles for coupling on the fly */
+    float *mu_xyz;
     float shift1; 
 
   /* Time parameters */
@@ -111,6 +113,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
   /*File handles*/
     FILE *H_traj;
     FILE *C_traj;
+    FILE *mu_traj;
     /* FILE *absorption_matrix, *emission_matrix,*/
     FILE *log;
     FILE *Cfile;
@@ -119,53 +122,26 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /*Allocating memory for the real and imaginary part of the wave function that we need to propagate*/
     vecr=(float *)calloc(non->singles*non->singles,sizeof(float));	
     veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+    mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
- /* Open Trajectory files */
-    H_traj=fopen(non->energyFName,"rb");
-    if (H_traj==NULL){
-        printf("Hamiltonian file not found!\n");
-        exit(1);
-    }
-      /*Here we want to call the routine for checking the trajectory files*/ 
+    /* Open Trajectory files */
+    open_files(non,&H_traj,&mu_traj,&Cfile);
+
+    /*Here we want to call the routine for checking the trajectory files*/ 
     control(non);
 
     itime=0;
 
-    N_samples=(non->length-non->tmax1-1)/non->sample+1;
-    if (N_samples>0) {
-        printf("Making %d samples!\n",N_samples);
-    } else {
-      printf("Insufficient data to calculate spectrum.\n");
-      printf("Please, lower max times or provide longer\n");
-      printf("trajectory.\n");
-      exit(1);
-    }
-
-    if (non->end==0) non->end=N_samples;
-    if (non->end>N_samples){
-      printf(RED "Endpoint larger than number of samples was specified.\n" RESET);
-      printf(RED "Endpoint was %d but cannot be larger than %d.\n" RESET,non->end,N_samples);
-      exit(0);
-    }
+    /* Initialize sample numbers */
+    N_samples=determine_samples(non);
 
     log=fopen("NISE.log","a");
     fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
     fclose(log);
 
-    
-    /* Read coupling: Since in this case couplings are static, we want to read them in only once*/
-    if (!strcmp(non->hamiltonian,"Coupling")){
-      C_traj=fopen(non->couplingFName,"rb");
-      if (C_traj==NULL){
-        printf("Coupling file not found!\n");
-        exit(1);
-      }
-      if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-        printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
-      fclose(C_traj);
-    }
+    /* Read coupling, this is done if the coupling and transition-dipoles are */
+    /* time-independent and only one snapshot is stored */
+    read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
     /*Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory*/
     for (samples=non->begin;samples<non->end;samples++){ 
@@ -183,41 +159,33 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
         }
         if (non->cluster==-1 || non->cluster==cl){
       /* Initialize time-evolution operator */
-        if (emission==0){
-          	    /* Read Hamiltonian */
-	          if (!strcmp(non->hamiltonian,"Coupling")){
-                if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-                    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                    exit(1);
-                }
-            } else {
-	              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-	                  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	                  exit(1);
-  	            }
-            }
-            /* Remove couplings between segments */
-            multi_projection_Hamiltonian(Hamil_i_e,non);
-            /* Use the thermal equilibrium as initial state */
-            density_matrix(vecr,Hamil_i_e,non);
-        } else { 
-            unitmat(vecr,non->singles);
-        }
-        clearvec(veci,non->singles*non->singles);
-        
-      /*Loop over delay*/ 
-        for (t1=0;t1<non->tmax;t1++){
-	          tj=ti+t1;
-	          /* Read Hamiltonian */
-            read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+            if (emission==0){
+                /* Read Hamiltonian */
+                read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 	          
-            /* Remove couplings between segments */
-            multi_projection_Hamiltonian(Hamil_i_e,non);
+                /* Remove couplings between segments */
+                multi_projection_Hamiltonian(Hamil_i_e,non);
+
+                /* Use the thermal equilibrium as initial state */
+                density_matrix(vecr,Hamil_i_e,non);
+            } else { 
+                unitmat(vecr,non->singles);
+            }
+            clearvec(veci,non->singles*non->singles);
+        
+            /*Loop over delay*/ 
+            for (t1=0;t1<non->tmax;t1++){
+	              tj=ti+t1;
+	              /* Read Hamiltonian */
+                read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+	          
+                /* Remove couplings between segments */
+                multi_projection_Hamiltonian(Hamil_i_e,non);
                 
-            /* Update the MCFRET Response  */
-            mcfret_response_function_sub(re_S_1, im_S_1,t1,non,vecr,veci);        
+                /* Update the MCFRET Response  */
+                mcfret_response_function_sub(re_S_1, im_S_1,t1,non,vecr,veci);        
             
-            propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
+                propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
                         
             }/*We are closing the loop over time delays -t1 times*/
         } /*We are closing the cluster loop*/
@@ -270,6 +238,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     free(veci);  
 }
 
+/* Sub routine for adding up the calculated response in the response function */
 void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci){
   int i,k;
   int N,nn2;
@@ -300,6 +269,7 @@ void mcfret_coupling(float *J,t_non *non){
 
     /*Hamiltonian of the whole system - all donors and acceptors included*/
     float *Hamil_i_e;
+    float *mu_xyz;
     float shift1; 
 
   /* Time parameters */
@@ -314,54 +284,33 @@ void mcfret_coupling(float *J,t_non *non){
   /*File handles*/
     FILE *H_traj;
     FILE *C_traj;
+    FILE *mu_traj;
     /* FILE *absorption_matrix, *emission_matrix,*/
     FILE *log;
     FILE *Cfile;
 
- /* Open Trajectory files */
-    H_traj=fopen(non->energyFName,"rb");
-    if (H_traj==NULL){
-        printf("Hamiltonian file not found!\n");
-        exit(1);
-    }
-      /*Here we want to call the routine for checking the trajectory files*/ 
+    mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+
+    /* Open Trajectory files */
+    open_files(non,&H_traj,&mu_traj,&Cfile);
+
+    /*Here we want to call the routine for checking the trajectory files*/ 
     control(non);
 
-    N_samples=(non->length-non->tmax1-1)/non->sample+1;
-    if (N_samples>0) {
-        printf("Making %d samples!\n",N_samples);
-    } else {
-      printf("Insufficient data to calculate spectrum.\n");
-      printf("Please, lower max times or provide longer\n");
-      printf("trajectory.\n");
-      exit(1);
-    }
+ /* Initialize sample numbers */
+  N_samples=determine_samples(non);
+  Ncl=0;
 
-    if (non->end==0) non->end=N_samples;
-    if (non->end>N_samples){
-      printf(RED "Endpoint larger than number of samples was specified.\n" RESET);
-      printf(RED "Endpoint was %d but cannot be larger than %d.\n" RESET,non->end,N_samples);
-      exit(0);
-    }
+  /* Read coupling, this is done if the coupling and transition-dipoles are */
+  /* time-independent and only one snapshot is stored */
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
+
+
 
     log=fopen("NISE.log","a");
     fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
     fclose(log);
 
-    
-    /* Read coupling: Since in this case couplings are static, we want to read them in only once*/
-    if (!strcmp(non->hamiltonian,"Coupling")){
-      C_traj=fopen(non->couplingFName,"rb");
-      if (C_traj==NULL){
-        printf("Coupling file not found!\n");
-        exit(1);
-      }
-      if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-        printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
-      fclose(C_traj);
-    }
 
     /*Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory*/
     for (samples=non->begin;samples<non->end;samples++){ 
@@ -378,19 +327,9 @@ void mcfret_coupling(float *J,t_non *non){
             }
         }
         if (non->cluster==-1 || non->cluster==cl){
-      /* Initialize time-evolution operator */
-          	    /* Read Hamiltonian */
-	          if (!strcmp(non->hamiltonian,"Coupling")){
-                if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-                    printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                    exit(1);
-                }
-            } else {
-	              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-	                  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	                  exit(1);
-  	            }
-            }
+            /* Read Hamiltonian */
+            read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+          	    
             /* Extract couplings between segments */
             multi_projection_Coupling(Hamil_i_e,non);
             for (i=0;i<non->singles;i++){
@@ -429,11 +368,12 @@ void mcfret_coupling(float *J,t_non *non){
         }
     }
 
-    fclose(H_traj);
+    fclose(mu_traj),fclose(H_traj);
     if (non->cluster!=-1){
         fclose(Cfile);
     }  
     return;
+
 }
 
 
