@@ -33,7 +33,7 @@ void multi_projection(float *phi_in,float *phi_out,t_non *non,int ip){
 }
 
 /* This subroutine will nullify all the excitonic couplings between different segments */
-void multiprojection (float *Hamil_i_e, t_non *non, int ip){
+void zero_coupling(float *Hamil_i_e, t_non *non){
    /* Defining a double loop because we are checking the couplings between the pairs of molecules */
     int i,j;
     for (i=0;i<non->singles;i++){
