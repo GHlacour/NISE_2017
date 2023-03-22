@@ -15,6 +15,7 @@
 #include "calc_2DIR.h"
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
+#include "calc_CG_2DES.h"
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
@@ -23,6 +24,8 @@
 #include "anisotropy.h"
 #include "propagate.h"
 #include <mpi.h>
+
+
 
 /* This is the 2017 version of the NISE program
    It allow calculating linear absorption and 2D(IR) spectra
@@ -227,8 +230,11 @@ int main(int argc, char* argv[]) {
         calc_2DES(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
-    /* Call the Raman Routine */
-    if (!strcmp(non->technique, "CG_2DES")) {
+    /* Call the CG_2DES Routine */
+    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
+     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
+     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
+     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))) {
         /* Does not support MPI */
         if (parentRank == 0)
             calc_CG_2DES(non);
