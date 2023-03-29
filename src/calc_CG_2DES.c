@@ -370,15 +370,15 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
   int elements;
   int cl,Ncl;
   int pro_dim,ip;
-  int a,index,seg,site_num,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
+  int a,b,index,seg,site_num,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
 // reserve memory for the density operator
   int N;
   N = non->singles;
-  float rho_l;
+  float *rho_l;
   rho_l=(float *)calloc(N*N,sizeof(float));
 
   //here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
-  float mid_ver;
+  float *mid_ver;
   mid_ver = (float *)calloc(N,sizeof(float));
 
   /* Time parameters */
@@ -515,7 +515,7 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
              printf("ITIME %d %d\n",ti,alpha);
              exit(1);
             }
-          }       
+        }       
           /* this is for time t1 to generate the vector for the dipole with 0 as the imagine part*/ 
           clearvec(veci,non->singles);
           /*this is just copy the input dipole to the real part of the vector*/
@@ -539,7 +539,7 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
              }
             }
           //Here we generate the equilibrium density operator
-          eq_den(Hamil_i_e,rho_l,N,non)
+          eq_den(Hamil_i_e,rho_l,N,non);
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
           for (a=0;a<N;a++){
             for (b=0;b<N;b++){
@@ -573,10 +573,11 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
               seg_num=non->psites[site_num];
               /*this equation is make sure the calculated data in the right position */
               index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-              re_doorway[index]+=mu_eg[site_num]*vecr[site_num];
-              im_doorway[index]+=mu_eg[site_num]*veci[site_num]; 
+              re_window_SE[index]+=mu_eg[site_num]*vecr[site_num];
+              im_window_SE[index]+=mu_eg[site_num]*veci[site_num]; 
              }
           }  
+
           
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
           if (non->Npsites==non->singles){
@@ -612,7 +613,7 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
 
   /* The calculation is finished, lets write output */
   log=fopen("NISE.log","a");
-  fprintf(log,"Finished Calculating Response 123!\n");
+  fprintf(log,"Finished Calculating Response!\n");
   fprintf(log,"Writing to file!\n");  
   fclose(log);
 
@@ -635,7 +636,7 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
               for (beta=0;beta<3;beta++){
                 index =  seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
                 //fprintf(outone,"%e %e ",re_doorway[index]/samples,im_doorway[index]/samples);
-                fprintf(outone,"%e ",im_doorway[index]/samples);
+                fprintf(outone,"%e ",im_window_SE[index]/samples);
        }
      }
     }
@@ -649,9 +650,9 @@ void CG_2DES_window_SE(t_non *non, float * re_window_SE, float * im_window_SE){
     for (seg_num=0;seg_num<pro_dim;seg_num++){
       for (alpha=0;alpha<3;alpha++){
               for (beta=0;beta<3;beta++){
-                index =  seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+                index = seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
                 //fprintf(outone,"%e %e ",re_doorway[index]/samples,im_doorway[index]/samples);
-                fprintf(outone,"%e ",re_doorway[index]/samples);
+                fprintf(outone,"%e ",re_window_SE[index]/samples);
        }
      }
     }

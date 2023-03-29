@@ -16,7 +16,7 @@
 
 
 /*Here we defined the equilibrium density operator*/
-void eq_den(float *Hamiltonian_i, float* rho_l, int N, t_non *non){
+void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   int index,N;
   float *H,*e,*e_1,;
   float *rho_r;

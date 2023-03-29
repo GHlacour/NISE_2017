@@ -16,6 +16,7 @@
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
 #include "calc_CG_2DES.h"
+#include "eq_den.h"
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
@@ -24,6 +25,7 @@
 #include "anisotropy.h"
 #include "propagate.h"
 #include <mpi.h>
+
 
 
 
