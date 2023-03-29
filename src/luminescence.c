@@ -258,7 +258,7 @@ void bltz_weight(float *mu_eg,float *Hamiltonian_i,t_non *non){
   crr=(float *)calloc(N*N,sizeof(float));
   int a,b,c;
   float kBT=non->temperature*0.695; // Kelvin to cm-1
-  float Q,iQ;
+  float Q,iQ; 
 
   // Build Hamiltonian
   for (a=0;a<N;a++){
