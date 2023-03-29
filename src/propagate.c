@@ -14,8 +14,7 @@
 
 
 
-/* Standard propagation of a single vector */  int N;
-  N = non->singles;
+/* Standard propagation of a single vector */ 
 /* display is t1*x for displaying info at first step, that is when t1 and x are both zero */
 /* and we have the first sample */
 void propagate_vector(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int sign,int samples,int display){
