@@ -16,6 +16,9 @@
 void luminescence(t_non *non){
   // Initialize variables
   float *re_S_1,*im_S_1; // The first-order response function
+  float *re_S_1x,*im_S_1x;
+  float *re_S_1y,*im_S_1y;
+  float *re_S_1z,*im_S_1z;
   float *mu_eg,*Hamil_i_e;
   float *mu_xyz;
   // Aid arrays
@@ -55,6 +58,12 @@ void luminescence(t_non *non){
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
   im_S_1=(float *)calloc(non->tmax,sizeof(float));
+  re_S_1x=(float *)calloc(non->tmax,sizeof(float));
+  im_S_1x=(float *)calloc(non->tmax,sizeof(float));
+  re_S_1y=(float *)calloc(non->tmax,sizeof(float));
+  im_S_1y=(float *)calloc(non->tmax,sizeof(float));
+  re_S_1z=(float *)calloc(non->tmax,sizeof(float));
+  im_S_1z=(float *)calloc(non->tmax,sizeof(float));
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
@@ -187,6 +196,9 @@ void luminescence(t_non *non){
 	
 	// Find response
 	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+        if (x==0) calc_S1(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
+        if (x==1) calc_S1(re_S_1y,im_S_1y,t1,non,vecr,veci,mu_eg);
+        if (x==2) calc_S1(re_S_1z,im_S_1z,t1,non,vecr,veci,mu_eg);
 
 	/* Probagate vector */
         propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
@@ -225,8 +237,14 @@ void luminescence(t_non *non){
 
   /* Do Forier transform and save */
   do_1DFFT(non,"Luminescence.dat",re_S_1,im_S_1,samples);
+  do_1DFFT(non,"Luminescence_x.dat",re_S_1x,im_S_1x,samples);
+  do_1DFFT(non,"Luminescence_y.dat",re_S_1y,im_S_1y,samples);
+  do_1DFFT(non,"Luminescence_z.dat",re_S_1z,im_S_1z,samples);
 
   free(re_S_1),free(im_S_1);
+  free(re_S_1x),free(im_S_1x);
+  free(re_S_1y),free(im_S_1y);
+  free(re_S_1z),free(im_S_1z);
 
   printf("----------------------------------------------\n");
   printf(" Luminescence calculation succesfully completed\n");
