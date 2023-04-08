@@ -191,9 +191,12 @@ void luminescence(t_non *non){
 	  projection(mu_eg,non);
 	}
 
-	// Add Boltzman weight
-	bltz_weight(mu_eg,Hamil_i_e,non);
-	
+	/* Add Boltzman weight */
+	if (non->is==0){
+	    bltz_weight(mu_eg,Hamil_i_e,non);
+	} else {
+            bltz_weight_itime(mu_eg,Hamil_i_e,non);
+        }	    
 	// Find response
 	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
         if (x==0) calc_S1(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
@@ -328,4 +331,100 @@ void bltz_weight(float *mu_eg,float *Hamiltonian_i,t_non *non){
   free(crr);
   free(cnr);
   return;
+}
+
+/* This routine multiplies with the equilibrium density matrix through */
+/* imaginary time propagation */
+void bltz_weight_itime(float *cr,float *Hamiltonian_i,t_non *non){
+  float f;
+  int index, N;
+  float *H1, *H0, *re_U;
+  int *col, *row;
+  float *ocr;
+  float J;
+  float eJ,emJ;
+  float cr1, cr2, ci1, ci2;
+  float coh, sih;
+  int i, k, kmax;
+  int a,b,c;
+  float kBT=non->temperature*0.695; // Kelvin to cm-1
+  float Q,iQ,norm;
+  int m;
+  m=non->is;
+
+  N = non->singles;
+  f = 1.0 /(m*kBT);
+  H0 = (float *)calloc(N, sizeof(float));
+  H1 = (float *)calloc(N * N, sizeof(float));
+  col = (int *)calloc(N * N / 2, sizeof(int));
+  row = (int *)calloc(N * N / 2, sizeof(int));
+  re_U = (float *)calloc(N, sizeof(float));
+  ocr = (float *)calloc(N, sizeof(float));
+  Q=0;
+  norm=0;
+
+  /* Find initial norm */
+  for (a=0;a<N;a++){
+    norm+=cr[a]*cr[a];
+  } 
+
+    /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        H0[a] = Hamiltonian_i[Sindex(a, a, N)]; /* Diagonal */
+        for (b = a + 1; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut) {
+                H1[k] = Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+    /* Exponentiate diagonal [U=exp(-H0/2kBT )] */
+    for (a = 0; a < N; a++) {
+        re_U[a] = exp(-0.5 * H0[a] * f);
+    }
+
+    for (i = 0; i < m; i++) {
+      /* Multiply on vector first time */
+      for (a = 0; a < N; a++) {
+         ocr[a] = cr[a] * re_U[a];
+      }
+
+      /* Account for couplings */
+      for (k = 0; k < kmax; k++) {
+            a = col[k];
+            b = row[k];
+            J = H1[k];
+            J = -J * f;
+	    eJ=exp(J)*0.5;
+	    emJ=exp(-J)*0.5;
+            sih = eJ-emJ;
+            coh = eJ+emJ;
+            cr1 = coh * ocr[a]+sih * ocr[b];
+            cr2 = coh * ocr[b]+sih * ocr[a];
+            ocr[a] = cr1, ocr[b] = cr2;
+        }
+              /* Multiply on vector second time */
+        for (a = 0; a < N; a++) {
+            cr[a] = ocr[a] * re_U[a] ;
+        }
+    }
+
+  /* Find final norm */
+  for (a=0;a<N;a++){
+    Q+=cr[a]*cr[a];
+  }
+  iQ=sqrt(norm/Q);
+  /* Renormalize (divide by partition function) */
+  for (a=0;a<N;a++){
+    cr[a]=cr[a]*iQ;
+  }
+
+    free(ocr), free(re_U), free(H1), free(H0);
+    free(col), free(row);
+         
 }
