@@ -17,8 +17,8 @@
 
 /*Here we defined the equilibrium density operator*/
 void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
-  int index,N;
-  float *H,*e,*e_1,;
+  int index;
+  float *H,*e,*e_1;
   float *rho_r;
   //float *rho_l;
   float *diag_sum;  /*Here is store the diagonal element for one segment*/
@@ -42,7 +42,7 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
 
   /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
   if (non->Npsites==non->singles){
-    zero_coupling(Hamil_i_e,non);
+    zero_coupling(Hamiltonian_i,non);
   } else {
     printf("Segment number and the projection number are different");
     exit(1);
@@ -92,7 +92,7 @@ Here we should not combine the two loop in one loop as it would results in the h
 /*We first sum the diagonal element in one segment*/
   for (site_num=0;site_num<non->singles;site_num++){
     seg_num=non->psites[site_num];
-    diag_sum[seg_num]+= rho_l[site_num][site_num];
+    diag_sum[seg_num]+= rho_l[site_num*N+site_num];
   }
 
     /*Secondly, we normalize the density matrix within one segment*/
@@ -101,7 +101,7 @@ Here we should not combine the two loop in one loop as it would results in the h
     seg_num=non->psites[site_num_1];
     for (site_num_2=0;site_num_2<non->singles;site_num_2++){
       if (seg_num==non->psites[site_num_2]){
-        rho_l[seg_num_1][seg_num_2]=rho_l[seg_num_2][seg_num_1]=rho_l[seg_num_1][seg_num_2]/diag_sum[seg_num];
+        rho_l[site_num_1*N+site_num_2]=rho_l[site_num_2*N+site_num_1]=rho_l[site_num_1*N+site_num_2]/diag_sum[seg_num];
       }
     }
   }
@@ -115,4 +115,81 @@ Here we should not combine the two loop in one loop as it would results in the h
   return ;
 }
 
+// Multiply a real matrix on a real vector (vr,vi)
+void matrix_on_real_vector(float *mat,float *vr,int N){
+    float *xr;
+    float *xi;
+    int a,b;
+    xr = (float *)calloc(N * N, sizeof(float));
+    //xi = (float *)calloc(N * N, sizeof(float));
+    // Multiply
+    for (a=0;a<N;a++){
+        for (b=0;b<N;b++){
+            xr[a]+=mat[a+b*N]*vr[b];
+	    //xi[a]+=c[a+b*N]*vi[b];
+	}
+    }
+    // Copy back
+    copyvec(xr,vr,N);
+    //copyvec(xi,vi,N);
+    free(xr);
+    //free(xi);
+}
 
+
+/* Multiply with double exciton dipole mu_ef on single states */
+void dipole_double_CG2DES(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi) {
+    int N;
+    int i, j, k, index;
+    int seg_num;
+    N = non->singles * (non->singles + 1) / 2;
+    for (i = 0; i < N; i++) fr[i] = 0, fi[i] = 0;
+
+    for (i = 0; i < non->singles; i++) {
+       seg_num=non->psites[i];
+        for (j = i + 1; j < non->singles; j++) {
+            index = Sindex(i, j, non->singles);
+            if (seg_num==non->psites[j]){
+              fr[index] += dipole[i] * cr[j];
+              fi[index] += dipole[i] * ci[j];
+              fr[index] += dipole[j] * cr[i];
+              fi[index] += dipole[j] * ci[i];
+              } else {
+              fr[index] =0;
+              fi[index] =0;
+              fr[index] =0;
+              fi[index] =0;
+
+          }
+        }
+    }
+    return;
+}
+
+/* Multiply with double exciton dipole mu_ef on double states */
+void dipole_double_inverse_CG2DES(t_non* non, float* dipole, float* cr, float* ci, float* fr, float* fi) {
+    int N;
+    int i, j, k, index;
+    int seg_num;
+    N = non->singles * (non->singles + 1) / 2;
+    for (i = 0; i < non->singles; i++) fr[i] = 0, fi[i] = 0;
+
+    for (i = 0; i < non->singles; i++) {
+        seg_num=non->psites[i];
+        for (j = i + 1; j < non->singles; j++) {
+            index = Sindex(i, j, non->singles);
+            if (seg_num==non->psites[j]){
+            fr[j] += dipole[i] * cr[index];
+            fi[j] += dipole[i] * ci[index];
+            fr[i] += dipole[j] * cr[index];
+            fi[i] += dipole[j] * ci[index];
+            } else {
+            fr[index] =0;
+            fi[index] =0;
+            fr[index] =0;
+            fi[index] =0;
+            } 
+        }
+    }
+    return;
+}
