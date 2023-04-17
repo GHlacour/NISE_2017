@@ -117,13 +117,14 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /* FILE *absorption_matrix, *emission_matrix,*/
     FILE *log;
     FILE *Cfile;
+    FILE *absorption_matrix; 
 
     /*Allocate memory for all the variables */
     /*Allocating memory for the real and imaginary part of the wave function that we need to propagate*/
     vecr=(float *)calloc(non->singles*non->singles,sizeof(float));	
     veci=(float *)calloc(non->singles*non->singles,sizeof(float));
     mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
-
+    Hamil_i_e=(float *)calloc((non->singles+1)*non->singles/2,sizeof(float));
     /* Open Trajectory files */
     open_files(non,&H_traj,&mu_traj,&Cfile);
 
@@ -168,8 +169,10 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
 
                 /* Use the thermal equilibrium as initial state */
                 density_matrix(vecr,Hamil_i_e,non);
+		    write_matrix_to_file("Density.dat",vecr,non->singles);
             } else { 
                 unitmat(vecr,non->singles);
+		write_matrix_to_file("Unit.dat",vecr,non->singles);
             }
             clearvec(veci,non->singles*non->singles);
         
@@ -184,9 +187,11 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
                 
                 /* Update the MCFRET Response  */
                 mcfret_response_function_sub(re_S_1, im_S_1,t1,non,vecr,veci);        
-            
-                propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
-                        
+                if (emission==0){         
+                   propagate_matrix(non,Hamil_i_e,vecr,veci,-1,samples,t1*x);
+                } else {
+		   propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
+		}	   
             }/*We are closing the loop over time delays -t1 times*/
         } /*We are closing the cluster loop*/
 
@@ -217,25 +222,30 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     }
 
     /* Normalize response */
-    for (t1=0;t1<non->tmax1*nn2;t1+=1){
+    for (t1=0;t1<non->tmax1*non->singles*non->singles;t1++){
         re_S_1[t1]=re_S_1[t1]/samples;
         im_S_1[t1]=im_S_1[t1]/samples;
     }
   /* Save time domain response */
-  /*
+   if (emission==1){ 
     absorption_matrix=fopen("TD_absorption_matrix.dat","w");
-    emission_matrix=fopen("TD_emission_matrix.dat","w");
+   } else {
+    absorption_matrix=fopen("TD_emission_matrix.dat","w");
+   }
+   fprintf(absorption_matrix,"Samples %d\n",samples);
     for (t1=0;t1<non->tmax1;t1+=non->dt1){
-        fprintf(absorption_matrix,"%f %e %e\n",t1*non->deltat,re_S_Abs[t1]/samples,im_S_Abs[t1]/samples);
-        fprintf(emission_matrix, "%f %e %e\n",t1*non->deltat,re_S_Emi[t1]/samples,im_S_Emi[t1]/samples);
+        fprintf(absorption_matrix,"%f %e %e\n",t1*non->deltat,re_S_1[t1],im_S_1[t1]);
+ //       fprintf(emission_matrix, "%f %e %e\n",t1*non->deltat,re_S_Emi[t1]/samples,im_S_Emi[t1]/samples);
     }
     fclose(absorption_matrix);
-    fclose(emission_matrix);
-    */
+   // fclose(emission_matrix);
+    
     
     /*Free the memory*/
     free(vecr);	
     free(veci);  
+    free(Hamil_i_e);
+    free(mu_xyz);
 }
 
 /* Sub routine for adding up the calculated response in the response function */
@@ -290,6 +300,7 @@ void mcfret_coupling(float *J,t_non *non){
     FILE *Cfile;
 
     mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+    Hamil_i_e=(float *)calloc((non->singles+1)*non->singles/2,sizeof(float));
 
     /* Open Trajectory files */
     open_files(non,&H_traj,&mu_traj,&Cfile);
@@ -304,7 +315,7 @@ void mcfret_coupling(float *J,t_non *non){
   /* Read coupling, this is done if the coupling and transition-dipoles are */
   /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
-
+  samples=1;
 
 
     log=fopen("NISE.log","a");
@@ -333,9 +344,9 @@ void mcfret_coupling(float *J,t_non *non){
             /* Extract couplings between segments */
             multi_projection_Coupling(Hamil_i_e,non);
             for (i=0;i<non->singles;i++){
-              for (j=0;j<non->singles;j++){
-                J[non->singles*i+j]=+Hamil_i_e[Sindex(i,j,non->singles)];
-                J[non->singles*j+i]=+Hamil_i_e[Sindex(i,j,non->singles)];
+              for (j=i+1;j<non->singles;j++){
+                J[non->singles*i+j]+=Hamil_i_e[Sindex(i,j,non->singles)];
+                J[non->singles*j+i]+=Hamil_i_e[Sindex(i,j,non->singles)];
               }
             }
         } /*We are closing the cluster loop*/
@@ -371,7 +382,9 @@ void mcfret_coupling(float *J,t_non *non){
     fclose(mu_traj),fclose(H_traj);
     if (non->cluster!=-1){
         fclose(Cfile);
-    }  
+    }
+    free(Hamil_i_e);
+    free(mu_xyz);  
     return;
 
 }
@@ -392,6 +405,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
     float *re_aux_mat,*im_aux_mat;
     float *re_aux_mat2,*im_aux_mat2;
     float *Zeros;
+    FILE *ratefile;
     N=non->singles;
     nn2=non->singles*non->singles;
 
@@ -409,21 +423,32 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
         /* Exclude rate between same segments */
         if (sj!=si){
         /* Loop over time delay */
+            ratefile=fopen("RateFile.dat","w");
+	    fprintf(ratefile,"%d %d\n",si,sj);
             for (t1=0;t1<non->tmax;t1++){
             /* Matrix multiplication - J Emi */
                 segment_matrix_mul(J,Zeros,re_Emi+nn2*t1,im_Emi+nn2*t1,
                     re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
+		fprintf(ratefile,"JE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
             /* Matrix multiplication - Abs (J Emi) */
                 segment_matrix_mul(re_Abs+nn2*t1,im_Abs+nn2*t1,re_aux_mat,im_aux_mat,
                     re_aux_mat2,im_aux_mat2,non->psites,segments,si,si,sj,N);
+		fprintf(ratefile,"AJE %f %f %f %f\n",re_aux_mat2[0],re_aux_mat2[1],re_aux_mat2[2],re_aux_mat2[3]);
             /* Matrix multiplication - J (Abs J Emi) */
                 segment_matrix_mul(J,Zeros,re_aux_mat2,im_aux_mat2,
                     re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
             /* Here trace should be */
-                rate_response[t1]=trace_rate(re_aux_mat,N);
+                rate_response[t1]=trace_rate(re_aux_mat,non->singles);
+		fprintf(ratefile,"%d %f %d\n",t1,rate_response[t1],nn2);
+		fprintf(ratefile,"JAJE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
+		fprintf(ratefile,"%f %f %f %f\n",J[0],J[1],J[2],J[3]);
+                fprintf(ratefile,"%f %f %f %f\n",re_Emi[0+nn2*t1],re_Emi[1+nn2*t1],re_Emi[2+nn2*t1],re_Emi[3+nn2*t1]);
+	        fprintf(ratefile,"%f %f %f %f\n",re_Abs[0+nn2*t1],re_Abs[1+nn2*t1],re_Abs[2+nn2*t1],re_Abs[3+nn2*t1]);	
             }
+	    fclose(ratefile);
             /* Update rate matrix */
-            rate_matrix[si+segments+sj]=integrate_rate_response(rate_response,non->tmax);
+            rate_matrix[si*segments+sj]=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*1000;
+
         }
 
       }
@@ -454,7 +479,11 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
 
   int a,b,c;
   float kBT=non->temperature*0.695; // Kelvin to cm-1
-  float Q,iQ;
+  int segments;
+  float *Q,iQ;
+
+  segments=project_dim(non);
+  Q=(float *)calloc(segments,sizeof(float));  
 
   /*Build Hamiltonian*/
   for (a=0;a<N;a++){
@@ -469,15 +498,15 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
   /*Exponentiate [U=exp(-H/kBT)]*/
   for (a=0;a<N;a++){
       c2[a]=exp(-e[a]/kBT);
-      Q=Q+c2[a];
+//      Q=Q+c2[a];
   }
   /* Find the inverse of the partition function */
-  iQ=1.0/Q;
+//  iQ=1.0/Q;
 
   /*Transform back to site basis*/ 
   for (a=0;a<N;a++){
       for (b=0;b<N;b++){
-          cnr[b+a*N]+=H[b+a*N]*c2[b]*iQ;
+          cnr[b+a*N]+=H[b+a*N]*c2[b];
       }
   }  
   for (a=0;a<N;a++){
@@ -488,25 +517,37 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
       }
   }
   
+  /* Re-normalize */
+  for (a=0;a<N;a++){
+     Q[non->psites[a]]+=density_matrix[a+a*N];
+  }
+  for (a=0;a<N;a++){
+      for (b=0;b<N;b++){
+	  density_matrix[a+b*N]=density_matrix[a+b*N]/Q[non->psites[a]];
+      }
+  }      
+    
+
   free(H);
   free(c2);
   free(e);
   free(cnr);
+  free(Q);
   return;
 }
 
 /* Matrix multiplication for different segments */
 void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
-    float *rC,float *iC,int *psites,int segments,int si,int sj,int sk,int N){
+    float *rC,float *iC,int *psites,int segments,int si,int sk,int sj,int N){
     int i,j,k;
     /* Set initial values of results matrix to zero to be sure */
     clearvec(rC,N*N);
     clearvec(iC,N*N);
     for (i=0;i<N;i++){
         if (psites[i]==si){
-            for (j=0;i<N;i++){
+            for (j=0;j<N;j++){
                 if (psites[j]==sj){
-                    for (k=0;i<N;i++){
+                    for (k=0;k<N;k++){
                         if (psites[k]==sk){
                             rC[i*N+j]+=rA[i*N+k]*rB[k*N+j]-iA[i*N+k]*iB[k*N+j];
                             iC[i*N+j]+=rA[i*N+k]*iB[k*N+j]+iA[i*N+k]*rB[k*N+j];
@@ -523,6 +564,7 @@ void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
 float trace_rate(float *matrix,int N){
   int i;
   float trace;
+  trace=0;
   for (i=0;i<N;i++){
     trace=trace+matrix[N*i+i];
   }
