@@ -1,7 +1,7 @@
 #ifndef _MCFRET_ /* ignore */
 #define _MCFRET_
 void mcfret(t_non *non);
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non);
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments);
 void mcfret_autodetect(t_non *non, float treshold);
 void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission);
 void mcfret_coupling(float *J,t_non *non);

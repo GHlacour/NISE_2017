@@ -43,19 +43,19 @@ void mcfret(t_non *non){
      if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
       || (!strcmp(non->technique, "MCFRET-Emission")) || (!strcmp(non->technique, "MCFRET-Coupling")) || (!strcmp(non->technique,
       "MCFRET-Rate")) || (!strcmp(non->technique, "MCFRET-Analyse")) ) {
-          printf("Perfroming the MCFRET calculation.\n");
+          printf("Performing the MCFRET calculation.\n");
     }
 
 /* Call the absorption routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Absorption"))){
         mcfret_response_function(re_Abs,im_Abs,non,0);
     }
-
+   
 /* Call the emission routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
         mcfret_response_function(re_Emi,im_Emi,non,1);
     }
-
+    
 /* Call the coupling routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Coupling"))){
         mcfret_coupling(J,non);
@@ -92,6 +92,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     int t1;
     int elements;
     int cl,Ncl;
+    int segments;
 
     /*Hamiltonian of the whole system - all donors and acceptors included*/
     float *Hamil_i_e;
@@ -135,7 +136,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
 
     /* Initialize sample numbers */
     N_samples=determine_samples(non);
-
+    segments=project_dim(non);
     log=fopen("NISE.log","a");
     fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
     fclose(log);
@@ -160,7 +161,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
         }
         if (non->cluster==-1 || non->cluster==cl){
       /* Initialize time-evolution operator */
-            if (emission==0){
+            if (emission==1){
                 /* Read Hamiltonian */
                 read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 	          
@@ -168,11 +169,11 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
                 multi_projection_Hamiltonian(Hamil_i_e,non);
 
                 /* Use the thermal equilibrium as initial state */
-                density_matrix(vecr,Hamil_i_e,non);
-		    write_matrix_to_file("Density.dat",vecr,non->singles);
+                density_matrix(vecr,Hamil_i_e,non,segments);
+		   // write_matrix_to_file("Density.dat",vecr,non->singles);
             } else { 
                 unitmat(vecr,non->singles);
-		write_matrix_to_file("Unit.dat",vecr,non->singles);
+		//write_matrix_to_file("Unit.dat",vecr,non->singles);
             }
             clearvec(veci,non->singles*non->singles);
         
@@ -227,7 +228,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
         im_S_1[t1]=im_S_1[t1]/samples;
     }
   /* Save time domain response */
-   if (emission==1){ 
+   if (emission==0){ 
     absorption_matrix=fopen("TD_absorption_matrix.dat","w");
    } else {
     absorption_matrix=fopen("TD_emission_matrix.dat","w");
@@ -415,7 +416,8 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
     re_aux_mat2=(float *)calloc(nn2,sizeof(float));
     im_aux_mat2=(float *)calloc(nn2,sizeof(float));
     Zeros=(float *)calloc(nn2,sizeof(float));
-
+  
+    ratefile=fopen("RateFile.dat","w");
     /* Do one rate at a time - so first we loop over segments */
     /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
     for (si=0;si<segments;si++){
@@ -423,29 +425,27 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
         /* Exclude rate between same segments */
         if (sj!=si){
         /* Loop over time delay */
-            ratefile=fopen("RateFile.dat","w");
-	    fprintf(ratefile,"%d %d\n",si,sj);
+//	    fprintf(ratefile,"%d %d\n",si,sj);
             for (t1=0;t1<non->tmax;t1++){
             /* Matrix multiplication - J Emi */
                 segment_matrix_mul(J,Zeros,re_Emi+nn2*t1,im_Emi+nn2*t1,
                     re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
-		fprintf(ratefile,"JE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
+//		fprintf(ratefile,"JE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
             /* Matrix multiplication - Abs (J Emi) */
                 segment_matrix_mul(re_Abs+nn2*t1,im_Abs+nn2*t1,re_aux_mat,im_aux_mat,
                     re_aux_mat2,im_aux_mat2,non->psites,segments,si,si,sj,N);
-		fprintf(ratefile,"AJE %f %f %f %f\n",re_aux_mat2[0],re_aux_mat2[1],re_aux_mat2[2],re_aux_mat2[3]);
+//		fprintf(ratefile,"AJE %f %f %f %f\n",re_aux_mat2[0],re_aux_mat2[1],re_aux_mat2[2],re_aux_mat2[3]);
             /* Matrix multiplication - J (Abs J Emi) */
                 segment_matrix_mul(J,Zeros,re_aux_mat2,im_aux_mat2,
                     re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
             /* Here trace should be */
                 rate_response[t1]=trace_rate(re_aux_mat,non->singles);
-		fprintf(ratefile,"%d %f %d\n",t1,rate_response[t1],nn2);
-		fprintf(ratefile,"JAJE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
-		fprintf(ratefile,"%f %f %f %f\n",J[0],J[1],J[2],J[3]);
-                fprintf(ratefile,"%f %f %f %f\n",re_Emi[0+nn2*t1],re_Emi[1+nn2*t1],re_Emi[2+nn2*t1],re_Emi[3+nn2*t1]);
-	        fprintf(ratefile,"%f %f %f %f\n",re_Abs[0+nn2*t1],re_Abs[1+nn2*t1],re_Abs[2+nn2*t1],re_Abs[3+nn2*t1]);	
+		fprintf(ratefile,"%d %f\n",t1,rate_response[t1]);
+//		fprintf(ratefile,"JAJE %f %f %f %f\n",re_aux_mat[0],re_aux_mat[1],re_aux_mat[2],re_aux_mat[3]);
+//		fprintf(ratefile,"%f %f %f %f\n",J[0],J[1],J[2],J[3]);
+//                fprintf(ratefile,"%f %f %f %f\n",re_Emi[0+nn2*t1],re_Emi[1+nn2*t1],re_Emi[2+nn2*t1],re_Emi[3+nn2*t1]);
+//	        fprintf(ratefile,"%f %f %f %f\n",re_Abs[0+nn2*t1],re_Abs[1+nn2*t1],re_Abs[2+nn2*t1],re_Abs[3+nn2*t1]);	
             }
-	    fclose(ratefile);
             /* Update rate matrix */
             rate_matrix[si*segments+sj]=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*1000;
 
@@ -453,6 +453,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
 
       }
     }
+    fclose(ratefile);
 
     free(rate_response);
     free(ns);
@@ -466,7 +467,7 @@ void mcfret_validate(t_non *non);
 void mcfret_analyse(t_non *non);
 
 /*This function will create a density matrix where every term is weighted with a Boltzmann weight*/
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments){
   int index,N;
   float *H,*e,*c2;
   float *cnr;
@@ -479,12 +480,10 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non){
 
   int a,b,c;
   float kBT=non->temperature*0.695; // Kelvin to cm-1
-  int segments;
   float *Q,iQ;
 
-  segments=project_dim(non);
   Q=(float *)calloc(segments,sizeof(float));  
-
+  //printf("Seg %d \n",segments);
   /*Build Hamiltonian*/
   for (a=0;a<N;a++){
       H[a+N*a]=Hamiltonian_i[a+N*a-(a*(a+1))/2]; /*Diagonal*/
@@ -601,4 +600,5 @@ float write_matrix_to_file(char fname[],float *matrix,int N){
     }
     fprintf(file_handle,"\n");
   }
+  fclose(file_handle);
 }
