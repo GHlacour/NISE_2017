@@ -447,7 +447,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
 //	        fprintf(ratefile,"%f %f %f %f\n",re_Abs[0+nn2*t1],re_Abs[1+nn2*t1],re_Abs[2+nn2*t1],re_Abs[3+nn2*t1]);	
             }
             /* Update rate matrix */
-            rate_matrix[si*segments+sj]=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*1000;
+            rate_matrix[si*segments+sj]=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
 
         }
 
