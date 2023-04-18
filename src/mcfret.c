@@ -450,7 +450,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
             /* Update rate matrix */
             rate=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
             rate_matrix[si*segments+sj]=rate;
-            rate_matrix[si*segments+si]-=rate;
+            rate_matrix[si*segments+si]=-rate;
         }
 
       }
