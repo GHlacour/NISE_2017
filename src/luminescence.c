@@ -156,8 +156,13 @@ void luminescence(t_non *non){
 //      copyvec(vecr,vecr_old,non->singles);
       copyvec(vecr,mu_eg,non->singles);
 
-      // Add Boltzman weight
-      bltz_weight(mu_eg,Hamil_i_e,non);
+        /* Add Boltzman weight */
+        if (non->is==0){
+            bltz_weight(vecr,Hamil_i_e,non);
+        } else {
+            bltz_weight_itime(vecr,Hamil_i_e,non);
+        }
+     // bltz_weight(mu_eg,Hamil_i_e,non);
 
       // Loop over delay
       for (t1=0;t1<non->tmax;t1++){
@@ -192,11 +197,11 @@ void luminescence(t_non *non){
 	}
 
 	/* Add Boltzman weight */
-	if (non->is==0){
+/*	if (non->is==0){
 	    bltz_weight(mu_eg,Hamil_i_e,non);
 	} else {
             bltz_weight_itime(mu_eg,Hamil_i_e,non);
-        }	    
+        }*/    
 	// Find response
 	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
         if (x==0) calc_S1(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
