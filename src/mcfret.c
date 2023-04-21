@@ -23,10 +23,10 @@ void mcfret(t_non *non){
 
   /*Allocate memory for the response functions*/
     nn2=non->singles*non->singles;
-    re_Abs=(float *)calloc(nn2*non->tmax,sizeof(float));
-    im_Abs=(float *)calloc(nn2*non->tmax,sizeof(float));
-    re_Emi=(float *)calloc(nn2*non->tmax,sizeof(float));
-    im_Emi=(float *)calloc(nn2*non->tmax,sizeof(float));
+    re_Abs=(float *)calloc(nn2*non->tmax1,sizeof(float));
+    im_Abs=(float *)calloc(nn2*non->tmax1,sizeof(float));
+    re_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
+    im_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
     J=(float *)calloc(nn2,sizeof(float));
 
   /* The rate matrix is determined by the integral over t1 for */
@@ -145,6 +145,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /* time-independent and only one snapshot is stored */
     read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
+    clearvec(re_S_1,non->singles*non->singles*non->tmax1);
     /*Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory*/
     for (samples=non->begin;samples<non->end;samples++){ 
         ti=samples*non->sample;
@@ -170,15 +171,15 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
 
                 /* Use the thermal equilibrium as initial state */
                 density_matrix(vecr,Hamil_i_e,non,segments);
-		   // write_matrix_to_file("Density.dat",vecr,non->singles);
+		if (samples==0) write_matrix_to_file("Density.dat",vecr,non->singles);
             } else { 
                 unitmat(vecr,non->singles);
-		//write_matrix_to_file("Unit.dat",vecr,non->singles);
+		if (samples==0) write_matrix_to_file("Unit.dat",vecr,non->singles);
             }
             clearvec(veci,non->singles*non->singles);
         
             /*Loop over delay*/ 
-            for (t1=0;t1<non->tmax;t1++){
+            for (t1=0;t1<non->tmax1;t1++){
 	              tj=ti+t1;
 	              /* Read Hamiltonian */
                 read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
@@ -234,8 +235,13 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     absorption_matrix=fopen("TD_emission_matrix.dat","w");
    }
    fprintf(absorption_matrix,"Samples %d\n",samples);
-    for (t1=0;t1<non->tmax1;t1+=non->dt1){
-        fprintf(absorption_matrix,"%f %e %e\n",t1*non->deltat,re_S_1[t1],im_S_1[t1]);
+   fprintf(absorption_matrix,"Dimension %d\n",non->singles*non->singles*non->tmax1);
+    for (t1=0;t1<non->tmax1;t1++){
+        fprintf(absorption_matrix,"%f ",t1*non->deltat);
+	for (i=0;i<non->singles;i++){
+	   fprintf(absorption_matrix,"%e %e ",re_S_1[t1*non->singles*non->singles+i*non->singles+i],im_S_1[t1*non->singles*non->singles+i*non->singles+i]);
+	}
+	fprintf(absorption_matrix,"\n");
  //       fprintf(emission_matrix, "%f %e %e\n",t1*non->deltat,re_S_Emi[t1]/samples,im_S_Emi[t1]/samples);
     }
     fclose(absorption_matrix);
@@ -450,7 +456,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
             /* Update rate matrix */
             rate=integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
             rate_matrix[si*segments+sj]=rate;
-            rate_matrix[si*segments+si]=-rate;
+            rate_matrix[si*segments+si]-=rate;
         }
 
       }
