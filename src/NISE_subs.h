@@ -13,6 +13,7 @@ void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
+int compare_string(char* string_to_compare, char* string_array[], int array_size);
 int determine_samples (t_non *non);
 char* time_diff(time_t t0, time_t t1);
 char* MPI_time(double t0);

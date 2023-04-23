@@ -143,6 +143,16 @@ time_t log_time(time_t t0, FILE* log) {
     return t1;
 }
 
+/* Compare a string to an array of options */
+int compare_string(char* string_to_compare, char* string_array[], int array_size) {
+    for (int i = 0; i < array_size; i++) {
+        if (!strcmp(string_to_compare, string_array[i])) {
+            return i+1; // return the index of the matched string
+	    }
+    }
+    return 0; // if no match is found, return -1
+}
+
 /* Determine number of samples to use and write to log file */
 int determine_samples (t_non *non){
   FILE *log;
