@@ -20,6 +20,7 @@ void mcfret(t_non *non){
     float *re_Emi,*im_Emi;
     float *J;
     float *rate_matrix;
+    float *coherence_matrix;
 
   /* Allocate memory for the response functions */
     nn2=non->singles*non->singles;
@@ -38,6 +39,7 @@ void mcfret(t_non *non){
       exit(0);
     }
     rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+    coherence_matrix=(float *)calloc(segments*segments,sizeof(float));
 
   /* Tell the user that we are in the MCFRET Routine */
      if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
@@ -66,11 +68,12 @@ void mcfret(t_non *non){
         if ((!strcmp(non->technique, "MCFRET-Rate"))){
             /* Read in absorption, emission and coupling from file if needed */
         }
-        mcfret_rate(rate_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
+        mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
     }
 
     /* Write the calculated ratematrix to file */
     write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
+    write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
 
     free(re_Abs);
     free(im_Abs);
@@ -78,6 +81,7 @@ void mcfret(t_non *non){
     free(im_Emi);
     free(J);
     free(rate_matrix);
+    free(coherence_matrix);
     return;
 }
 
@@ -314,14 +318,14 @@ void mcfret_coupling(float *J,t_non *non){
     /* Here we want to call the routine for checking the trajectory files */ 
     control(non);
 
- /* Initialize sample numbers */
-  N_samples=determine_samples(non);
-  Ncl=0;
+    /* Initialize sample numbers */
+    N_samples=determine_samples(non);
+    Ncl=0;
 
-  /* Read coupling, this is done if the coupling and transition-dipoles are */
-  /* time-independent and only one snapshot is stored */
-  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
-  samples=1;
+    /* Read coupling, this is done if the coupling and transition-dipoles are */
+    /* time-independent and only one snapshot is stored */
+    read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
+    samples=1;
 
 
     log=fopen("NISE.log","a");
@@ -400,7 +404,7 @@ void mcfret_coupling(float *J,t_non *non){
 void mcfret_autodetect(t_non *non, float treshold);
 
 /* Calculate actual rate matrix */
-void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
+void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs,
     float *re_Emi,float *im_Emi,float *J,t_non *non){
     int nn2,N;
     int si,sj;
@@ -409,6 +413,7 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
     int t1;
     float *rate_response;
     float rate;
+    float isimple,is13; /* Variables for integrals */
     float *re_aux_mat,*im_aux_mat;
     float *re_aux_mat2,*im_aux_mat2;
     float *Zeros;
@@ -446,9 +451,12 @@ void mcfret_rate(float *rate_matrix,int segments,float *re_Abs,float *im_Abs,
 		fprintf(ratefile,"%d %f\n",t1,rate_response[t1]);
             }
             /* Update rate matrix */
-            rate=2*integrate_rate_response(rate_response,non->tmax)*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
+	    integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
+            rate=2*is13*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
             rate_matrix[si*segments+sj]=rate;
             rate_matrix[si*segments+si]-=rate;
+	    /* Calculate the rate of coherence decay */
+	    coherence_matrix[si*segments+sj]=1000*rate_response[0]/is13/non->deltat;
         }
 
       }
@@ -569,14 +577,16 @@ float trace_rate(float *matrix,int N){
 }
 
 /* Integrate the rate response */
-float integrate_rate_response(float *rate_response,int T){
+void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
     int i;
     float simple; /* Variable for naieve box integral */
     float simp13; /* Variable for Simpsons 1/3 rule integral */
     for (i=0;i<T;i++){
         simple+=rate_response[i];
-        if (i%2==0){
-          simp13+=rate_response[i]/3;
+        if (i==0){
+	  simp13+=rate_response[i]/3;
+	} else if (i%2==0){
+          simp13+=2*rate_response[i]/3;
         } else {
           simp13+=4*rate_response[i]/3;
         }
@@ -585,7 +595,9 @@ float integrate_rate_response(float *rate_response,int T){
       printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
       printf(YELLOW "Simple integral value %f ans Simpson 1/3 %f.\n" RESET,simple,simp13);
     }
-    return simp13;
+    /* Store results in variables for return */
+    *isimple=simple;
+    *is13=simp13;
 }
 
 /* Write a square matrix to a text file */
