@@ -581,13 +581,17 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
     int i;
     float simple; /* Variable for naieve box integral */
     float simp13; /* Variable for Simpsons 1/3 rule integral */
+    simple=0;
+    simp13=0;
     for (i=0;i<T;i++){
-        simple+=rate_response[i];
         if (i==0){
+	  simple+=rate_response[i]/2;
 	  simp13+=rate_response[i]/3;
 	} else if (i%2==0){
+	  simple+=rate_response[i];
           simp13+=2*rate_response[i]/3;
         } else {
+	  simple+=rate_response[i];
           simp13+=4*rate_response[i]/3;
         }
     }
