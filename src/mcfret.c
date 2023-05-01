@@ -447,12 +447,12 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
                 segment_matrix_mul(J,Zeros,re_aux_mat2,im_aux_mat2,
                     re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
             /* Take the trace */
-                rate_response[t1]=trace_rate(re_aux_mat,non->singles);
-		fprintf(ratefile,"%d %f\n",t1,rate_response[t1]);
+                rate_response[t1]=trace_rate(re_aux_mat,non->singles)*twoPi*twoPi;
+		fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
             }
             /* Update rate matrix */
 	    integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
-            rate=2*is13*non->deltat*icm2ifs*icm2ifs*twoPi*twoPi*1000;
+            rate=2*is13*non->deltat*icm2ifs*icm2ifs*1000;
             rate_matrix[si*segments+sj]=rate;
             rate_matrix[si*segments+si]-=rate;
 	    /* Calculate the rate of coherence decay */
