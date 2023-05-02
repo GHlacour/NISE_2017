@@ -39,8 +39,8 @@ void calc_CG_2DES(t_non *non){
     im_window_GB = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));  
-    re_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
-    im_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+    //re_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+    //im_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
      (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
      ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
@@ -1290,7 +1290,9 @@ rho_i = (float *)calloc(non->singles,sizeof(float));
 }
 
 
-void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
+void CG_full_2DES_segments(t_non *non,float *re_2DES_SE,float *im_2DES_SE_NR,float *im_2DES_SE_R,
+                          float *re_2DES_GB,float *im_2DES_GB_NR,float *im_2DES_GB_R,
+                          float *re_2DES_EA,float *im_2DES_EA_NR,float *im_2DES_EA_R){
   float *re_doorway, *im_doorway; 
   float *re_window_SE, * im_window_SE;
   float *re_window_GB, * im_window_GB;
@@ -1337,6 +1339,17 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
   up_ver2_re = (float *)calloc(pro_dim,sizeof(float));
   up_ver2_im_NR = (float *)calloc(pro_dim,sizeof(float));
   up_ver2_im_R = (float *)calloc(pro_dim,sizeof(float));
+
+  re_2DES_SE = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_SE_NR = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_SE_R = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  re_2DES_GB = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_GB_NR = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_GB_R = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  re_2DES_EA = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_EA_NR = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+  im_2DES_EA_R = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
+
   
   CG_2DES_doorway(non,re_doorway,im_doorway);
   CG_2DES_P_DA(non,P_DA, K, P0, pro_dim);
@@ -1346,6 +1359,7 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
   /* tmax and tmax1,tmax2,tmax3 are essential the same */
   /*This part is calculate xxyy,yyxx,zzxx , and xxxx yyyy zzzz which in total 9*/
   /*for (t1=0;t1<non->tmax;t1++)*/
+  /*if */
   for (t1=0; t1<non->tmax1; t1+=1){
     for (a=0;a<9;a++,a++,a++,a++){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
@@ -1354,14 +1368,44 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
       }  
       for (t2=0; t2<non->tmax2; t2+=1){
-        CG_2DES_P_DA(non,P_DA, K, P0, pro_dim);
-        for (int t2=0;t2<non->tmax2;t2+=non->dt2){
             for (int a=0;a<pro_dim;a++){
                 for (int b=0;b<pro_dim;b++){
-                  PDA_t2[pro_dim*a+b]=P_DA[t2+(pro_dim*a+b)*non->tmax2];
+                  PDA_t2[pro_dim*b+a]=P_DA[t2*pro_dim+pro_dim*b*non->tmax2+a];
+                  //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
+              
               }
             }
+            /*dimention 1*N* N*N *N*1*/
+            /*first calculate the part1: dimention: 1*N* N*N */
+            for (c=0;c<pro_dim;c++){
+              up_ver1_re=0; 
+              up_ver1_im_NR=0;
+              up_ver1_im_R=0;
+                 
+              for (d=0;d<pro_dim;d++){
+                int_PDA[d] = PDA_t2[pro_dim*d+c];
+              }
+              for  (e=0;e<pro_dim;e++){
+                up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
+                up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
+                up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
+              }
+            up_ver2_re[c]=up_ver1_re;
+            up_ver2_im_NR[c]=up_ver1_im_NR;
+            up_ver2_im_R[c]=up_ver1_im_R;
+          }  
+
+
           for (t3=0; t3<non->tmax1; t3+=1){
+              up_ver3_SE_re=0;
+              up_ver3_SE_im_NR=0;
+              up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0;
+              up_ver3_GB_im_NR=0;
+              up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0;
+              up_ver3_EA_im_NR=0;
+              up_ver3_EA_im_R=0;  
               for (b=0;b<9;b++,b++,b++,b++){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
@@ -1371,32 +1415,8 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_im[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
                   }
-                /*dimention 1*N* N*N *N*1*/
-                /*first calculate the part1: dimention: 1*N* N*N */
-                for (c=0;c<pro_dim;c++){
-                  up_ver1_re=0; 
-                  up_ver1_im_NR=0;
-                  up_ver1_im_R=0;
-                  up_ver3_SE_re=0;
-                  up_ver3_SE_im_NR=0;
-                  up_ver3_SE_im_R=0;
-                  up_ver3_GB_re=0;
-                  up_ver3_GB_im_NR=0;
-                  up_ver3_GB_im_R=0;
-                  up_ver3_EA_re=0;
-                  up_ver3_EA_im_NR=0;
-                  up_ver3_EA_im_R=0;                  
-                  for (d=0;d<pro_dim;d++){
-                    int_PDA[d] = PDA_t2[pro_dim*c+d];
-                  }
-                  for  (e=0;e<pro_dim;e++){
-                  up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
-                  up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
-                  up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
-                  }
-                up_ver2_re[c]=up_ver1_re;
-                up_ver2_im_NR[c]=up_ver1_im_NR;
-                up_ver2_im_R[c]=up_ver1_im_R;
+   
+
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
@@ -1409,20 +1429,18 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
                   up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
                 }
-              }
-          /*here *2 this is sum of the rephasing and non rephasing part*/
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
-           }
 
-          }
+          /*here *2 this is sum of the rephasing and non rephasing part*/
+           re_2DES_SE[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re;
+           im_2DES_SE_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
+           im_2DES_SE_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
+           re_2DES_GB[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re;
+           im_2DES_GB_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
+           im_2DES_GB_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
+           re_2DES_EA[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re;
+           im_2DES_EA_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
+           im_2DES_EA_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
+           }
         }
       }
     }
@@ -1435,17 +1453,46 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
-      }
-       
+      }  
       for (t2=0; t2<non->tmax2; t2+=1){
-        CG_2DES_P_DA(non,P_DA, K, P0, pro_dim);
-        for (int t2=0;t2<non->tmax2;t2+=non->dt2){
             for (int a=0;a<pro_dim;a++){
                 for (int b=0;b<pro_dim;b++){
-                  PDA_t2[pro_dim*a+b]=P_DA[t2*pro_dim+a*pro_dim*non->tmax2+b]; 
-                }
+                  PDA_t2[pro_dim*b+a]=P_DA[t2*pro_dim+pro_dim*b*non->tmax2+a];
+                  //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
+              
+              }
             }
+            /*dimention 1*N* N*N *N*1*/
+            /*first calculate the part1: dimention: 1*N* N*N */
+            for (c=0;c<pro_dim;c++){
+              up_ver1_re=0; 
+              up_ver1_im_NR=0;
+              up_ver1_im_R=0;
+                 
+              for (d=0;d<pro_dim;d++){
+                int_PDA[d] = PDA_t2[pro_dim*d+c];
+              }
+              for  (e=0;e<pro_dim;e++){
+                up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
+                up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
+                up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
+              }
+            up_ver2_re[c]=up_ver1_re;
+            up_ver2_im_NR[c]=up_ver1_im_NR;
+            up_ver2_im_R[c]=up_ver1_im_R;
+          }  
+
+
           for (t3=0; t3<non->tmax1; t3+=1){
+              up_ver3_SE_re=0;
+              up_ver3_SE_im_NR=0;
+              up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0;
+              up_ver3_GB_im_NR=0;
+              up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0;
+              up_ver3_EA_im_NR=0;
+              up_ver3_EA_im_R=0;  
               for (b=1;b<4;b++,b++){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
@@ -1455,33 +1502,8 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_im[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
                   }
-                /*dimention 1*N* N*N *N*1*/
-                /*first calculate the part1: dimention: 1*N* N*N */
-                for (c=0;c<pro_dim;c++){
-                  up_ver1_re=0; 
-                  up_ver1_im_NR=0;
-                  up_ver1_im_R=0;
-                  up_ver3_SE_re=0;
-                  up_ver3_SE_im_NR=0;
-                  up_ver3_SE_im_R=0;
-                  up_ver3_GB_re=0;
-                  up_ver3_GB_im_NR=0;
-                  up_ver3_GB_im_R=0;
-                  up_ver3_EA_re=0;
-                  up_ver3_EA_im_NR=0;
-                  up_ver3_EA_im_R=0; 
+   
 
-                  for (d=0;d<pro_dim;d++){
-                    int_PDA[d] = PDA_t2[pro_dim*c+d];
-                  }
-                  for  (e=0;e<pro_dim;e++){
-                  up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
-                  up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
-                  up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
-                  }
-                up_ver2_re[c]=up_ver1_re;
-                up_ver2_im_NR[c]=up_ver1_im_NR;
-                up_ver2_im_R[c]=up_ver1_im_R;
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
@@ -1494,20 +1516,18 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
                   up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
                 }
-              }
-          /*here *2 this is sum of the rephasing and non rephasing part*/
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
-           }
 
-          }
+          /*here *2 this is sum of the rephasing and non rephasing part*/
+           re_2DES_SE[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re;
+           im_2DES_SE_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
+           im_2DES_SE_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
+           re_2DES_GB[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re;
+           im_2DES_GB_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
+           im_2DES_GB_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
+           re_2DES_EA[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re;
+           im_2DES_EA_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
+           im_2DES_EA_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
+           }
         }
       }
     }
@@ -1515,23 +1535,53 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
 
 
    /*This part calculate the xzxz and zxxz*/
-  for (t1=0; t1<non->tmax1; t1+=1){
-    for (a=2;a<7;a++,a++,a++,a++){
+
+ for (t1=0; t1<non->tmax1; t1+=1){
+     for (a=2;a<7;a++,a++,a++,a++){ 
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
-      }
-       
+      }  
       for (t2=0; t2<non->tmax2; t2+=1){
-        CG_2DES_P_DA(non,P_DA, K, P0, pro_dim);
-        for (int t2=0;t2<non->tmax2;t2+=non->dt2){
             for (int a=0;a<pro_dim;a++){
                 for (int b=0;b<pro_dim;b++){
-                  PDA_t2[pro_dim*a+b]=P_DA[t2+(pro_dim*a+b)*non->tmax2];
-                }
+                  PDA_t2[pro_dim*b+a]=P_DA[t2*pro_dim+pro_dim*b*non->tmax2+a];
+                  //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
+              
+              }
             }
+            /*dimention 1*N* N*N *N*1*/
+            /*first calculate the part1: dimention: 1*N* N*N */
+            for (c=0;c<pro_dim;c++){
+              up_ver1_re=0; 
+              up_ver1_im_NR=0;
+              up_ver1_im_R=0;
+                 
+              for (d=0;d<pro_dim;d++){
+                int_PDA[d] = PDA_t2[pro_dim*d+c];
+              }
+              for  (e=0;e<pro_dim;e++){
+                up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
+                up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
+                up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
+              }
+            up_ver2_re[c]=up_ver1_re;
+            up_ver2_im_NR[c]=up_ver1_im_NR;
+            up_ver2_im_R[c]=up_ver1_im_R;
+          }  
+
+
           for (t3=0; t3<non->tmax1; t3+=1){
+              up_ver3_SE_re=0;
+              up_ver3_SE_im_NR=0;
+              up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0;
+              up_ver3_GB_im_NR=0;
+              up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0;
+              up_ver3_EA_im_NR=0;
+              up_ver3_EA_im_R=0;  
               for (b=2;b<7;b++,b++,b++,b++){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
@@ -1541,33 +1591,8 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_im[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
                   }
-                /*dimention 1*N* N*N *N*1*/
-                /*first calculate the part1: dimention: 1*N* N*N */
-                for (c=0;c<pro_dim;c++){
-                  up_ver1_re=0; 
-                  up_ver1_im_NR=0;
-                  up_ver1_im_R=0;
-                  up_ver3_SE_re=0;
-                  up_ver3_SE_im_NR=0;
-                  up_ver3_SE_im_R=0;
-                  up_ver3_GB_re=0;
-                  up_ver3_GB_im_NR=0;
-                  up_ver3_GB_im_R=0;
-                  up_ver3_EA_re=0;
-                  up_ver3_EA_im_NR=0;
-                  up_ver3_EA_im_R=0; 
+   
 
-                  for (d=0;d<pro_dim;d++){
-                    int_PDA[d] = PDA_t2[pro_dim*c+d];
-                  }
-                  for  (e=0;e<pro_dim;e++){
-                  up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
-                  up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
-                  up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
-                  }
-                up_ver2_re[c]=up_ver1_re;
-                up_ver2_im_NR[c]=up_ver1_im_NR;
-                up_ver2_im_R[c]=up_ver1_im_R;
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
@@ -1580,43 +1605,75 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
                   up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
                 }
-              }
-          /*here *2 this is sum of the rephasing and non rephasing part*/
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
-           }
 
-          }
+          /*here *2 this is sum of the rephasing and non rephasing part*/
+           re_2DES_SE[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re;
+           im_2DES_SE_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
+           im_2DES_SE_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
+           re_2DES_GB[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re;
+           im_2DES_GB_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
+           im_2DES_GB_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
+           re_2DES_EA[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re;
+           im_2DES_EA_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
+           im_2DES_EA_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
+           }
         }
       }
     }
   }
 
+
+
+
  /*This part calculate the yzyz and zyyz*/
-  for (t1=0; t1<non->tmax1; t1+=1){
-    for (a=5;a<8;a++,a++){
+
+
+ for (t1=0; t1<non->tmax1; t1+=1){
+     for (a=5;a<8;a++,a++){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
-      }
-       
+      }  
       for (t2=0; t2<non->tmax2; t2+=1){
-        CG_2DES_P_DA(non,P_DA, K, P0, pro_dim);
-        for (int t2=0;t2<non->tmax2;t2+=non->dt2){
             for (int a=0;a<pro_dim;a++){
                 for (int b=0;b<pro_dim;b++){
-                  PDA_t2[pro_dim*a+b]=P_DA[t2+(pro_dim*a+b)*non->tmax2];
-                }
+                  PDA_t2[pro_dim*b+a]=P_DA[t2*pro_dim+pro_dim*b*non->tmax2+a];
+                  //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
+              
+              }
             }
+            /*dimention 1*N* N*N *N*1*/
+            /*first calculate the part1: dimention: 1*N* N*N */
+            for (c=0;c<pro_dim;c++){
+              up_ver1_re=0; 
+              up_ver1_im_NR=0;
+              up_ver1_im_R=0;
+                 
+              for (d=0;d<pro_dim;d++){
+                int_PDA[d] = PDA_t2[pro_dim*d+c];
+              }
+              for  (e=0;e<pro_dim;e++){
+                up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
+                up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
+                up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
+              }
+            up_ver2_re[c]=up_ver1_re;
+            up_ver2_im_NR[c]=up_ver1_im_NR;
+            up_ver2_im_R[c]=up_ver1_im_R;
+          }  
+
+
           for (t3=0; t3<non->tmax1; t3+=1){
+              up_ver3_SE_re=0;
+              up_ver3_SE_im_NR=0;
+              up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0;
+              up_ver3_GB_im_NR=0;
+              up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0;
+              up_ver3_EA_im_NR=0;
+              up_ver3_EA_im_R=0;  
               for (b=5;b<8;b++,b++){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
@@ -1626,33 +1683,8 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_im[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
                   }
-                /*dimention 1*N* N*N *N*1*/
-                /*first calculate the part1: dimention: 1*N* N*N */
-                for (c=0;c<pro_dim;c++){
-                  up_ver1_re=0; 
-                  up_ver1_im_NR=0;
-                  up_ver1_im_R=0;
-                  up_ver3_SE_re=0;
-                  up_ver3_SE_im_NR=0;
-                  up_ver3_SE_im_R=0;
-                  up_ver3_GB_re=0;
-                  up_ver3_GB_im_NR=0;
-                  up_ver3_GB_im_R=0;
-                  up_ver3_EA_re=0;
-                  up_ver3_EA_im_NR=0;
-                  up_ver3_EA_im_R=0; 
+   
 
-                  for (d=0;d<pro_dim;d++){
-                    int_PDA[d] = PDA_t2[pro_dim*c+d];
-                  }
-                  for  (e=0;e<pro_dim;e++){
-                  up_ver1_re += int_sna_t1_re[e]*int_PDA[e];
-                  up_ver1_im_NR+=int_sna_t1_im_NR[e]*int_PDA[e];
-                  up_ver1_im_R+=int_sna_t1_im_R[e]*int_PDA[e];
-                  }
-                up_ver2_re[c]=up_ver1_re;
-                up_ver2_im_NR[c]=up_ver1_im_NR;
-                up_ver2_im_R[c]=up_ver1_im_R;
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
@@ -1665,18 +1697,17 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
                   up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
                 }
-              }
+
           /*here *2 this is sum of the rephasing and non rephasing part*/
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
-           re_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re*2;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
-           im_2DES[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
-           }
+           re_2DES_SE[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_re;
+           im_2DES_SE_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_NR;
+           im_2DES_SE_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_SE_im_R;
+           re_2DES_GB[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_re;
+           im_2DES_GB_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_NR;
+           im_2DES_GB_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_GB_im_R;
+           re_2DES_EA[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_re;
+           im_2DES_EA_NR[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_NR;
+           im_2DES_EA_R[t1+t3*non->tmax+t2*non->tmax*non->tmax]+=up_ver3_EA_im_R;
 
           }
         }
@@ -1684,7 +1715,40 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES){
     }
   }
 
+// polar effect
+  free(re_doorway);
+  free(im_doorway) ;
+  free(re_window_SE) ;
+  free(im_window_SE);   
+  free(re_window_GB) ;
+  free(im_window_GB); 
+  free(re_window_EA) ;
+  free(im_window_EA); 
+  free(PDA_t2) ; 
+  free(int_sna_t1_re); 
+  free(int_sna_t1_im_NR);
+  free(int_sna_t1_im_R);
+  free(int_sna_t3_SE_re); 
+  free(int_sna_t3_SE_im); 
+  free(int_sna_t3_GB_re); 
+  free(int_sna_t3_GB_im); 
+  free(int_sna_t3_EA_re); 
+  free(int_sna_t3_EA_im); 
+  free(PDA_t2);
+  free(int_PDA);
+  free(up_ver2_re);
+  free(up_ver2_im_NR);
+  free(up_ver2_im_R);
 
+  free(re_2DES_SE);
+  free(im_2DES_SE_NR);
+  free(im_2DES_SE_R);
+  free(re_2DES_GB);
+  free(im_2DES_GB_NR);
+  free(im_2DES_GB_R);
+  free(re_2DES_EA);
+  free(im_2DES_EA_NR);
+  free(im_2DES_EA_R);
 
 
 

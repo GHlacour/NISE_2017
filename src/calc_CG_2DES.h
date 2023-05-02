@@ -7,7 +7,9 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,float* K, float* P0, int N);
 void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB);
 void CG_2DES_window_SE(t_non *non,float *re_window_SE,float *im_window_SE);
 void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA);
-void CG_full_2DES_segments(t_non *non,float *re_2DES,float *im_2DES);
+void CG_full_2DES_segments(t_non *non,float *re_2DES_SE,float *im_2DES_SE_NR,float *im_2DES_SE_R,
+                          float *re_2DES_GB,float *im_2DES_GB_NR,float *im_2DES_GB_R,
+                          float *re_2DES_EA,float *im_2DES_EA_NR,float *im_2DES_EA_R);
 void combine_CG_2DES(t_non *non,float *re_doorway,float *im_doorway,
     float *P_DA,float *re_window_GB,float *im_window_GB,
     float *re_window_SE,float *im_window_SE,float *re_window_EA,float *im_window_EA,
