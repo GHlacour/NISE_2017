@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Call the MCFRET Routine */
-        if (compare_string(non->technique,(char*[]){"MCFRET",
+        if (string_in_array(non->technique,(char*[]){"MCFRET",
 	   "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse"},7)){
         /* Does not support MPI */
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Luminescence Routine
-    if (compare_string(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
+    if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
         // Does not support MPI
         if (parentRank == 0)
             luminescence(non);

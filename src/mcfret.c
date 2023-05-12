@@ -106,16 +106,16 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     float *mu_xyz;
     float shift1; 
 
-  /* Time parameters */
+    /* Time parameters */
     time_t time_now,time_old,time_0;
-  /* Initialize time */
+    /* Initialize time */
     time(&time_now);
     time(&time_0);
     shift1=(non->max1+non->min1)/2;
     printf("Frequency shift %f.\n",shift1);
     non->shifte=shift1;
 
-  /* File handles */
+    /* File handles */
     FILE *H_traj;
     FILE *C_traj;
     FILE *mu_traj;
@@ -221,16 +221,17 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
         }
     }
 
-    fclose(H_traj);
-    if (non->cluster!=-1){
-        fclose(Cfile);
-    }
-
     /* Normalize response */
     for (t1=0;t1<non->tmax1*non->singles*non->singles;t1++){
         re_S_1[t1]=re_S_1[t1]/samples;
         im_S_1[t1]=im_S_1[t1]/samples;
     }
+
+    fclose(H_traj);
+    if (non->cluster!=-1){
+        fclose(Cfile);
+    }
+
   /* Save time domain response */
    if (emission==0){ 
     absorption_matrix=fopen("TD_absorption_matrix.dat","w");
@@ -464,6 +465,11 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     fclose(ratefile);
 
     free(rate_response);
+    free(re_aux_mat);
+    free(im_aux_mat);
+    free(re_aux_mat2);
+    free(im_aux_mat2);
+    free(Zeros);
     free(ns);
     return;
 }
