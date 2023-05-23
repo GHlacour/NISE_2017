@@ -74,6 +74,8 @@ void mcfret(t_non *non){
     /* Write the calculated ratematrix to file */
     write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
     write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
+    write_matrix_to_file("Emission.dat",re_Emi,non->tmax1);
+    write_matrix_to_file("Absorption.dat",re_Abs,non->tmax1);
 
     free(re_Abs);
     free(im_Abs);
@@ -105,6 +107,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /* Transition dipoles for coupling on the fly */
     float *mu_xyz;
     float shift1; 
+    float diag;
 
     /* Time parameters */
     time_t time_now,time_old,time_0;
@@ -242,11 +245,16 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
    fprintf(absorption_matrix,"Dimension %d\n",non->singles*non->singles*non->tmax1);
     for (t1=0;t1<non->tmax1;t1++){
         fprintf(absorption_matrix,"%f ",t1*non->deltat);
+        diag =0;
 	for (i=0;i<non->singles;i++){
 	   for (j=0;j<non->singles;j++){
 	      fprintf(absorption_matrix,"%e %e ",re_S_1[t1*non->singles*non->singles+i*non->singles+j],im_S_1[t1*non->singles*non->singles+i*non->singles+j]);
+          if (i==j){
+            diag+=re_S_1[t1*non->singles*non->singles+i*non->singles+j];
+          }
 	   }
 	}
+    fprintf(absorption_matrix,"%f", diag);
 	fprintf(absorption_matrix,"\n");
     }
     fclose(absorption_matrix);
@@ -376,6 +384,7 @@ void mcfret_coupling(float *J,t_non *non){
             J[non->singles*i+j]=J[non->singles*i+j]/samples;
         }
     }
+    write_matrix_to_file("CouplingCheck.dat",J,non->singles);
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
