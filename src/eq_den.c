@@ -218,7 +218,8 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
     int INFO, lwork;
     float *work, *Kcopy;
     int i, j;
-    float *pivot;
+    int *pivot;
+    int M;
 
     /* Diagonalization*/
     /* Find lwork for diagonalization */
@@ -252,7 +253,7 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
     }
 
     /* Inverse right eigenvectors*/
-    pivot = (float *)calloc(N,sizeof(float));
+    pivot = (int *)calloc(N,sizeof(int));
     sgetrf_(&N, &N, ivecR, &N, pivot, &INFO); //LU factorization
     if (INFO != 0) {
         printf("Something went wrong trying to factorize right eigenvector matrix...\nExit code %d\n",INFO);
@@ -272,7 +273,7 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
     free(work), free(pivot);
 
     /* Inverse left eigenvectors*/
-    pivot = (float *)calloc(N,sizeof(float));
+    pivot = (int *)calloc(N,sizeof(int));
     sgetrf_(&N, &N, ivecL, &N, pivot, &INFO); //LU factorization
     if (INFO != 0) {
         printf("Something went wrong trying to factorize left eigenvector matrix...\nExit code %d\n",INFO);

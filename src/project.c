@@ -67,7 +67,7 @@ int project_dim(t_non* non){
              max=non->psites[i];
       }
       }
-      printf("Identified %d projection segments\n",max+1);
+      //printf("Identified %d projection segments\n",max+1);
       return max+1;
    }
 printf(RED "Something went wrong in projection input analysis.\n");
