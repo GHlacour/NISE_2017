@@ -18,6 +18,9 @@
 #include "propagate.h"
 #include "read_trajectory.h"
 #include "eq_den.h"
+#include "mpi.h"
+#include "MPI_subs.h"
+
 
 /* This is the main routine which will control the flow of the
  * coarse grained 2DES calculation. It takes the general NISE
@@ -1401,13 +1404,13 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
 
   /* The calculation is finished we can close all auxillary arrays before writing */
   /* output to file. */
-  printf("this is a test for EA");  
+  printf("this is a test for EA \n");  
 
   free(mu_xyz);
   free(Hamil_i_e);
   free(Hamil_i_ee);
   free(mid_ver);
-  free(vecr1);
+  //free(vecr1);
   //free(vecr);
   //free(veci);
   //free(vecr1);
@@ -1565,8 +1568,7 @@ void CG_full_2DES_segments(t_non *non,float *re_2DES_pa,float *im_2DES_NR_pa,flo
   /*for (t1=0;t1<non->tmax;t1++)*/
 
 
- printf("the code can run successfully \n");
-exit(1);
+
   for (t1=0; t1<non->tmax1; t1+=1){
     for (a=0;a<9;a+=4){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
@@ -2165,48 +2167,153 @@ exit(1);
       }
     }
   }
-printf("the code can run successfully");
 
-// polar effect
-  free(re_doorway);
-  free(im_doorway) ;
-  free(re_window_SE) ;
-  free(im_window_SE);   
-  free(re_window_GB) ;
-  free(im_window_GB); 
-  free(re_window_EA) ;
-  free(im_window_EA); 
-  free(PDA_t2) ; 
-  free(int_sna_t1_re); 
-  free(int_sna_t1_im_NR);
-  free(int_sna_t1_im_R);
-  free(int_sna_t3_SE_re); 
-  free(int_sna_t3_SE_im); 
-  free(int_sna_t3_GB_re); 
-  free(int_sna_t3_GB_im); 
-  free(int_sna_t3_EA_re); 
-  free(int_sna_t3_EA_im); 
-  free(PDA_t2);
-  free(int_PDA);
-  free(up_ver2_re);
-  free(up_ver2_im_NR);
-  free(up_ver2_im_R);
-  free(re_2DES_pa);
-  free(im_2DES_NR_pa);
-  free(im_2DES_R_pa);
-  free(re_2DES_pe);
-  free(im_2DES_NR_pe);
-  free(im_2DES_R_pe);
-  free(re_2DES_cr);
-  free(im_2DES_NR_cr);
-  free(im_2DES_R_cr);
+  free(re_doorway),  free(im_doorway) ;
+  free(re_window_SE) ,  free(im_window_SE); 
+  free(re_window_GB) ,  free(im_window_GB); 
+  free(re_window_EA) , free(im_window_EA); 
+  free(int_sna_t1_re),  free(int_sna_t1_im_NR),  free(int_sna_t1_im_R);
+  free(int_sna_t3_SE_re),  free(int_sna_t3_SE_im), free(int_sna_t3_GB_re);   
+  free(int_sna_t3_GB_im) , free(int_sna_t3_EA_re),  free(int_sna_t3_EA_im); 
+  free(PDA_t2),  free(int_PDA), free(up_ver2_re);
+  free(up_ver2_im_NR),  free(up_ver2_im_R);
+  free(re_2DES_pa) ,free(im_2DES_NR_pa),  free(im_2DES_R_pa);
+  free(re_2DES_pe),  free(im_2DES_NR_pe) ,free(im_2DES_R_pe);
+  free(re_2DES_cr),  free(im_2DES_NR_cr),  free(im_2DES_R_cr);
   fclose(Rate);
+
+
+  
+   printf("the signal part can run successfully \n");
+
 }
+
+
+
+
 void combine_CG_2DES(t_non *non,float **re_2DES_pa_sum,float **im_2DES_NR_pa_sum,float **im_2DES_R_pa_sum,
                           float **re_2DES_pe_sum,float **im_2DES_NR_pe_sum,float **im_2DES_R_pe_sum,
                           float **re_2DES_cr_sum,float **im_2DES_NR_cr_sum,float **im_2DES_R_cr_sum){
 
-                          }
+    float *re_2DES_pa, *im_2DES_NR_pa, *im_2DES_R_pa;
+    float *re_2DES_pe, *im_2DES_NR_pe, *im_2DES_R_pe;
+    float *re_2DES_cr, *im_2DES_NR_cr, *im_2DES_R_cr;  
+    int a,index ;  
+    int t1, t2, t3 ;
+    int sampleCount;
+    sampleCount = 3; // which numbe should I set this number 
+
+
+  //re_2DES_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_NR_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_R_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //re_2DES_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_NR_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_R_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //re_2DES_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_NR_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+  //im_2DES_R_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1*non->tmax2,sizeof(float),sizeof(float*));
+
+  re_2DES_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_NR_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_NR_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_NR_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+
+  //re_2DES_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_NR_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_R_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //re_2DES_pe = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_NR_pe = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_R_pe = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //re_2DES_cr = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_NR_cr = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+  //im_2DES_R_cr = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+
+
+
+  CG_full_2DES_segments(non,re_2DES_pa,im_2DES_NR_pa,im_2DES_R_pa,
+                       re_2DES_pe,im_2DES_NR_pe,im_2DES_R_pe,
+                       re_2DES_cr,im_2DES_NR_cr,im_2DES_R_cr);
+
+
+
+  for (t1=0; t1<non->tmax1; t1+=1){
+    //for (t2=0; t2<non->tmax2; t2+=1){
+      t2 = 0;
+      for (t3=0; t3<non->tmax3; t3+=1){
+        for (a=0; a<3; a+=1){
+          index = t1+t3*non->tmax+t2*non->tmax*non->tmax;
+          //re_2DES_pa_sum[t3][t1+t2*non->tmax1] +=re_2DES_pa[a*index];
+          //im_2DES_NR_pa_sum[t3][t1+t2*non->tmax1]  +=im_2DES_NR_pa[a*index];
+          //im_2DES_R_pa_sum[t3][t1+t2*non->tmax1]  +=im_2DES_R_pa[a*index];
+          //re_2DES_pe_sum[t3][t1+t2*non->tmax1]  +=re_2DES_pe[a*index];
+          //im_2DES_NR_pe_sum[t3][t1+t2*non->tmax1]  +=im_2DES_NR_pe[a*index];
+          //im_2DES_R_pe_sum[t3][t1+t2*non->tmax1]  +=im_2DES_R_pe[a*index];
+          //re_2DES_cr_sum[t3][t1+t2*non->tmax1]  +=re_2DES_cr[a*index];
+          //im_2DES_NR_cr_sum[t3][t1+t2*non->tmax1]  +=im_2DES_NR_cr[a*index];
+          //im_2DES_R_cr_sum[t3][t1+t2*non->tmax1]  +=im_2DES_R_cr[a*index];
+
+          re_2DES_pa_sum[t3][t1]     +=re_2DES_pa[a*index];
+          im_2DES_NR_pa_sum[t3][t1]  +=im_2DES_NR_pa[a*index];
+          im_2DES_R_pa_sum[t3][t1]   +=im_2DES_R_pa[a*index];
+          re_2DES_pe_sum[t3][t1]     +=re_2DES_pe[a*index];
+          im_2DES_NR_pe_sum[t3][t1]  +=im_2DES_NR_pe[a*index];
+          im_2DES_R_pe_sum[t3][t1]   +=im_2DES_R_pe[a*index];
+          re_2DES_cr_sum[t3][t1]     +=re_2DES_cr[a*index];
+          im_2DES_NR_cr_sum[t3][t1]  +=im_2DES_NR_cr[a*index];
+          im_2DES_R_cr_sum[t3][t1]   +=im_2DES_R_cr[a*index];
+
+        }
+      //}
+    }
+  }
+  /* Print 2D */
+
+  print2D("RIIpar.dat", re_2DES_pa_sum, im_2DES_NR_pa_sum, non, sampleCount);
+  print2D("RIpar.dat",  re_2DES_pa_sum, im_2DES_R_pa_sum,  non, sampleCount);
+  print2D("RIIper.dat", re_2DES_pe_sum, im_2DES_NR_pe_sum, non, sampleCount);
+  print2D("RIper.dat",  re_2DES_pe_sum, im_2DES_R_pe_sum,  non, sampleCount);
+  print2D("RIIcro.dat", re_2DES_cr_sum, im_2DES_NR_cr_sum, non, sampleCount);
+  print2D("RIcro.dat",  re_2DES_cr_sum, im_2DES_R_cr_sum,  non, sampleCount);
+
+  printf("----------------------------------------\n");
+  printf(" 2DES calculation succesfully completed\n");
+
+
+  free(re_2DES_pa_sum) ;
+  free(im_2DES_NR_pa_sum) ;
+  free(im_2DES_R_pa_sum) ;
+  free(re_2DES_pe_sum);
+  free(im_2DES_NR_pe_sum) ;
+  free(im_2DES_R_pe_sum);
+  free(re_2DES_cr_sum);
+  free(im_2DES_NR_cr_sum);
+  free(im_2DES_R_cr_sum);
+
+  free(re_2DES_pa) ;
+  free(im_2DES_NR_pa) ;
+  free(im_2DES_R_pa) ;
+  free(re_2DES_pe);
+  free(im_2DES_NR_pe) ;
+  free(im_2DES_R_pe);
+  free(re_2DES_cr) ;
+  free(im_2DES_NR_cr);
+  free(im_2DES_R_cr);
+
+
+}
+
+
+
+
+//void combine_CG_2DES(t_non *non,float **re_2DES_pa_sum,float **im_2DES_NR_pa_sum,float **im_2DES_R_pa_sum,
+                          //float **re_2DES_pe_sum,float **im_2DES_NR_pe_sum,float **im_2DES_R_pe_sum,
+                          //float **re_2DES_cr_sum,float **im_2DES_NR_cr_sum,float **im_2DES_R_cr_sum)
 
 
 
