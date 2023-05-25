@@ -61,21 +61,27 @@ void mcfret(t_non *non){
 /* Call the coupling routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Coupling"))){
         mcfret_coupling(J,non);
+
     }
 
 /* Call the rate routine routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Rate"))){
         if ((!strcmp(non->technique, "MCFRET-Rate"))){
             /* Read in absorption, emission and coupling from file if needed */
+	    printf("Calculating rate from precalculated absorption, emission\n");
+	    printf("and coupling!\n");
+	    read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
+	    read_response_from_file("TD_absorption_matrix.dat",re_Abs,im_Abs,non->singles,non->tmax1);
+	    read_response_from_file("TD_emission_matrix.dat",re_Emi,im_Emi,non->singles,non->tmax1);
+	    printf("Completed reading pre-calculated data.\n");
         }
         mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
     }
 
     /* Write the calculated ratematrix to file */
     write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
+    /* Write the calculated coherence matrix to file */
     write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
-    write_matrix_to_file("Emission.dat",re_Emi,non->tmax1);
-    write_matrix_to_file("Absorption.dat",re_Abs,non->tmax1);
 
     free(re_Abs);
     free(im_Abs);
@@ -107,7 +113,6 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /* Transition dipoles for coupling on the fly */
     float *mu_xyz;
     float shift1; 
-    float diag;
 
     /* Time parameters */
     time_t time_now,time_old,time_0;
@@ -245,16 +250,11 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
    fprintf(absorption_matrix,"Dimension %d\n",non->singles*non->singles*non->tmax1);
     for (t1=0;t1<non->tmax1;t1++){
         fprintf(absorption_matrix,"%f ",t1*non->deltat);
-        diag =0;
 	for (i=0;i<non->singles;i++){
 	   for (j=0;j<non->singles;j++){
 	      fprintf(absorption_matrix,"%e %e ",re_S_1[t1*non->singles*non->singles+i*non->singles+j],im_S_1[t1*non->singles*non->singles+i*non->singles+j]);
-          if (i==j){
-            diag+=re_S_1[t1*non->singles*non->singles+i*non->singles+j];
-          }
 	   }
 	}
-    fprintf(absorption_matrix,"%f", diag);
 	fprintf(absorption_matrix,"\n");
     }
     fclose(absorption_matrix);
@@ -384,7 +384,7 @@ void mcfret_coupling(float *J,t_non *non){
             J[non->singles*i+j]=J[non->singles*i+j]/samples;
         }
     }
-    write_matrix_to_file("CouplingCheck.dat",J,non->singles);
+    write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
@@ -520,6 +520,10 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
   /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
       c2[a]=exp(-e[a]/kBT);
+      /* Apply strict high temperature limit when T>100000 */
+      if (non->temperature>100000){
+	 c2[a]=1;
+      }
   }
 
   /* Transform back to site basis */ 
@@ -620,7 +624,7 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
 }
 
 /* Write a square matrix to a text file */
-float write_matrix_to_file(char fname[],float *matrix,int N){
+void write_matrix_to_file(char fname[],float *matrix,int N){
   FILE *file_handle;
   int i,j;
   file_handle=fopen(fname,"w");
@@ -633,4 +637,47 @@ float write_matrix_to_file(char fname[],float *matrix,int N){
   fclose(file_handle);
 }
 
+/* Read a square matrix from a text file */
+void read_matrix_from_file(char fname[],float *matrix,int N){
+  FILE *file_handle;
+  int i,j;
+  file_handle=fopen(fname,"r");
+  if (file_handle == NULL) {
+        printf("Error opening the file %s.\n",fname);
+        exit(0);
+  }
+  for (i=0;i<N;i++){
+    for (j=0;j<N;j++){
+      fscanf(file_handle,"%f",&matrix[i*N+j]);
+    }
+  }
+  fclose(file_handle);
+}
 
+/* Read the absorption/emission function from file */
+void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax){
+  FILE *file_handle;
+  int i,j;
+  int t1;
+  float dummy;
+  file_handle=fopen(fname,"r");
+  if (file_handle == NULL) {
+        printf("Error opening the file %s.\n",fname);
+        exit(0);
+  }
+  
+  /* Read initial info */
+  fscanf(file_handle, "Samples %d\n", &dummy);
+  fscanf(file_handle, "Dimension %d\n", &dummy);
+  
+  for (t1=0;t1<tmax;t1++){
+    /* Read time */
+    fscanf(file_handle,"%f",&dummy);
+    for (i=0;i<N;i++){
+      for (j=0;j<N;j++){
+	fscanf(file_handle,"%f %f",&re_R[t1*N*N+i*N+j],&im_R[t1*N*N+i*N+j]);
+      }
+    }
+  }
+  fclose(file_handle);
+}

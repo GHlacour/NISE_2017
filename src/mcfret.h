@@ -13,5 +13,7 @@ void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,
 void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,float *rC,float *iC,int *psites,int segments,int si,int sj,int sk,int N);
 float trace_rate(float *matrix,int N);
 void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple);
-float write_matrix_to_file(char fname[],float *matrix,int N);
+void write_matrix_to_file(char fname[],float *matrix,int N);
+void read_matrix_from_file(char fname[],float *matrix,int N);
+void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax);
 #endif /* _MCFRET_ */
