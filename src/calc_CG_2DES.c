@@ -73,55 +73,40 @@ void calc_CG_2DES(t_non *non){
   
     //re_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
     //im_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
-    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
-     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
-     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
-     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES")))
-      {
-        printf("Performing the CG_2DES calculation.\n"); 
-      }  
+    printf("Performing the CG_2DES calculation.\n"); 
 
 
-    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")))
-      {
+    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway"))) {
         CG_2DES_doorway(non, re_doorway, im_doorway);
-        //CG_2DES_window_SE(non, re_window_SE, im_window_SE); 
       }  
-           if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_SE")) )
-      {
+     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ) {
         CG_2DES_window_SE(non, re_window_SE, im_window_SE); 
-      } 
-      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_GB")))
-      {
-        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
+     } 
+      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_GB"))){
+//        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
       }
-            if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_EA")))
-      {
-        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
+      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_EA"))){
+//        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
       }
-          if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
+
+      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
          (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
      ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
      ||  (!strcmp(non->technique, "CG_full_2DES_segments")))
       { 
-      CG_full_2DES_segments(non, re_2DES_pa,im_2DES_NR_pa,im_2DES_R_pa,
-                          re_2DES_pe, im_2DES_NR_pe, im_2DES_R_pe,
-                          re_2DES_cr, im_2DES_NR_cr, im_2DES_R_cr);
+//      CG_full_2DES_segments(non, re_2DES_pa,im_2DES_NR_pa,im_2DES_R_pa,
+//                          re_2DES_pe, im_2DES_NR_pe, im_2DES_R_pe,
+//                          re_2DES_cr, im_2DES_NR_cr, im_2DES_R_cr);
       }
            if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
          (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
      ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
      ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES")))
       {
-      combine_CG_2DES(non,re_2DES_pa_sum,im_2DES_NR_pa_sum,im_2DES_R_pa_sum,
-                          re_2DES_pe_sum,im_2DES_NR_pe_sum,im_2DES_R_pe_sum,
-                          re_2DES_cr_sum,im_2DES_NR_cr_sum,im_2DES_R_cr_sum);
+//      combine_CG_2DES(non,re_2DES_pa_sum,im_2DES_NR_pa_sum,im_2DES_R_pa_sum,
+//                          re_2DES_pe_sum,im_2DES_NR_pe_sum,im_2DES_R_pe_sum,
+//                          re_2DES_cr_sum,im_2DES_NR_cr_sum,im_2DES_R_cr_sum);
       }
-           if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
-         (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
-     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
-     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES")))
-
 
     free(re_doorway);
     free(im_doorway);
@@ -152,8 +137,6 @@ void calc_CG_2DES(t_non *non){
 
     return;
 }
-
-//void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway);
 
 void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *non did?*/
   /* Initialize variables*/
@@ -674,9 +657,26 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
           /*this is just copy the input dipole to the real part of the vector*/
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
           //copyvec(vecr,mu_eg,non->singles);
-          /* Loop over coherence time */
+	  eq_den(Hamil_i_e,rho_l,N,non);
+            //printf("rho_l ");
+            //printf("%f \n", rho_l[0]);
 
-        
+          /*printf("Hamil_i_e  ");
+          printf("%f \n", Hamil_i_e); */
+          // Multiply the density operator to dipole operator,vecr, as it is only the real number.
+          clearvec(mid_ver,non->singles);
+          for (a=0;a<N;a++){
+            for (b=0;b<N;b++){
+              mid_ver[a]+=rho_l[a+b*N]*vecr[b];
+            }
+          }
+          // Update dipole operator
+          for (a=0;a<N;a++){
+            vecr[a]=mid_ver[a];
+          }
+
+
+          /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
             /* Read Hamiltonian */
@@ -692,38 +692,6 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
               
              }
             } 
-          eq_den(Hamil_i_e,rho_l,N,non);
-            //printf("rho_l "); 
-            //printf("%f \n", rho_l[0]);
-
-          /*printf("Hamil_i_e  "); 
-          printf("%f \n", Hamil_i_e); */
-          // Multiply the density operator to dipole operator,vecr, as it is only the real number.
-          for (a=0;a<N;a++){
-          /*printf("a "); 
-          printf("%f \n", a); 
-          printf("N "); 
-          printf("%f \n", N); */
-            for (b=0;b<N;b++){
-              mid_ver[a]+=rho_l[a+b*N]*vecr[b];
-                //printf(" SE vecr[b] "); 
-                //printf("%f \n", vecr[a]); 
-                //printf("rho_l "); 
-                //printf("%f \n", rho_l[a+b*N]); 
-                /*printf("a "); 
-                printf("%f \n", a);
-                printf("b "); 
-                printf("%f \n", b);*/  
-          /*printf("vecr[b] "); 
-          printf("%f \n", vecr); 
-          printf("mid_ver "); 
-          printf("%f \n", mid_ver);*/                     
-            }
-          }
-          // Update dipole operator
-          for (a=0;a<N;a++){
-            vecr[a]=mid_ver[a];
-          }  
 
           //printf("%f \n", vecr); 
           for (beta=0;beta<3;beta++){
