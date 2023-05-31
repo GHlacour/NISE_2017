@@ -83,10 +83,10 @@ void calc_CG_2DES(t_non *non){
         CG_2DES_window_SE(non, re_window_SE, im_window_SE); 
      } 
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_GB"))){
-//        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
+        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
       }
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_EA"))){
-//        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
+        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
       }
 
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
@@ -338,9 +338,6 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
                 im_doorway[index]+=mu_eg[site_num]*veci[site_num]; 
                 //printf("im_doorway[index] ");
                 //printf("%f\n",im_doorway[index]);
-
-
-
               }
           }  
 
@@ -657,10 +654,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
           /*this is just copy the input dipole to the real part of the vector*/
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
           //copyvec(vecr,mu_eg,non->singles);
-	  eq_den(Hamil_i_e,rho_l,N,non);
-            //printf("rho_l ");
-            //printf("%f \n", rho_l[0]);
-
+	        eq_den(Hamil_i_e,rho_l,N,non);
           /*printf("Hamil_i_e  ");
           printf("%f \n", Hamil_i_e); */
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
@@ -688,20 +682,16 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
             } else {
               if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
               printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-              
+              exit(1);  
              }
             } 
 
-          //printf("%f \n", vecr); 
           for (beta=0;beta<3;beta++){
             /* Read mu(tj) */
             if (!strcmp(non->hamiltonian,"Coupling")){
               copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
             } else {
               if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-          //Here we generate the equilibrium density operator
-            
                 printf("Dipole trajectory file to short, could not fill buffer!!!\n");
                 printf("JTIME %d %d\n",tj,beta);
                 exit(1);
@@ -844,9 +834,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   float *rho_l;
   rho_l=(float *)calloc(N*N,sizeof(float));
 
-  //here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
-  float *mid_ver;
-  mid_ver = (float *)calloc(N,sizeof(float));
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -961,9 +948,9 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
              }
             }
           //Here we generate the equilibrium density operator
-          eq_den(Hamil_i_e,rho_l,N,non);
+          //eq_den(Hamil_i_e,rho_l,N,non);
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
-          for (a=0;a<N;a++){
+          /*for (a=0;a<N;a++){
             for (b=0;b<N;b++){
               mid_ver[a]+=rho_l[a+b*N]*vecr[b];
             }
@@ -971,8 +958,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
           // Update dipole operator
           for (a=0;a<N;a++){
             vecr[a]=mid_ver[a];
-          }      
-
+          } */
           for (beta=0;beta<3;beta++){
             /* Read mu(tj) */
             if (!strcmp(non->hamiltonian,"Coupling")){
@@ -1033,7 +1019,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   free(mu_xyz);
   free(Hamil_i_e);
   free(rho_l);
-  free(mid_ver);
 
   /* The calculation is finished, lets write output */
   log=fopen("NISE.log","a");
@@ -1232,10 +1217,16 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
              exit(1);
             }
         }
-        //printf("this is a test1 \n");  
+        clearvec(rho_i,non->singles*non->singles); 
+          //Here we generate the equilibrium density operator
+        eq_den(Hamil_i_e,rho_l,N,non);       
+
+        for (a=0;a<N;a++){
+          dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
+        }
+
 
           /* this is for time t1 to generate the vector for the dipole with 0 as the imagine part*/ 
-          //clearvec(veci,non->singles);
           /*this is just copy the input dipole to the real part of the vector*/
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
           //copyvec(vecr,mu_eg,non->singles);
@@ -1255,22 +1246,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
               exit(1);
              }
             }
-          //Here we generate the equilibrium density operator
-          eq_den(Hamil_i_e,rho_l,N,non);  
-          clearvec(rho_i,non->singles*non->singles);
-          //printf("this is a test");
-          //printf ("rho_i");
-          //printf("%f \n", rho_i[2]);        
-
-          for (a=0;a<N;a++){
-            //for (b=0;b<N;b++){
-              //index = a+b*N
-              //mid_rho[b]+=rho_l[a+b*N];
-            //}
-            //dipole_double_CG2DES(non, vecr, mid_rho, rho_i, fr[a], fi[a]);
-            dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
-          }
-
 
           for (beta=0;beta<3;beta++){
             /* Read mu(tj) */
@@ -1353,16 +1328,10 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
           /* Propagate dipole moment */
           for (a=0;a<N;a++){
             propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
-
-          }
-        
+          } 
       }
-      
-  
     }
-   
   }
-  
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
     fprintf(log,"Finished sample %d\n",samples);        
@@ -1378,7 +1347,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   free(Hamil_i_e);
   free(Hamil_i_ee);
   free(mid_ver);
-  //free(vecr1);
   //free(vecr);
   //free(veci);
   //free(vecr1);
