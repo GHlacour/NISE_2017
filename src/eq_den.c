@@ -166,18 +166,12 @@ void dipole_double_CG2DES(t_non* non, float* dipole, float* cr, float* ci, float
     for (i = 0; i < non->singles; i++) {
        seg_num=non->psites[i];
         for (j = i + 1; j < non->singles; j++) {
-            index = Sindex(i, j, non->singles);
             if (seg_num==non->psites[j]){
+              index = Sindex(i, j, non->singles);
               fr[index] += dipole[i] * cr[j];
               fi[index] += dipole[i] * ci[j];
               fr[index] += dipole[j] * cr[i];
               fi[index] += dipole[j] * ci[i];
-              } else {
-              fr[index] =0;
-              fi[index] =0;
-              fr[index] =0;
-              fi[index] =0;
-
           }
         }
     }
@@ -195,17 +189,12 @@ void dipole_double_inverse_CG2DES(t_non* non, float* dipole, float* cr, float* c
     for (i = 0; i < non->singles; i++) {
         seg_num=non->psites[i];
         for (j = i + 1; j < non->singles; j++) {
-            index = Sindex(i, j, non->singles);
             if (seg_num==non->psites[j]){
-            fr[j] += dipole[i] * cr[index];
-            fi[j] += dipole[i] * ci[index];
-            fr[i] += dipole[j] * cr[index];
-            fi[i] += dipole[j] * ci[index];
-            } else {
-            fr[index] =0;
-            fi[index] =0;
-            fr[index] =0;
-            fi[index] =0;
+               index = Sindex(i, j, non->singles);
+               fr[j] += dipole[i] * cr[index];
+               fi[j] += dipole[i] * ci[index];
+               fr[i] += dipole[j] * cr[index];
+               fi[i] += dipole[j] * ci[index];
             } 
         }
     }

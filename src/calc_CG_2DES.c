@@ -33,16 +33,18 @@ void calc_CG_2DES(t_non *non){
     float *re_window_SE, * im_window_SE;
     float *re_window_GB, * im_window_GB;
     float *re_window_EA, * im_window_EA;
-    float *re_2DES , *im_2DES;
+/*    float *re_2DES , *im_2DES;
     float *re_2DES_pa, *im_2DES_NR_pa, *im_2DES_R_pa;
     float *re_2DES_pe, *im_2DES_NR_pe, *im_2DES_R_pe;
     float *re_2DES_cr, *im_2DES_NR_cr, *im_2DES_R_cr; 
     float **re_2DES_pa_sum, **im_2DES_NR_pa_sum, **im_2DES_R_pa_sum;
     float **re_2DES_pe_sum, **im_2DES_NR_pe_sum, **im_2DES_R_pe_sum;
     float **re_2DES_cr_sum, **im_2DES_NR_cr_sum, **im_2DES_R_cr_sum; 
+*/
 
     int pro_dim;
     pro_dim=project_dim(non);
+    printf("Dimension %d\n",non->tmax*9*pro_dim);
     re_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     re_window_SE = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
@@ -51,7 +53,8 @@ void calc_CG_2DES(t_non *non){
     im_window_GB = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));  
-    re_2DES_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
+    printf("Print %d\n",non->tmax2);
+/*    re_2DES_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
     im_2DES_NR_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
     im_2DES_R_pa = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
     re_2DES_pe = (float *)calloc(3*non->tmax*non->tmax*non->tmax2,sizeof(float));
@@ -69,7 +72,7 @@ void calc_CG_2DES(t_non *non){
     re_2DES_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     im_2DES_NR_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     im_2DES_R_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-
+*/
   
     //re_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
     //im_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
@@ -85,6 +88,7 @@ void calc_CG_2DES(t_non *non){
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_GB"))){
         CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
       }
+  
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_EA"))){
         CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
       }
@@ -116,7 +120,7 @@ void calc_CG_2DES(t_non *non){
     free(im_window_GB);
     free(re_window_EA);
     free(im_window_EA);
-    free(re_2DES_pa);
+/*    free(re_2DES_pa);
     free(im_2DES_NR_pa);
     free(im_2DES_R_pa);
     free(re_2DES_pe);
@@ -134,7 +138,7 @@ void calc_CG_2DES(t_non *non){
     free(re_2DES_cr_sum);
     free(im_2DES_NR_cr_sum);
     free(im_2DES_R_cr_sum);    
-
+*/
     return;
 }
 
@@ -654,7 +658,19 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
           /*this is just copy the input dipole to the real part of the vector*/
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
           //copyvec(vecr,mu_eg,non->singles);
-	        eq_den(Hamil_i_e,rho_l,N,non);
+	    /* Read Hamiltonian */
+            if (!strcmp(non->hamiltonian,"Coupling")){
+              if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
+                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+                exit(1);
+              }
+            } else {
+              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
+              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+              exit(1);
+             }
+            }
+	  eq_den(Hamil_i_e,rho_l,N,non);
           /*printf("Hamil_i_e  ");
           printf("%f \n", Hamil_i_e); */
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
@@ -1071,10 +1087,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
  printf("the GB part run successfully \n ");  
 }
 
-
-
-
-
 void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
    /* Initialize variables*/
  /* The window part for SE*/
@@ -1090,8 +1102,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   FILE *Cfile;
   /* Floats */
   float shift1;
-
-
   /* Integers */
   int nn2;
   int itime,N_samples;
@@ -1108,21 +1118,16 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   float *rho_l;
    /* Allocate memory*/  /*(tmax+1)*9*/
   nn2=non->singles*(non->singles+1)/2;
-  rho_l=(float *)calloc(N*N,sizeof(float));
 // reserve memory for transition dipole from first to second
-  float* fr = calloc(nn2*N, sizeof(float));
-  float* fi = calloc(nn2*N, sizeof(float));
-   rho_i = (float *)calloc(N*N,sizeof(float));
+  float *fr;
+  float *fi;
   //here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
-  float *mid_ver;
-  mid_ver = (float *)calloc(N,sizeof(float));
+//  float *mid_ver;
+//  mid_ver = (float *)calloc(N,sizeof(float));
 
   /* projection */
   pro_dim=project_dim(non);
 //Here we reserve memory for matrix multiplication
-  //mid_rho=(float *)calloc(N,sizeof(float));
-  //mid_u=(float *)calloc(N,sizeof(float));
-  //up_rho_u = (float *)calloc(N*N,sizeof(float));
   /* Time parameters */
   time_t time_now,time_old,time_0;
   /* Initialize time */
@@ -1132,14 +1137,18 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
 
-
 // reserve memory for transition dipole
   vecr=(float *)calloc(N*N,sizeof(float));	
   vecr1=(float *)calloc(N,sizeof(float));	
   veci=(float *)calloc(N*N,sizeof(float));
   mu_eg=(float *)calloc(N,sizeof(float));
   mu_xyz=(float *)calloc(N*3,sizeof(float));
-
+  Hamil_i_e=  (float *)calloc(nn2,sizeof(float));
+  Hamil_i_ee= (float *)calloc(nn2,sizeof(float));
+  fr  = calloc(nn2*N, sizeof(float));
+  fi  = calloc(nn2*N, sizeof(float));
+  rho_i = (float *)calloc(N*N,sizeof(float));
+  rho_l=(float *)calloc(N*N,sizeof(float));
 
   /* check projection */   
   if (non->Npsites!=non->singles){
@@ -1148,17 +1157,13 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
       exit(1);
   }
 
-
-  Hamil_i_e=  (float *)calloc(nn2,sizeof(float));
-  Hamil_i_ee= (float *)calloc(nn2,sizeof(float));
-
   /* Open Trajectory files */
   open_files(non,&H_traj,&mu_traj,&Cfile);
   Ncl=0; /* Counter for snapshots calculated*/
   /* Here we walsnt to call the routine for checking the trajectory files*/
   control(non);
   itime =0;
-
+ 
   // Do calculation
   N_samples=(non->length-non->tmax1-1)/non->sample+1;
   if (N_samples>0) {
@@ -1185,7 +1190,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   /* Read coupling, this is done if the coupling and transition-dipoles are */
   /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
-
+  
     /* Loop over samples */
  for (samples=non->begin;samples<non->end;samples++){
       /* Calculate linear response */   
@@ -1219,8 +1224,20 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
         }
         clearvec(rho_i,non->singles*non->singles); 
           //Here we generate the equilibrium density operator
+	/* Read Hamiltonian */
+        if (!strcmp(non->hamiltonian,"Coupling")){
+              if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
+                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+                exit(1);
+              }
+            } else {
+              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
+              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+              exit(1);
+             }
+        }
         eq_den(Hamil_i_e,rho_l,N,non);       
-
+        
         for (a=0;a<N;a++){
           dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
         }
@@ -1234,19 +1251,8 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
         
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
-            /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-            }
-
+	    //printf("tj %d\n",tj);
+          
           for (beta=0;beta<3;beta++){
             /* Read mu(tj) */
             if (!strcmp(non->hamiltonian,"Coupling")){
@@ -1274,8 +1280,10 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
                 dipole_double_inverse_CG2DES(non, mu_eg, fr+a*nn2, fi+a*nn2, vecr+a*N, veci+a*N);
                 //dipole_double_inverse_CG2DES(non, mu_eg, fr+a*nn2, fi+a*nn2, vecr, veci);
             }
+	    
             /* Propagate back to time ti； tj=ti+t1; */
             for (tk=tj;tk>ti;tk--){
+	     // printf("ti tj tk: %d %d %d\n",ti,tj,tk);
               /* Read Hamiltonian */
               /* Read hamiltonian at tk */
               if (!strcmp(non->hamiltonian,"Coupling")){
@@ -1292,16 +1300,13 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
 
               /* Zero coupling in hamiltonian */
               /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
-              if (non->Npsites==non->singles){
                 zero_coupling(Hamil_i_ee,non);
-              } else {
-                printf("Segment number and the projection number are different");
-                exit(1);
-              }              
-              /* Propagate vecr and veci backwards with propagate */
+	      
+              /* Propagate single excited states vecr and veci backwards with propagate */
               /* Propagate dipole moment */
             for (a=0;a<N;a++){
                propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,1,samples,tk*alpha);
+	    //propagate_matrix(non,Hamil_i_ee,vecr,veci,1,samples,tk*alpha);
             }
 
             }
@@ -1317,21 +1322,32 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
               //printf("%d \n", index);
              }
           }  
-
+          
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
-          if (non->Npsites==non->singles){
+	  /* Read Hamiltonian */
+            if (!strcmp(non->hamiltonian,"Coupling")){
+              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
+                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+                exit(1);
+              }
+            } else {
+              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
+              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
+              exit(1);
+             }
+            }
             zero_coupling(Hamil_i_e,non);
-          } else {
-            printf("Segment number and the projection number are different");
-            exit(1);
-          }
+
           /* Propagate dipole moment */
           for (a=0;a<N;a++){
             propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
-          } 
-      }
+          }
+	 
+	 }
+	// exit(0);
     }
   }
+   
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
     fprintf(log,"Finished sample %d\n",samples);        
@@ -1346,16 +1362,15 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   free(mu_xyz);
   free(Hamil_i_e);
   free(Hamil_i_ee);
-  free(mid_ver);
-  //free(vecr);
-  //free(veci);
-  //free(vecr1);
-  //free(fr);
-  //free(fi);
-  //free(rho_i);
-  //free(rho_l);
-  //free(mu_eg);
-
+  //free(mid_ver);
+  free(vecr);
+  free(veci);
+  free(vecr1);
+  free(fr);
+  free(fi);
+  free(rho_i);
+  free(rho_l);
+  free(mu_eg);
 
   /* The calculation is finished, lets write output */
   log=fopen("NISE.log","a");
@@ -1411,6 +1426,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   //exit(1);
   printf("the EA part run successfully \n ");  
 }
+
 //void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB)
 //void CG_2DES_window_SE(t_non *non,float *re_window_SE,float *im_window_SE);
 //void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA);
