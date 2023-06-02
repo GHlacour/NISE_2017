@@ -19,6 +19,7 @@ void mcfret(t_non *non){
     float *re_Abs,*im_Abs;
     float *re_Emi,*im_Emi;
     float *J;
+    float *E;
     float *rate_matrix;
     float *coherence_matrix;
 
@@ -29,6 +30,7 @@ void mcfret(t_non *non){
     re_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
     im_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
     J=(float *)calloc(nn2,sizeof(float));
+    E=(float *)calloc(non->singles,sizeof(float));
 
   /* The rate matrix is determined by the integral over t1 for */
   /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
@@ -83,11 +85,20 @@ void mcfret(t_non *non){
     /* Write the calculated coherence matrix to file */
     write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
 
+/* Call the MCFRET Analyse routine */
+    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
+	 /* Calculate the expectation value of the segment energies */
+	 mcfret_energy(E,non,segments);
+//       mcfret_analyse(non);	    
+    }
+
+
     free(re_Abs);
     free(im_Abs);
     free(re_Emi);
     free(im_Emi);
     free(J);
+    free(E);
     free(rate_matrix);
     free(coherence_matrix);
     return;
@@ -489,6 +500,129 @@ void mcfret_validate(t_non *non);
 /* Analyse rate matrix */
 void mcfret_analyse(t_non *non);
 
+/* Find the energy of each segment */
+void mcfret_energy(float *E,t_non *non,int segments){
+  /* Define variables and arrays */
+   /* Integers */
+    int nn2;
+    int N_samples;
+    int samples;
+    int ti,i,j;
+    int cl,Ncl;
+
+    /* Hamiltonian of the whole system - all donors and acceptors included */
+    float *Hamil_i_e;
+    float *vecr;
+    float *mu_xyz;
+    float shift1;
+
+  /* Time parameters */
+    time_t time_now,time_old,time_0;
+  /* Initialize time */
+    time(&time_now);
+    time(&time_0);
+    shift1=(non->max1+non->min1)/2;
+    printf("Frequency shift %f.\n",shift1);
+    non->shifte=shift1;
+      /* File handles */
+    FILE *H_traj;
+    FILE *C_traj;
+    FILE *mu_traj;
+    /* FILE *absorption_matrix, *emission_matrix,*/
+    FILE *log;
+    FILE *Cfile;
+
+    mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+    Hamil_i_e=(float *)calloc((non->singles+1)*non->singles/2,sizeof(float));
+    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
+
+    /* Open Trajectory files */
+    open_files(non,&H_traj,&mu_traj,&Cfile);
+
+    /* Here we want to call the routine for checking the trajectory files */
+    control(non);
+
+        /* Initialize sample numbers */
+    N_samples=determine_samples(non);
+    Ncl=0;
+
+    /* Read coupling, this is done if the coupling and transition-dipoles are */
+    /* time-independent and only one snapshot is stored */
+    read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
+    samples=1;
+
+    log=fopen("NISE.log","a");
+    fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
+    fclose(log);
+
+
+    /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
+    for (samples=non->begin;samples<non->end;samples++){
+	        ti=samples*non->sample;
+        if (non->cluster!=-1){
+            if (read_cluster(non,ti,&cl,Cfile)!=1){
+                      printf("Cluster trajectory file to short, could not fill buffer!!!\n");
+                      printf("ITIME %d\n",ti);
+                      exit(1);
+            }
+            /* Configuration belong to cluster */ 
+            if (non->cluster==cl){
+                      Ncl++;
+            }
+        }
+        if (non->cluster==-1 || non->cluster==cl){
+            /* Read Hamiltonian */
+            read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+    
+            /* Remove couplings between segments */
+            multi_projection_Hamiltonian(Hamil_i_e,non);	    
+            /* Find density matrix */
+	    density_matrix(vecr,Hamil_i_e,non,segments);
+	    /* H * rho */
+            triangular_on_square(Hamil_i_e,vecr,non->singles); 
+	    /* Add energy contribution for each segment */
+	    /* that is take the trace for each segment */
+	    for (i=0;i<non->singles;i++){
+	        E[non->psites[i]]+=vecr[i*non->singles+i];    
+            }
+        } /* We are closing the cluster loop */
+
+         /* Update NISE log file */
+        log=fopen("NISE.log","a");
+        fprintf(log,"Finished sample %d\n",samples);
+
+        time_now=log_time(time_now,log);
+        fclose(log);
+    }/* Closing the loop over samples */
+
+    /* Divide with total number of samples */
+    for (i=0;i<segments;i++){
+            E[i]=E[i]/samples;
+    }
+    //write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
+
+    /* The calculation is finished, lets write output */
+    log=fopen("NISE.log","a");
+    fprintf(log,"Finished Calculating Response!\n");
+    fprintf(log,"Writing to file!\n");
+    fclose(log);
+
+    if (non->cluster!=-1){
+        printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
+        if (samples==0){ /* Avoid dividing by zero */
+            samples=1;
+        }
+    }
+    fclose(mu_traj),fclose(H_traj);
+    if (non->cluster!=-1){
+        fclose(Cfile);
+    }
+    free(Hamil_i_e);
+    free(mu_xyz);
+    free(vecr);
+    return;
+}
+
 /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
 void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments){
   int index,N;
@@ -680,4 +814,31 @@ void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax
     }
   }
   fclose(file_handle);
+}
+
+/* Multiply a triangular matrix on a square one and return */
+/* The result in the square matrix */
+/* "S=T*S" */
+void triangular_on_square(float *T,float *S,int N){
+   float *inter;
+   int a,c,b;
+   int index;
+   inter=(float *)calloc(N*N,sizeof(float));
+   /* Do matrix multiplication */
+   for (a=0;a<N;a++){
+     for (b=0;b<N;b++){
+       for (c=0;c<N;c++){
+         index=Sindex(a,b,N);
+         inter[a+c*N]+=T[index]*S[b+c*N];	 
+       }       
+     }
+   }
+   /* Copy result back */
+   for (a=0;a<N;a++){
+     for (b=0;b<N;b++){
+       S[a+b*N]=inter[a+b*N];
+     }
+   }
+   free(inter);
+   return;
 }
