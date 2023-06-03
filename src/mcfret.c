@@ -87,9 +87,15 @@ void mcfret(t_non *non){
 
 /* Call the MCFRET Analyse routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
+	 /* If analysis is done as post processing first read the rate matrix */
+	 if ((!strcmp(non->technique, "MCFRET-Analyse"))){
+           read_matrix_from_file("RateMatrix.dat",rate_matrix,segments);
+	 }
+
 	 /* Calculate the expectation value of the segment energies */
 	 mcfret_energy(E,non,segments);
-//       mcfret_analyse(non);	    
+	 /* Analyse the rate matrix */
+         mcfret_analyse(E,rate_matrix,non,segments);	    
     }
 
 
@@ -475,7 +481,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
 	    integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
             rate=2*is13*non->deltat*icm2ifs*icm2ifs*1000;
             rate_matrix[si*segments+sj]=rate;
-            rate_matrix[si*segments+si]-=rate;
+            rate_matrix[sj*segments+sj]-=rate;
 	    /* Calculate the rate of coherence decay */
 	    coherence_matrix[si*segments+sj]=1000*rate_response[0]/is13/non->deltat;
         }
@@ -498,7 +504,29 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
 void mcfret_validate(t_non *non);
 
 /* Analyse rate matrix */
-void mcfret_analyse(t_non *non);
+void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
+  float *qc_rate_matrix;
+  float C;
+  int i,j;
+  float kBT=non->temperature*0.695; /* Kelvin to cm-1 */
+
+  qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+/* Find quantum correction factors */
+  for (i=0;i<segments;i++){
+    for (j=0;j<segments;j++){
+       if (i!=j){
+	  /* Quantum correction factor from D.W. Oxtoby. */
+	  /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/
+	  C=2/(1+exp((E[i]-E[j])/kBT));
+	  qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
+	  qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
+       }
+    }
+  }
+
+  write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+  return;
+}
 
 /* Find the energy of each segment */
 void mcfret_energy(float *E,t_non *non,int segments){

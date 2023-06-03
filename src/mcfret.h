@@ -8,7 +8,7 @@ void mcfret_coupling(float *J,t_non *non);
 void mcfret_energy(float *E,t_non *non,int segments);
 void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs,float *re_Emi,float *im_Emi,float *J,t_non *non);
 void mcfret_validate(t_non *non);
-void mcfret_analyse(t_non *non);
+void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments);
 void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci);
 void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,float *rC,float *iC,int *psites,int segments,int si,int sj,int sk,int N);
 float trace_rate(float *matrix,int N);
