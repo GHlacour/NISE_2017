@@ -508,7 +508,7 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
   float *qc_rate_matrix;
   float C;
   int i,j;
-  float kBT=non->temperature*0.695; /* Kelvin to cm-1 */
+  float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
 
   qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
 /* Find quantum correction factors */
@@ -664,7 +664,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
   cnr=(float *)calloc(N*N,sizeof(float));
 
   int a,b,c;
-  float kBT=non->temperature*0.695; /* Kelvin to cm-1 */
+  float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
   float *Q,iQ;
 
   Q=(float *)calloc(segments,sizeof(float));  
