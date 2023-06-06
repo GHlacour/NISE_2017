@@ -228,7 +228,7 @@ void population(t_non *non){
 
 
       }/*Propagate vector*/
-      propagate_vector(non, Hamil_i_e, vecr, veci, 1, samples, t1);
+      propagate_matrix(non, Hamil_i_e, vecr, veci, 1, samples, t1);
 
      /* for (a=0;a<non->singles;a++){
         
