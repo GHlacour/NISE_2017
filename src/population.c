@@ -152,6 +152,7 @@ void population(t_non *non){
           Pop[t1]+=veci[a+a*non->singles]*veci[a+a*non->singles];
         }           
         for (a=0;a<non->singles;a++){
+          #pragma omp parallel for
           for (b=0;b<non->singles;b++){
             PopF[t1+(non->singles*b+a)*non->tmax]+=vecr[a+b*non->singles]*vecr[a+b*non->singles];
             PopF[t1+(non->singles*b+a)*non->tmax]+=veci[a+b*non->singles]*veci[a+b*non->singles];
@@ -180,6 +181,7 @@ void population(t_non *non){
         }
         /* Loop over final and initial states */
         for (a=0;a<non->singles;a++){
+          
           for (d=0;d<non->singles;d++){
             pr=0;
             pi=0;
@@ -225,9 +227,11 @@ void population(t_non *non){
         }
 
 
-      }
-      for (a=0;a<non->singles;a++){
-        /* Probagate vector */
+      }/*Propagate vector*/
+      propagate_vector(non, Hamil_i_e, vecr, veci, 1, samples, t1);
+
+     /* for (a=0;a<non->singles;a++){
+        
         if (non->thres==0 || non->thres>1){
           propagate_vec_DIA(non,Hamil_i_e,vecr+a*non->singles,veci+a*non->singles,1);
         } else {
@@ -246,7 +250,7 @@ void population(t_non *non){
             }
           }
         }
-      }
+      } */
     }
 
   }
