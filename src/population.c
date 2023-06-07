@@ -150,9 +150,9 @@ void population(t_non *non){
         for (a=0;a<non->singles;a++){
           Pop[t1]+=vecr[a+a*non->singles]*vecr[a+a*non->singles];
           Pop[t1]+=veci[a+a*non->singles]*veci[a+a*non->singles];
-        }           
+        }
+        #pragma omp parallel for	
         for (a=0;a<non->singles;a++){
-          #pragma omp parallel for
           for (b=0;b<non->singles;b++){
             PopF[t1+(non->singles*b+a)*non->tmax]+=vecr[a+b*non->singles]*vecr[a+b*non->singles];
             PopF[t1+(non->singles*b+a)*non->tmax]+=veci[a+b*non->singles]*veci[a+b*non->singles];
@@ -180,6 +180,7 @@ void population(t_non *non){
           Pop[t1]+=pr*pr+pi*pi;
         }
         /* Loop over final and initial states */
+	#pragma omp parallel for
         for (a=0;a<non->singles;a++){
           
           for (d=0;d<non->singles;d++){
@@ -211,6 +212,7 @@ void population(t_non *non){
           Pop[t1]+=pr*pr+pi*pi;
         }
         /* Loop over final and initial states */
+	#pragma omp parallel for
         for (a=0;a<non->singles;a++){
           for (d=0;d<non->singles;d++){
             pr=0;
@@ -227,9 +229,12 @@ void population(t_non *non){
         }
 
 
-      }/*Propagate vector*/
-      propagate_matrix(non, Hamil_i_e, vecr, veci, 1, samples, t1);
-
+      }
+      
+      /*Propagate matrix (but skip propagation after last calculation) */
+      if (t1<non->tmax-1){
+         propagate_matrix(non, Hamil_i_e, vecr, veci, 1, samples, t1);
+      }
      /* for (a=0;a<non->singles;a++){
         
         if (non->thres==0 || non->thres>1){
