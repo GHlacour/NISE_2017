@@ -4,6 +4,7 @@
 #include "lapack.h"
 void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
+
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
 void unitmat(float *a,int N);
@@ -53,6 +54,8 @@ float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x);
 float distance3(float *rf,float *ri,int a,int b,int N,float *box);
 float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x);
 float pbc1(float r, int x, float *box);
+void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N);
+
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing
