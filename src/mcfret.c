@@ -482,7 +482,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
             rate=2*is13*non->deltat*icm2ifs*icm2ifs*1000;
             rate_matrix[si*segments+sj]=rate;
             rate_matrix[sj*segments+sj]-=rate;
-	    /* Calculate the rate of coherence decay */
+	    /* Calculate the rate of coherence decay in ps-1 */
 	    coherence_matrix[si*segments+sj]=1000*rate_response[0]/is13/non->deltat;
         }
 
@@ -779,7 +779,7 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
     }
     if (abs(simple-simp13)/abs(simp13)>0.05){
       printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
-      printf(YELLOW "Simple integral value %f ans Simpson 1/3 %f.\n" RESET,simple,simp13);
+      printf(YELLOW "Simple integral value %f and Simpson 1/3 %f.\n" RESET,simple,simp13);
     }
     /* Store results in variables for return */
     *isimple=simple;
