@@ -677,9 +677,8 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
       }
   }
   /* Find eigenvalues and eigenvectors */
-  if (non->temperature<=100000){ /* Skip in high temperature approx */
-      diagonalizeLPD(H,e,N);
-  }
+  diagonalizeLPD(H,e,N);
+  
  
   /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
