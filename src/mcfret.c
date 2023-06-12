@@ -16,21 +16,21 @@ void mcfret(t_non *non){
     int nn2;
     int segments;
   /* Response functions for emission and absorption: real and imaginary part*/
-    float *re_Abs,*im_Abs;
-    float *re_Emi,*im_Emi;
-    float *J;
-    float *E;
-    float *rate_matrix;
-    float *coherence_matrix;
-
+    double *re_Abs,*im_Abs;
+    double *re_Emi,*im_Emi;
+    double *J;
+    double *E;
+    double *rate_matrix;
+    double *coherence_matrix;
+ 
   /* Allocate memory for the response functions */
     nn2=non->singles*non->singles;
-    re_Abs=(float *)calloc(nn2*non->tmax1,sizeof(float));
-    im_Abs=(float *)calloc(nn2*non->tmax1,sizeof(float));
-    re_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
-    im_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
-    J=(float *)calloc(nn2,sizeof(float));
-    E=(float *)calloc(non->singles,sizeof(float));
+    re_Abs=(double *)calloc(nn2*non->tmax1,sizeof(double));
+    im_Abs=(double *)calloc(nn2*non->tmax1,sizeof(double));
+    re_Emi=(double *)calloc(nn2*non->tmax1,sizeof(double));
+    im_Emi=(double *)calloc(nn2*non->tmax1,sizeof(double));
+    J=(double *)calloc(nn2,sizeof(double));
+    E=(double *)calloc(non->singles,sizeof(double));
 
   /* The rate matrix is determined by the integral over t1 for */
   /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
@@ -40,8 +40,8 @@ void mcfret(t_non *non){
       printf(RED "Too few segments defined for MCFRET calculation!" RESET);
       exit(0);
     }
-    rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-    coherence_matrix=(float *)calloc(segments*segments,sizeof(float));
+    rate_matrix=(double *)calloc(segments*segments,sizeof(double));
+    coherence_matrix=(double *)calloc(segments*segments,sizeof(double));
 
   /* Tell the user that we are in the MCFRET Routine */
      if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
@@ -81,9 +81,9 @@ void mcfret(t_non *non){
     }
 
     /* Write the calculated ratematrix to file */
-    write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
+    write_matrix_to_file_double("RateMatrix.dat",rate_matrix,segments);
     /* Write the calculated coherence matrix to file */
-    write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
+    write_matrix_to_file_double("CoherenceMatrix.dat",coherence_matrix,segments);
 
 /* Call the MCFRET Analyse routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
@@ -111,7 +111,7 @@ void mcfret(t_non *non){
 }
 
 /* Calculate Absorption/Emission matrix (depending on emission variable 0/1) */
-void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission){
+void mcfret_response_function(double *re_S_1,double *im_S_1,t_non *non,int emission){
 /* Define variables and arrays */
    /* Integers */
     int nn2;
@@ -129,7 +129,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     float *vecr, *veci;
     /* Transition dipoles for coupling on the fly */
     float *mu_xyz;
-    float shift1; 
+    double shift1; 
 
     /* Time parameters */
     time_t time_now,time_old,time_0;
@@ -173,7 +173,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     /* time-independent and only one snapshot is stored */
     read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
-    clearvec(re_S_1,non->singles*non->singles*non->tmax1);
+    clearvec_double(re_S_1,non->singles*non->singles*non->tmax1);
     /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
     for (samples=non->begin;samples<non->end;samples++){ 
         ti=samples*non->sample;
@@ -285,7 +285,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
 }
 
 /* Sub routine for adding up the calculated response in the response function */
-void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci){
+void mcfret_response_function_sub(double *re_S_1,double *im_S_1,int t1,t_non *non,float *cr,float *ci){
   int i,k;
   int N,nn2;
   N=non->singles;
@@ -304,7 +304,7 @@ void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,
 }
 
 /* Find the average couplings but only between different segments */
-void mcfret_coupling(float *J,t_non *non){
+void mcfret_coupling(double *J,t_non *non){
   /* Define variables and arrays */
    /* Integers */
     int nn2;
@@ -316,7 +316,7 @@ void mcfret_coupling(float *J,t_non *non){
     /* Hamiltonian of the whole system - all donors and acceptors included */
     float *Hamil_i_e;
     float *mu_xyz;
-    float shift1; 
+    double shift1; 
 
   /* Time parameters */
     time_t time_now,time_old,time_0;
@@ -401,7 +401,7 @@ void mcfret_coupling(float *J,t_non *non){
             J[non->singles*i+j]=J[non->singles*i+j]/samples;
         }
     }
-    write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
+    write_matrix_to_file_double("CouplingMCFRET.dat",J,non->singles);
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
@@ -431,29 +431,29 @@ void mcfret_coupling(float *J,t_non *non){
 void mcfret_autodetect(t_non *non, float treshold);
 
 /* Calculate actual rate matrix */
-void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs,
-    float *re_Emi,float *im_Emi,float *J,t_non *non){
+void mcfret_rate(double *rate_matrix,double *coherence_matrix,int segments,double *re_Abs,double *im_Abs,
+    double *re_Emi,double *im_Emi,double *J,t_non *non){
     int nn2,N;
     int si,sj;
     int i,j,k;
     int *ns; /* Segment dimensions */
     int t1;
-    float *rate_response;
-    float rate;
-    float isimple,is13; /* Variables for integrals */
-    float *re_aux_mat,*im_aux_mat;
-    float *re_aux_mat2,*im_aux_mat2;
-    float *Zeros;
+    double *rate_response;
+    double rate;
+    double isimple,is13; /* Variables for integrals */
+    double *re_aux_mat,*im_aux_mat;
+    double *re_aux_mat2,*im_aux_mat2;
+    double *Zeros;
     FILE *ratefile;
     N=non->singles;
     nn2=non->singles*non->singles;
 
-    rate_response=(float *)calloc(non->tmax,sizeof(float));
-    re_aux_mat=(float *)calloc(nn2,sizeof(float));
-    im_aux_mat=(float *)calloc(nn2,sizeof(float));
-    re_aux_mat2=(float *)calloc(nn2,sizeof(float));
-    im_aux_mat2=(float *)calloc(nn2,sizeof(float));
-    Zeros=(float *)calloc(nn2,sizeof(float));
+    rate_response=(double *)calloc(non->tmax,sizeof(double));
+    re_aux_mat=(double *)calloc(nn2,sizeof(double));
+    im_aux_mat=(double *)calloc(nn2,sizeof(double));
+    re_aux_mat2=(double *)calloc(nn2,sizeof(double));
+    im_aux_mat2=(double *)calloc(nn2,sizeof(double));
+    Zeros=(double *)calloc(nn2,sizeof(double));
   
     ratefile=fopen("RateFile.dat","w");
     /* Do one rate at a time - so first we loop over segments */
@@ -504,13 +504,13 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
 void mcfret_validate(t_non *non);
 
 /* Analyse rate matrix */
-void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
-  float *qc_rate_matrix;
-  float C;
+void mcfret_analyse(double *E,double *rate_matrix,t_non *non,int segments){
+  double *qc_rate_matrix;
+  double C;
   int i,j;
-  float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
+  double kBT=non->temperature*k_B; /* Kelvin to cm-1 */
 
-  qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+  qc_rate_matrix=(double *)calloc(segments*segments,sizeof(double));
 /* Find quantum correction factors */
   for (i=0;i<segments;i++){
     for (j=0;j<segments;j++){
@@ -524,12 +524,12 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
     }
   }
 
-  write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+  write_matrix_to_file_double("QC_RateMatrix.dat",qc_rate_matrix,segments);
   return;
 }
 
 /* Find the energy of each segment */
-void mcfret_energy(float *E,t_non *non,int segments){
+void mcfret_energy(double *E,t_non *non,int segments){
   /* Define variables and arrays */
    /* Integers */
     int nn2;
@@ -542,7 +542,7 @@ void mcfret_energy(float *E,t_non *non,int segments){
     float *Hamil_i_e;
     float *vecr;
     float *mu_xyz;
-    float shift1;
+    double shift1;
 
   /* Time parameters */
     time_t time_now,time_old,time_0;
@@ -724,12 +724,12 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
 }
 
 /* Matrix multiplication for different segments */
-void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
-    float *rC,float *iC,int *psites,int segments,int si,int sk,int sj,int N){
+void segment_matrix_mul(double *rA,double *iA,double *rB,double *iB,
+    double *rC,double *iC,int *psites,int segments,int si,int sk,int sj,int N){
     int i,j,k;
     /* Set initial values of results matrix to zero to be sure */
-    clearvec(rC,N*N);
-    clearvec(iC,N*N);
+    clearvec_double(rC,N*N);
+    clearvec_double(iC,N*N);
     for (i=0;i<N;i++){
         if (psites[i]==si){
             for (j=0;j<N;j++){
@@ -748,9 +748,9 @@ void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
 } 
 
 /* Find the trace of the matrix */
-float trace_rate(float *matrix,int N){
+  double trace_rate(double *matrix,int N){
   int i;
-  float trace;
+  double trace;
   trace=0;
   for (i=0;i<N;i++){
     trace=trace+matrix[N*i+i];
@@ -759,10 +759,10 @@ float trace_rate(float *matrix,int N){
 }
 
 /* Integrate the rate response */
-void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
+void integrate_rate_response(double *rate_response,int T,double *is13,double *isimple){
     int i;
-    float simple; /* Variable for naieve box integral */
-    float simp13; /* Variable for Simpsons 1/3 rule integral */
+    double simple; /* Variable for naieve box integral */
+    double simp13; /* Variable for Simpsons 1/3 rule integral */
     simple=0;
     simp13=0;
     for (i=0;i<T;i++){
@@ -800,8 +800,23 @@ void write_matrix_to_file(char fname[],float *matrix,int N){
   fclose(file_handle);
 }
 
+/* Write a square matrix to a text file */
+void write_matrix_to_file_double(char fname[],double *matrix,int N){
+  FILE *file_handle;
+  int i,j;
+  file_handle=fopen(fname,"w");
+  for (i=0;i<N;i++){
+    for (j=0;j<N;j++){
+      fprintf(file_handle,"%e ",matrix[i*N+j]);
+    }
+    fprintf(file_handle,"\n");
+  }
+  fclose(file_handle);
+}
+
+
 /* Read a square matrix from a text file */
-void read_matrix_from_file(char fname[],float *matrix,int N){
+void read_matrix_from_file(char fname[],double *matrix,int N){
   FILE *file_handle;
   int i,j;
   file_handle=fopen(fname,"r");
@@ -818,11 +833,11 @@ void read_matrix_from_file(char fname[],float *matrix,int N){
 }
 
 /* Read the absorption/emission function from file */
-void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax){
+void read_response_from_file(char fname[],double *re_R,double *im_R,int N,int tmax){
   FILE *file_handle;
   int i,j;
   int t1;
-  float dummy;
+  double dummy;
   file_handle=fopen(fname,"r");
   if (file_handle == NULL) {
         printf("Error opening the file %s.\n",fname);
@@ -849,10 +864,10 @@ void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax
 /* The result in the square matrix */
 /* "S=T*S" */
 void triangular_on_square(float *T,float *S,int N){
-   float *inter;
+   double *inter;
    int a,c,b;
    int index;
-   inter=(float *)calloc(N*N,sizeof(float));
+   inter=(double *)calloc(N*N,sizeof(double));
    /* Do matrix multiplication */
    for (a=0;a<N;a++){
      for (b=0;b<N;b++){
