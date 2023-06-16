@@ -14,6 +14,7 @@ void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,float *rC,float 
 float trace_rate(float *matrix,int N);
 void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple);
 void write_matrix_to_file(char fname[],float *matrix,int N);
+void write_matrix_to_file_float(char fname[],float *matrix,int N);
 void read_matrix_from_file(char fname[],float *matrix,int N);
 void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax);
 void triangular_on_square(float *T,float *S,int N);

@@ -784,7 +784,7 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
           simp13+=4*rate_response[i]/3;
         }
     }
-    if (abs(simple-simp13)/abs(simp13)>0.05){
+    if (fabs(simple-simp13)/fabs(simp13)>0.05){
       printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
       printf(YELLOW "Simple integral value %f and Simpson 1/3 %f.\n" RESET,simple,simp13);
     }

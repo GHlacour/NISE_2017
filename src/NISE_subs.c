@@ -41,6 +41,11 @@ void clearvec(float* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
 }
+// Set all elements of a vector to zero
+void clearvec_double(double* a, int N) {
+    int i;
+    for (i = 0; i < N; i++) a[i] = 0;
+}
 
 // Construct unit matrix
 void unitmat(float *a,int N){
