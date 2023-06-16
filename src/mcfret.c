@@ -559,6 +559,7 @@ void mcfret_energy(float *E,t_non *non,int segments){
     /* FILE *absorption_matrix, *emission_matrix,*/
     FILE *log;
     FILE *Cfile;
+    FILE *Efile;
 
     mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
     Hamil_i_e=(float *)calloc((non->singles+1)*non->singles/2,sizeof(float));
@@ -628,6 +629,12 @@ void mcfret_energy(float *E,t_non *non,int segments){
             E[i]=E[i]/samples;
     }
     //write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
+    Efile=fopen("SegmentEnergies.dat","w");
+    fprintf(Efile,"# Segment number - Average segment energy\n");
+    for (i=0;i<segments;i++){
+       fprintf(Efile,"%d %f\n",i,E[i]+shift1);
+    }
+    fclose(Efile);
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
