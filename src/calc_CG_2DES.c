@@ -27,15 +27,12 @@
  * input as input.
  */
 
-
 void calc_CG_2DES(t_non *non){
     float *re_doorway, *im_doorway; 
     float *re_window_SE, * im_window_SE;
     float *re_window_GB, * im_window_GB;
     float *re_window_EA, * im_window_EA;
     float *re_2DES , *im_2DES;
-
-
     int pro_dim;
     pro_dim=project_dim(non);
     printf("Dimension %d\n",non->tmax*9*pro_dim);
@@ -48,12 +45,7 @@ void calc_CG_2DES(t_non *non){
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));  
     printf("Print %d\n",non->tmax2);
-
-  
-    //re_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
-    //im_2DES = (float *)calloc(non->tmax*non->tmax*non->tmax2,sizeof(float));
     printf("Performing the CG_2DES calculation.\n"); 
-
 
     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway"))) {
         CG_2DES_doorway(non, re_doorway, im_doorway);
@@ -81,15 +73,10 @@ void calc_CG_2DES(t_non *non){
                                   re_window_EA,im_window_EA);
      }
 
-    free(re_doorway);
-    free(im_doorway);
-    free(re_window_SE);
-    free(im_window_SE);
-    free(re_window_GB);
-    free(im_window_GB);
-    free(re_window_EA);
-    free(im_window_EA);  
-
+    free(re_doorway),      free(im_doorway);
+    free(re_window_SE),    free(im_window_SE);
+    free(re_window_GB),    free(im_window_GB);
+    free(re_window_EA),    free(im_window_EA);  
     return;
 }
 
@@ -264,9 +251,6 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
                   exit(1);
                 }
               }
-
-
-
             /* Here calculate doorway function/
             /* Inner product for all sites*/
             /*here we need to make clear the seg_num and the site_num
@@ -348,7 +332,7 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
   fclose(mu_traj),fclose(H_traj);
 
   /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_doorway_im.dat","w");
+  /*outone=fopen("CG_2DES_doorway_im.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -362,9 +346,10 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
     }
   fprintf(outone,"\n"); 
   }
+  */
 
   /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_doorway_re.dat","w");
+  /*outone=fopen("CG_2DES_doorway_re.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -380,9 +365,9 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
   }
 
  fclose(outone);
+ */
  printf("the doorway part run successfully \n ");  
 }
-
 
 
 //void CG_2DES_P_DA(t_non *non,float *P_DA,float* K, float* P0, int N){
@@ -536,13 +521,9 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   /* Allocate memory*/  /*(tmax+1)*9*/
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
-
-
   /* Open Trajectory files */
   open_files(non,&H_traj,&mu_traj,&Cfile);
-
  Ncl=0; /* Counter for snapshots calculated*/
-
   /* Here we walsnt to call the routine for checking the trajectory files*/
   control(non);
   itime =0;
@@ -568,8 +549,6 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   log=fopen("NISE.log","a");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
-
-
   /* Read coupling, this is done if the coupling and transition-dipoles are */
   /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
@@ -622,9 +601,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
               exit(1);
              }
             }
-	  eq_den(Hamil_i_e,rho_l,N,non);
-          /*printf("Hamil_i_e  ");
-          printf("%f \n", Hamil_i_e); */
+	         eq_den(Hamil_i_e,rho_l,N,non);
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
           clearvec(mid_ver,non->singles);
           for (a=0;a<N;a++){
@@ -635,9 +612,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
           // Update dipole operator
           for (a=0;a<N;a++){
             vecr[a]=mid_ver[a];
-          }
-
-
+          } 
           /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
@@ -665,7 +640,6 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
                 exit(1);
               }
             }             
-
 
             /* Here calculate doorway function/
             /* Inner product for all sites*/
@@ -733,7 +707,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   fclose(mu_traj),fclose(H_traj);
 
   /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_windows_SE_im.dat","w");
+  /*outone=fopen("CG_2DES_windows_SE_im.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -747,9 +721,9 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
     }
   fprintf(outone,"\n"); 
   }
-
+*/
   /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_SE_re.dat","w");
+/*  outone=fopen("CG_2DES_windows_SE_re.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -764,6 +738,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   fprintf(outone,"\n"); 
   }
  fclose(outone);
+ */
  printf("the SE part run successfully \n ");  
 }
 
@@ -798,10 +773,8 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   int N;
   N = non->singles;
 
-
   float *rho_l;
   rho_l=(float *)calloc(N*N,sizeof(float));
-
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -858,7 +831,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
-
   /* Read coupling, this is done if the coupling and transition-dipoles are */
   /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
@@ -899,8 +871,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
           //copyvec(vecr,mu_eg,non->singles);
           /* Loop over coherence time */
-
-        
+ 
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
             /* Read Hamiltonian */
@@ -915,18 +886,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
               exit(1);
              }
             }
-          //Here we generate the equilibrium density operator
-          //eq_den(Hamil_i_e,rho_l,N,non);
-          // Multiply the density operator to dipole operator,vecr, as it is only the real number.
-          /*for (a=0;a<N;a++){
-            for (b=0;b<N;b++){
-              mid_ver[a]+=rho_l[a+b*N]*vecr[b];
-            }
-          }
-          // Update dipole operator
-          for (a=0;a<N;a++){
-            vecr[a]=mid_ver[a];
-          } */
           for (beta=0;beta<3;beta++){
             /* Read mu(tj) */
             if (!strcmp(non->hamiltonian,"Coupling")){
@@ -951,11 +910,8 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
               index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
               re_window_GB[index]+=mu_eg[site_num]*vecr[site_num];
               im_window_GB[index]+=mu_eg[site_num]*veci[site_num]; 
-              //printf("re_window_GB "); 
-              //printf("%f \n", re_window_GB); 
              }
           }  
-
           
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
           if (non->Npsites==non->singles){
@@ -965,8 +921,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
             exit(1);
           }
           /* Propagate dipole moment */
-          propagate_vector(non,Hamil_i_e,vecr,veci,-1,samples,t1*alpha);
-          
+          propagate_vector(non,Hamil_i_e,vecr,veci,-1,samples,t1*alpha);  
       }
     }
   }
@@ -976,7 +931,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
     fprintf(log,"Finished sample %d\n",samples);        
     time_now=log_time(time_now,log);
     fclose(log);
-
   }
  
   /* The calculation is finished we can close all auxillary arrays before writing */
@@ -1005,7 +959,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   fclose(mu_traj),fclose(H_traj);
 
   /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_windows_GB_im.dat","w");
+  /*outone=fopen("CG_2DES_windows_GB_im.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -1019,9 +973,9 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
     }
   fprintf(outone,"\n"); 
   }
-
+*s/
   /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_GB_re.dat","w");
+  /*outone=fopen("CG_2DES_windows_GB_re.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -1036,6 +990,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   fprintf(outone,"\n"); 
   }
  fclose(outone);
+ */
  printf("the GB part run successfully \n ");  
 }
 
@@ -1073,9 +1028,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
 // reserve memory for transition dipole from first to second
   float *fr;
   float *fi;
-  //here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
-//  float *mid_ver;
-//  mid_ver = (float *)calloc(N,sizeof(float));
 
   /* projection */
   pro_dim=project_dim(non);
@@ -1138,7 +1090,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
-
   /* Read coupling, this is done if the coupling and transition-dipoles are */
   /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
@@ -1158,9 +1109,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
       if (non->cluster==cl){
         Ncl++;
       }
-    }
-
-    
+    }   
       // Include snapshot if it is in the cluster or if no clusters are defined
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
@@ -1193,8 +1142,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
         for (a=0;a<N;a++){
           dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
         }
-
-
           /* this is for time t1 to generate the vector for the dipole with 0 as the imagine part*/ 
           /*this is just copy the input dipole to the real part of the vector*/
           /*This two step is necessary as the input dipole is real number, but after probagate it becomes complex number */
@@ -1215,8 +1162,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
                 printf("JTIME %d %d\n",tj,beta);
                 exit(1);
               }
-            }
-            //dipole_double_CG2DES(non, mu_eg, vecr, veci, fr, fi);            
+            }        
             /* Here calculate doorway function/
             /* Inner product for all sites*/
             /*here we need to make clear the seg_num and the site_num
@@ -1258,11 +1204,9 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
               /* Propagate dipole moment */
             for (a=0;a<N;a++){
                propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,1,samples,tk*alpha);
-	    //propagate_matrix(non,Hamil_i_ee,vecr,veci,1,samples,tk*alpha);
+	        //propagate_matrix(non,Hamil_i_ee,vecr,veci,1,samples,tk*alpha);
             }
-
-            }
-
+          }
             /* Calculate window function by taking trace of vecr and veci */
             for (site_num=0;site_num<non->singles;site_num++){
               seg_num=non->psites[site_num];
@@ -1270,13 +1214,11 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
               index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
               re_window_EA[index]+=vecr[site_num*N+site_num];
               im_window_EA[index]+=veci[site_num*N+site_num]; 
-              //printf("re_window_EA[index]");
-              //printf("%d \n", index);
              }
           }  
           
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
-	  /* Read Hamiltonian */
+	       /* Read Hamiltonian */
             if (!strcmp(non->hamiltonian,"Coupling")){
               if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
                 printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
@@ -1294,12 +1236,9 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
           for (a=0;a<N;a++){
             propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
           }
-	 
-	 }
-	// exit(0);
-    }
-  }
-   
+	      }
+     }
+   }
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
     fprintf(log,"Finished sample %d\n",samples);        
@@ -1314,7 +1253,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   free(mu_xyz);
   free(Hamil_i_e);
   free(Hamil_i_ee);
-  //free(mid_ver);
   free(vecr);
   free(veci);
   free(vecr1);
@@ -1339,9 +1277,8 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
 
   /* Close Trajectory Files */
   fclose(mu_traj),fclose(H_traj);
-  printf("write EA IM ");
   /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_windows_EA_im.dat","w");
+  /*outone=fopen("CG_2DES_windows_EA_im.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -1358,8 +1295,9 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   }
   printf("write EA RE ");
   fprintf(outone,"\n"); 
+  */
   /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_EA_re.dat","w");
+  /*outone=fopen("CG_2DES_windows_EA_re.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
     fprintf(outone,"%f ",t1*non->deltat);
     for (seg_num=0;seg_num<pro_dim;seg_num++){
@@ -1375,7 +1313,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   }
  fclose(outone);
 
- 
+*/ 
     //printf("this is a test \n"); 
   //exit(1);
   printf("the EA part run successfully \n ");  
@@ -1404,6 +1342,7 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   int t1, t2, t3 ;
   int a,b,c,d,e,f;
   int seg_num_t1, seg_num_t3;
+  int sites;
   FILE *outone,*log, *Rate;
   pro_dim=project_dim(non);
   //P0 =(float *)calloc(pro_dim*pro_dim,sizeof(float));
@@ -1944,15 +1883,16 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
         //a represent GB SE EA 
         for (a=0; a<3; a+=1){
           index = t1+t3*non->tmax1+t2*non->tmax3*non->tmax1;
-          re_2DES_pa_sum[t3][t1]     +=re_2DES_pa[a*index];
-          im_2DES_NR_pa_sum[t3][t1]  +=im_2DES_NR_pa[a*index];
-          im_2DES_R_pa_sum[t3][t1]   +=im_2DES_R_pa[a*index];
-          re_2DES_pe_sum[t3][t1]     +=re_2DES_pe[a*index];
-          im_2DES_NR_pe_sum[t3][t1]  +=im_2DES_NR_pe[a*index];
-          im_2DES_R_pe_sum[t3][t1]   +=im_2DES_R_pe[a*index];
-          re_2DES_cr_sum[t3][t1]     +=re_2DES_cr[a*index];
-          im_2DES_NR_cr_sum[t3][t1]  +=im_2DES_NR_cr[a*index];
-          im_2DES_R_cr_sum[t3][t1]   +=im_2DES_R_cr[a*index];
+          sites = non->tmax3*non->tmax2*non->tmax1;
+          re_2DES_pa_sum[t3][t1]     +=re_2DES_pa[a*sites+index];
+          im_2DES_NR_pa_sum[t3][t1]  +=im_2DES_NR_pa[a*sites+index];
+          im_2DES_R_pa_sum[t3][t1]   +=im_2DES_R_pa[a*sites+index];
+          re_2DES_pe_sum[t3][t1]     +=re_2DES_pe[a*sites+index];
+          im_2DES_NR_pe_sum[t3][t1]  +=im_2DES_NR_pe[a*sites+index];
+          im_2DES_R_pe_sum[t3][t1]   +=im_2DES_R_pe[a*sites+index];
+          re_2DES_cr_sum[t3][t1]     +=re_2DES_cr[a*sites+index];
+          im_2DES_NR_cr_sum[t3][t1]  +=im_2DES_NR_cr[a*sites+index];
+          im_2DES_R_cr_sum[t3][t1]   +=im_2DES_R_cr[a*sites+index];
 
         }
       //}
