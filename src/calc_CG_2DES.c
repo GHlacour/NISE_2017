@@ -1534,7 +1534,7 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     for (a=1;a<4;a+=2){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        int_sna_t1_im_NR[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
+        int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
       }  
@@ -1648,7 +1648,7 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     for (a=2;a<7;a+=4){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        int_sna_t1_im_NR[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
+        int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
       }  
@@ -1767,7 +1767,7 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     for (a=5;a<8;a+=2){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        int_sna_t1_im_NR[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
+        int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
       }  
