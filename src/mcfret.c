@@ -865,7 +865,7 @@ void triangular_on_square(float *T,float *S,int N){
      for (b=0;b<N;b++){
        for (c=0;c<N;c++){
          index=Sindex(a,b,N);
-         inter[a+c*N]+=T[index]*S[b+c*N];	 
+         inter[a+c*N]+=T[index]*S[c+b*N]; // TLC b -> c
        }       
      }
    }
