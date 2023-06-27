@@ -683,6 +683,8 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
   int a,b,c;
   float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
   float *Q,iQ;
+ 
+  clearvec(density_matrix,N*N);
 
   Q=(float *)calloc(segments,sizeof(float));  
   /* Build Hamiltonian */
