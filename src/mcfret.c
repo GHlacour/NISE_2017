@@ -587,7 +587,8 @@ void mcfret_energy(float *E,t_non *non,int segments){
 
     /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
     for (samples=non->begin;samples<non->end;samples++){
-	        ti=samples*non->sample;
+	ti=samples*non->sample;
+	//printf("%d\n",ti);
         if (non->cluster!=-1){
             if (read_cluster(non,ti,&cl,Cfile)!=1){
                       printf("Cluster trajectory file to short, could not fill buffer!!!\n");
@@ -607,18 +608,27 @@ void mcfret_energy(float *E,t_non *non,int segments){
             multi_projection_Hamiltonian(Hamil_i_e,non);	    
             /* Find density matrix */
 	    density_matrix(vecr,Hamil_i_e,non,segments);
+//	    if (samples==0){
+//		    write_matrix_to_file("DensityE.dat",vecr,non->singles);
+//	    }
 	    /* H * rho */
             triangular_on_square(Hamil_i_e,vecr,non->singles); 
+//	    if (samples==0){
+//	         write_matrix_to_file("EDensity.dat",vecr,non->singles);
+//	    }
 	    /* Add energy contribution for each segment */
 	    /* that is take the trace for each segment */
 	    for (i=0;i<non->singles;i++){
 	        E[non->psites[i]]+=vecr[i*non->singles+i];    
             }
+	    
+//	    printf("Debug %d %d %f %f %f %f\n",samples,ti,vecr[0*non->singles+0],vecr[1*non->singles+1],Hamil_i_e[0]/2,Hamil_i_e[7]/2);
+	    clearvec(vecr,non->singles*non->singles);
         } /* We are closing the cluster loop */
 
          /* Update NISE log file */
         log=fopen("NISE.log","a");
-        fprintf(log,"Finished sample %d\n",samples);
+        fprintf(log,"SE Finished sample %d\n",samples);
 
         time_now=log_time(time_now,log);
         fclose(log);
@@ -626,11 +636,11 @@ void mcfret_energy(float *E,t_non *non,int segments){
 
     /* Divide with total number of samples */
     for (i=0;i<segments;i++){
-            E[i]=E[i]/samples;
+            E[i]=E[i]/N_samples;
     }
     //write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
     Efile=fopen("SegmentEnergies.dat","w");
-    fprintf(Efile,"# Segment number - Average segment energy\n");
+    fprintf(Efile,"# Segment number - Average segment energy - %d\n",N_samples);
     for (i=0;i<segments;i++){
        fprintf(Efile,"%d %f\n",i,E[i]+shift1);
     }
@@ -865,7 +875,7 @@ void triangular_on_square(float *T,float *S,int N){
      for (b=0;b<N;b++){
        for (c=0;c<N;c++){
          index=Sindex(a,b,N);
-         inter[a+c*N]+=T[index]*S[c+b*N]; // TLC b -> c
+         inter[a+c*N]+=T[index]*S[b+c*N]; // TLC b -> c
        }       
      }
    }
