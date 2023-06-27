@@ -286,14 +286,19 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
 }
 
 void pe_pa_cr(int t1, int t2, int t3, float polWeight, 
-float up_ver3_SE_re, float up_ver3_GB_re, float up_ver3_EA_re,
+float up_ver3_SE_re_NR, float up_ver3_SE_re_R, float up_ver3_GB_re_NR, float up_ver3_GB_re_R,
+ float up_ver3_EA_re_NR, float up_ver3_EA_re_R,
 float up_ver3_SE_im_NR , float up_ver3_GB_im_NR,   float up_ver3_EA_im_NR,   
-float up_ver3_SE_im_R, float up_ver3_GB_im_R, float up_ver3_EA_im_R,
-float *re_2DES_pe, float *im_2DES_NR_pe,  float *im_2DES_R_pe,  t_non *non){
+float up_ver3_SE_im_R,   float up_ver3_GB_im_R,    float up_ver3_EA_im_R,
+float *re_2DES_NR_pe,float *re_2DES_R_pe, float *im_2DES_NR_pe,  float *im_2DES_R_pe,  t_non *non){
 
-re_2DES_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_re*polWeight;
-re_2DES_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_re*polWeight;
-re_2DES_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_re*polWeight;
+
+re_2DES_NR_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_re_NR*polWeight;
+re_2DES_NR_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_re_NR*polWeight;
+re_2DES_NR_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_re_NR*polWeight;
+re_2DES_R_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_re_R*polWeight;
+re_2DES_R_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_re_R*polWeight;
+re_2DES_R_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_re_R*polWeight;
 im_2DES_NR_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_im_NR*polWeight;
 im_2DES_NR_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_im_NR*polWeight;
 im_2DES_NR_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_im_NR*polWeight;

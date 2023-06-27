@@ -1335,9 +1335,15 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   float up_ver3_SE_re, up_ver3_SE_im_NR,up_ver3_SE_im_R;
   float up_ver3_GB_re, up_ver3_GB_im_NR,up_ver3_GB_im_R;
   float up_ver3_EA_re, up_ver3_EA_im_NR,up_ver3_EA_im_R;
-  float *re_2DES_pa, *im_2DES_NR_pa, *im_2DES_R_pa;
-  float *re_2DES_pe, *im_2DES_NR_pe, *im_2DES_R_pe;
-  float *re_2DES_cr, *im_2DES_NR_cr, *im_2DES_R_cr;
+  float *re_2DES_NR_pa,*re_2DES_R_pa, *im_2DES_NR_pa, *im_2DES_R_pa;
+  float *re_2DES_NR_pe,*re_2DES_R_pe,*im_2DES_NR_pe, *im_2DES_R_pe;
+  float *re_2DES_NR_cr,*re_2DES_R_cr, *im_2DES_NR_cr, *im_2DES_R_cr;
+  float SE_NR_re, SE_R_re,SE_NR_im,SE_R_im;
+  float GB_NR_re, GB_R_re,GB_NR_im,GB_R_im;
+  float EA_NR_re, EA_R_re,EA_NR_im,EA_R_im;
+  float up_ver3_SE_im_NR1, up_ver3_SE_im_NR2,up_ver3_SE_im_R1,up_ver3_SE_im_R2;
+  float up_ver3_GB_im_NR1, up_ver3_GB_im_NR2,up_ver3_GB_im_R1,up_ver3_GB_im_R2;
+  float up_ver3_EA_im_NR1, up_ver3_EA_im_NR2,up_ver3_EA_im_R1,up_ver3_EA_im_R2;
   int pro_dim;
   int t1, t2, t3 ;
   int a,b,c,d,e,f;
@@ -1363,31 +1369,37 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   up_ver2_im_NR = (float *)calloc(pro_dim,sizeof(float));
   up_ver2_im_R = (float *)calloc(pro_dim,sizeof(float));
 
-  re_2DES_pa = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_NR_pa = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_R_pa = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_NR_pa = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_R_pa = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
-  re_2DES_pe = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_NR_pe = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_R_pe = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_NR_pe = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_R_pe = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
-  re_2DES_cr = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_NR_cr = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
+  re_2DES_R_cr = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_NR_cr = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   im_2DES_R_cr = (float *)calloc(3*non->tmax1*non->tmax3*non->tmax2,sizeof(float));
   int index;
   int sampleCount;
   sampleCount = 1; // which numbe should I set this number 
-  float **re_2DES_pa_sum, **im_2DES_NR_pa_sum, **im_2DES_R_pa_sum;
-  float **re_2DES_pe_sum, **im_2DES_NR_pe_sum, **im_2DES_R_pe_sum;
-   float **re_2DES_cr_sum, **im_2DES_NR_cr_sum, **im_2DES_R_cr_sum;
+  float **re_2DES_NR_pa_sum,  **re_2DES_R_pa_sum, **im_2DES_NR_pa_sum, **im_2DES_R_pa_sum;
+  float **re_2DES_NR_pe_sum,  **re_2DES_R_pe_sum, **im_2DES_NR_pe_sum, **im_2DES_R_pe_sum;
+  float **re_2DES_NR_cr_sum,  **re_2DES_R_cr_sum, **im_2DES_NR_cr_sum, **im_2DES_R_cr_sum;
 
-  re_2DES_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_NR_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_R_pa_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
   im_2DES_NR_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-  im_2DES_R_pa_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-  re_2DES_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_pa_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_NR_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_R_pe_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
   im_2DES_NR_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-  im_2DES_R_pe_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-  re_2DES_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_pe_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_NR_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  re_2DES_R_cr_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));  
   im_2DES_NR_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
-  im_2DES_R_cr_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
+  im_2DES_R_cr_sum =  (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
 
   int molpol, px[4]; 
   polar(px,molpol);
@@ -1412,18 +1424,17 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   /*This part is calculate xxyy,yyxx,zzxx , and xxxx yyyy zzzz which in total 9*/
   /*for (t1=0;t1<non->tmax;t1++)*/
 
-
-
   for (t1=0; t1<non->tmax1; t1+=1){
     //printf("%d" ,  t1);
     for (a=0;a<9;a+=4){
-      for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
+      for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){            
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
-
+        //int_sna_t1_im_R[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
+ 
       }  
+
       for (t2=0; t2<non->tmax2; t2+=1){
             for (int a=0;a<pro_dim;a++){
                 for (int b=0;b<pro_dim;b++){
@@ -1450,18 +1461,16 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
             up_ver2_re[c]=up_ver1_re;
             up_ver2_im_NR[c]=up_ver1_im_NR;
             up_ver2_im_R[c]=up_ver1_im_R;
-          }  
+            }  
 
           for (t3=0; t3<non->tmax1; t3+=1){
-              up_ver3_SE_re=0;
-              up_ver3_SE_im_NR=0;
-              up_ver3_SE_im_R=0;
-              up_ver3_GB_re=0;
-              up_ver3_GB_im_NR=0;
-              up_ver3_GB_im_R=0;
-              up_ver3_EA_re=0;
-              up_ver3_EA_im_NR=0;
-              up_ver3_EA_im_R=0;  
+              up_ver3_SE_re=0,up_ver3_SE_im_NR=0,up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0,up_ver3_GB_im_NR=0,up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0,up_ver3_EA_im_NR=0,up_ver3_EA_im_R=0;
+              up_ver3_SE_im_NR1 =0,up_ver3_SE_im_NR2 =0,up_ver3_SE_im_R1 =0,up_ver3_SE_im_R2=0;
+              up_ver3_GB_im_NR1 =0,up_ver3_GB_im_NR2 =0,up_ver3_GB_im_R1 =0,up_ver3_GB_im_R2=0;
+              up_ver3_EA_im_NR1 =0,up_ver3_EA_im_NR2 =0,up_ver3_EA_im_R1 =0,up_ver3_EA_im_R2=0;
+
               for (b=0;b<9;b+=4){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
@@ -1469,58 +1478,89 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                     int_sna_t3_GB_re[seg_num_t3] = re_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_im[seg_num_t3] = im_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
-                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];     
+                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3]; 
+   
                   }
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
-                  up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
-                  up_ver3_SE_im_NR += up_ver2_im_NR[f]*int_sna_t3_SE_im[f];
-                  up_ver3_SE_im_R += up_ver2_im_R[f]*int_sna_t3_SE_im[f];
+                  up_ver3_SE_re     += up_ver2_re[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_NR  += up_ver2_im_NR[f]*int_sna_t3_SE_im[f];
+                  up_ver3_SE_im_R   += up_ver2_im_R[f]* int_sna_t3_SE_im[f];
+                  up_ver3_SE_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_NR2 += up_ver2_re[f]*   int_sna_t3_SE_im[f];                  
+                  up_ver3_SE_im_R1  += up_ver2_im_R[f]* int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_R2  += up_ver2_re[f]*   int_sna_t3_SE_im[f];
+
                   up_ver3_GB_re += up_ver2_re[f]*int_sna_t3_GB_re[f];
                   up_ver3_GB_im_NR += up_ver2_im_NR[f]*int_sna_t3_GB_im[f];
                   up_ver3_GB_im_R += up_ver2_im_R[f]*int_sna_t3_GB_im[f];
+                  up_ver3_GB_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_NR2 += up_ver2_re[f]*int_sna_t3_GB_im[f];                  
+                  up_ver3_GB_im_R1 += up_ver2_im_R[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_R2 += up_ver2_re[f]*int_sna_t3_GB_im[f];
+
                   up_ver3_EA_re += up_ver2_re[f]*int_sna_t3_EA_re[f];
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
-                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];   
+                  up_ver3_EA_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_NR2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R1 += up_ver2_im_R[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_R2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+
                 }
+          SE_NR_re = up_ver3_SE_re-up_ver3_SE_im_NR;
+          SE_R_re  = up_ver3_SE_re-up_ver3_SE_im_R; 
+          SE_NR_im = up_ver3_SE_im_NR1+up_ver3_SE_im_NR2;
+          SE_R_im  = up_ver3_SE_im_R1+up_ver3_SE_im_R2;
+
+          GB_NR_re = up_ver3_GB_re-up_ver3_GB_im_NR;
+          GB_R_re  = up_ver3_GB_re-up_ver3_GB_im_R;
+          GB_NR_im = up_ver3_GB_im_NR1+up_ver3_GB_im_NR2;
+          GB_R_im  = up_ver3_GB_im_R1+up_ver3_GB_im_R2;
+
+          EA_NR_re = up_ver3_EA_re-up_ver3_EA_im_NR;
+          EA_R_re  = up_ver3_EA_re-up_ver3_EA_im_R;
+          EA_NR_im = up_ver3_EA_im_NR1+up_ver3_EA_im_NR2;
+          EA_R_im  = up_ver3_EA_im_R1+up_ver3_EA_im_R2;
+
           if (a==b){
             /* Parallel polarization:*/
             float polWeight = polarweight(0, 0);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 0);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 0);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
           } else{
            /* Parallel polarization:*/
             float polWeight = polarweight(0, 3);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 1);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 3);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
             }
            }
         }
@@ -1528,15 +1568,15 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     }
   }
 
-
   /*This part calculate the xyxy,yxyx and yxxy,xyyx*/
   for (t1=0; t1<non->tmax1; t1+=1){
     for (a=1;a<4;a+=2){
-      for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
+      for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){    
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
         int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
+        //int_sna_t1_im_R[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
+
       }  
       for (t2=0; t2<non->tmax2; t2+=1){
             for (int a=0;a<pro_dim;a++){
@@ -1565,79 +1605,110 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
             up_ver2_im_NR[c]=up_ver1_im_NR;
             up_ver2_im_R[c]=up_ver1_im_R;
           }  
+
+
           for (t3=0; t3<non->tmax1; t3+=1){
-              up_ver3_SE_re=0;
-              up_ver3_SE_im_NR=0;
-              up_ver3_SE_im_R=0;
-              up_ver3_GB_re=0;
-              up_ver3_GB_im_NR=0;
-              up_ver3_GB_im_R=0;
-              up_ver3_EA_re=0;
-              up_ver3_EA_im_NR=0;
-              up_ver3_EA_im_R=0;  
-              for (b=1;b<4;b+=2){
+              up_ver3_SE_re=0,up_ver3_SE_im_NR=0,up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0,up_ver3_GB_im_NR=0,up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0,up_ver3_EA_im_NR=0,up_ver3_EA_im_R=0;
+              up_ver3_SE_im_NR1 =0,up_ver3_SE_im_NR2 =0,up_ver3_SE_im_R1 =0,up_ver3_SE_im_R2=0;
+              up_ver3_GB_im_NR1 =0,up_ver3_GB_im_NR2 =0,up_ver3_GB_im_R1 =0,up_ver3_GB_im_R2=0;
+              up_ver3_EA_im_NR1 =0,up_ver3_EA_im_NR2 =0,up_ver3_EA_im_R1 =0,up_ver3_EA_im_R2=0;
+
+              for (b=0;b<9;b+=4){
                   for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_SE_im[seg_num_t3] = im_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_re[seg_num_t3] = re_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_im[seg_num_t3] = im_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
-                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
+                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];     
+
                   }
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
                   up_ver3_SE_im_NR += up_ver2_im_NR[f]*int_sna_t3_SE_im[f];
                   up_ver3_SE_im_R += up_ver2_im_R[f]*int_sna_t3_SE_im[f];
+                  up_ver3_SE_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_NR2 += up_ver2_re[f]*int_sna_t3_SE_im[f];                  
+                  up_ver3_SE_im_R1 += up_ver2_im_R[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_R2 += up_ver2_re[f]*int_sna_t3_SE_im[f];
+
                   up_ver3_GB_re += up_ver2_re[f]*int_sna_t3_GB_re[f];
                   up_ver3_GB_im_NR += up_ver2_im_NR[f]*int_sna_t3_GB_im[f];
                   up_ver3_GB_im_R += up_ver2_im_R[f]*int_sna_t3_GB_im[f];
+                  up_ver3_GB_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_NR2 += up_ver2_re[f]*int_sna_t3_GB_im[f];                  
+                  up_ver3_GB_im_R1 += up_ver2_im_R[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_R2 += up_ver2_re[f]*int_sna_t3_GB_im[f];
+
                   up_ver3_EA_re += up_ver2_re[f]*int_sna_t3_EA_re[f];
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
-                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];   
+                  up_ver3_EA_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_NR2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R1 += up_ver2_im_R[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_R2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+
                 }
+          SE_NR_re = up_ver3_SE_re-up_ver3_SE_im_NR;
+          SE_R_re = up_ver3_SE_re-up_ver3_SE_im_R; 
+          SE_NR_im =  up_ver3_SE_im_NR1+up_ver3_SE_im_NR2;
+          SE_R_im =   up_ver3_SE_im_R1+up_ver3_SE_im_R2;
+
+          GB_NR_re = up_ver3_GB_re-up_ver3_GB_im_NR;
+          GB_R_re  = up_ver3_GB_re-up_ver3_GB_im_R;
+          GB_NR_im = up_ver3_GB_im_NR1+up_ver3_GB_im_NR2;
+          GB_R_im  = up_ver3_GB_im_R1+up_ver3_GB_im_R2;
+
+          EA_NR_re = up_ver3_EA_re-up_ver3_EA_im_NR;
+          EA_R_re  = up_ver3_EA_re-up_ver3_EA_im_R;
+          EA_NR_im = up_ver3_EA_im_NR1+up_ver3_EA_im_NR2;
+          EA_R_im  = up_ver3_EA_im_R1+up_ver3_EA_im_R2;
+
           if (a==b ){
             /*Here only for xyxy*/
             /* Parallel polarization:*/
            float polWeight = polarweight(0, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
           } else{
             /*Here only for xyyx*/
            /* Parallel polarization:*/
            float polWeight = polarweight(0, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
             }
-           }
+          }
         }
       }
     }
@@ -1649,8 +1720,9 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
         int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
         int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
-        int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
+        int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
+        //int_sna_t1_im_R[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
+
       }  
       for (t2=0; t2<non->tmax2; t2+=1){
             for (int a=0;a<pro_dim;a++){
@@ -1679,59 +1751,87 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
             up_ver2_im_NR[c]=up_ver1_im_NR;
             up_ver2_im_R[c]=up_ver1_im_R;
           }  
+
           for (t3=0; t3<non->tmax1; t3+=1){
-              up_ver3_SE_re=0;
-              up_ver3_SE_im_NR=0;
-              up_ver3_SE_im_R=0;
-              up_ver3_GB_re=0;
-              up_ver3_GB_im_NR=0;
-              up_ver3_GB_im_R=0;
-              up_ver3_EA_re=0;
-              up_ver3_EA_im_NR=0;
-              up_ver3_EA_im_R=0;  
-              for (b=2;b<7;b+=4){
-                  for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
+              up_ver3_SE_re=0,up_ver3_SE_im_NR=0,up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0,up_ver3_GB_im_NR=0,up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0,up_ver3_EA_im_NR=0,up_ver3_EA_im_R=0;
+              up_ver3_SE_im_NR1 =0,up_ver3_SE_im_NR2 =0,up_ver3_SE_im_R1 =0,up_ver3_SE_im_R2=0;
+              up_ver3_GB_im_NR1 =0,up_ver3_GB_im_NR2 =0,up_ver3_GB_im_R1 =0,up_ver3_GB_im_R2=0;
+              up_ver3_EA_im_NR1 =0,up_ver3_EA_im_NR2 =0,up_ver3_EA_im_R1 =0,up_ver3_EA_im_R2=0;
+
+              for (b=0;b<9;b+=4){
+                  for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){                
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_SE_im[seg_num_t3] = im_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_re[seg_num_t3] = re_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_im[seg_num_t3] = im_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
-                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
+                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3]; 
+                    
                   }
-  
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
                   up_ver3_SE_im_NR += up_ver2_im_NR[f]*int_sna_t3_SE_im[f];
                   up_ver3_SE_im_R += up_ver2_im_R[f]*int_sna_t3_SE_im[f];
+                  up_ver3_SE_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_NR2 += up_ver2_re[f]*int_sna_t3_SE_im[f];                  
+                  up_ver3_SE_im_R1 += up_ver2_im_R[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_R2 += up_ver2_re[f]*int_sna_t3_SE_im[f];
+
                   up_ver3_GB_re += up_ver2_re[f]*int_sna_t3_GB_re[f];
                   up_ver3_GB_im_NR += up_ver2_im_NR[f]*int_sna_t3_GB_im[f];
                   up_ver3_GB_im_R += up_ver2_im_R[f]*int_sna_t3_GB_im[f];
+                  up_ver3_GB_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_NR2 += up_ver2_re[f]*int_sna_t3_GB_im[f];                  
+                  up_ver3_GB_im_R1 += up_ver2_im_R[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_R2 += up_ver2_re[f]*int_sna_t3_GB_im[f];
+
                   up_ver3_EA_re += up_ver2_re[f]*int_sna_t3_EA_re[f];
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
-                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];   
+                  up_ver3_EA_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_NR2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R1 += up_ver2_im_R[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_R2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+
                 }
+          SE_NR_re = up_ver3_SE_re-up_ver3_SE_im_NR;
+          SE_R_re = up_ver3_SE_re-up_ver3_SE_im_R; 
+          SE_NR_im =  up_ver3_SE_im_NR1+up_ver3_SE_im_NR2;
+          SE_R_im =   up_ver3_SE_im_R1+up_ver3_SE_im_R2;
+
+          GB_NR_re = up_ver3_GB_re-up_ver3_GB_im_NR;
+          GB_R_re  = up_ver3_GB_re-up_ver3_GB_im_R;
+          GB_NR_im = up_ver3_GB_im_NR1+up_ver3_GB_im_NR2;
+          GB_R_im  = up_ver3_GB_im_R1+up_ver3_GB_im_R2;
+
+          EA_NR_re = up_ver3_EA_re-up_ver3_EA_im_NR;
+          EA_R_re  = up_ver3_EA_re-up_ver3_EA_im_R;
+          EA_NR_im = up_ver3_EA_im_NR1+up_ver3_EA_im_NR2;
+          EA_R_im  = up_ver3_EA_im_R1+up_ver3_EA_im_R2;
           if (a==b ){
             /*Here only for xzxz and zxzx*/
             /* Parallel polarization:*/
            float polWeight = polarweight(0, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
 
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
 
           } else{
             /*Here only for zxxz xzzx*/
@@ -1739,22 +1839,22 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
 
 
          float polWeight = polarweight(0, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);
             }
            }
         }
@@ -1766,10 +1866,11 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   for (t1=0; t1<non->tmax1; t1+=1){
     for (a=5;a<8;a+=2){
       for (seg_num_t1=0;seg_num_t1<pro_dim;seg_num_t1++){
-        int_sna_t1_re[seg_num_t1] = re_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];
-        //int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
-        int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1];  
+        int_sna_t1_re[seg_num_t1]    =  re_doorway[ seg_num_t1*9*non->tmax1+a*non->tmax1+t1];
+        int_sna_t1_im_NR[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax1+a*non->tmax1+t1];
+        int_sna_t1_im_R[seg_num_t1] = -1*im_doorway[ seg_num_t1*9*non->tmax+a*non->tmax+t1]; 
+        //int_sna_t1_im_R[seg_num_t1] = im_doorway[ seg_num_t1*9*non->tmax1+a*non->tmax1+t1];  
+
       }  
       for (t2=0; t2<non->tmax2; t2+=1){
             for (int a=0;a<pro_dim;a++){
@@ -1797,86 +1898,120 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
             up_ver2_im_NR[c]=up_ver1_im_NR;
             up_ver2_im_R[c]=up_ver1_im_R;
           }  
+
           for (t3=0; t3<non->tmax1; t3+=1){
-              up_ver3_SE_re=0;
-              up_ver3_SE_im_NR=0;
-              up_ver3_SE_im_R=0;
-              up_ver3_GB_re=0;
-              up_ver3_GB_im_NR=0;
-              up_ver3_GB_im_R=0;
-              up_ver3_EA_re=0;
-              up_ver3_EA_im_NR=0;
-              up_ver3_EA_im_R=0;  
-              for (b=5;b<8;b+=2){
-                  for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){
+              up_ver3_SE_re=0,up_ver3_SE_im_NR=0,up_ver3_SE_im_R=0;
+              up_ver3_GB_re=0,up_ver3_GB_im_NR=0,up_ver3_GB_im_R=0;
+              up_ver3_EA_re=0,up_ver3_EA_im_NR=0,up_ver3_EA_im_R=0;
+              up_ver3_SE_im_NR1 =0,up_ver3_SE_im_NR2 =0,up_ver3_SE_im_R1 =0,up_ver3_SE_im_R2=0;
+              up_ver3_GB_im_NR1 =0,up_ver3_GB_im_NR2 =0,up_ver3_GB_im_R1 =0,up_ver3_GB_im_R2=0;
+              up_ver3_EA_im_NR1 =0,up_ver3_EA_im_NR2 =0,up_ver3_EA_im_R1 =0,up_ver3_EA_im_R2=0;
+
+              for (b=0;b<9;b+=4){
+                  for (seg_num_t3=0;seg_num_t3<pro_dim;seg_num_t3++){                  
                     int_sna_t3_SE_re[seg_num_t3] = re_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_SE_im[seg_num_t3] = im_window_SE[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_re[seg_num_t3] = re_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_GB_im[seg_num_t3] = im_window_GB[seg_num_t3*9*non->tmax+b*non->tmax+t3];
                     int_sna_t3_EA_re[seg_num_t3] = re_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
-                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];                    
+                    int_sna_t3_EA_im[seg_num_t3] = im_window_EA[seg_num_t3*9*non->tmax+b*non->tmax+t3];
+               
                   }
-  
               /*second calculate the part2: dimention: 1*N* N*1 */    
                 for  (f=0;f<pro_dim;f++){
                   up_ver3_SE_re += up_ver2_re[f]*int_sna_t3_SE_re[f];
                   up_ver3_SE_im_NR += up_ver2_im_NR[f]*int_sna_t3_SE_im[f];
                   up_ver3_SE_im_R += up_ver2_im_R[f]*int_sna_t3_SE_im[f];
+                  up_ver3_SE_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_NR2 += up_ver2_re[f]*int_sna_t3_SE_im[f];                  
+                  up_ver3_SE_im_R1 += up_ver2_im_R[f]*int_sna_t3_SE_re[f];
+                  up_ver3_SE_im_R2 += up_ver2_re[f]*int_sna_t3_SE_im[f];
+
                   up_ver3_GB_re += up_ver2_re[f]*int_sna_t3_GB_re[f];
                   up_ver3_GB_im_NR += up_ver2_im_NR[f]*int_sna_t3_GB_im[f];
                   up_ver3_GB_im_R += up_ver2_im_R[f]*int_sna_t3_GB_im[f];
+                  up_ver3_GB_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_NR2 += up_ver2_re[f]*int_sna_t3_GB_im[f];                  
+                  up_ver3_GB_im_R1 += up_ver2_im_R[f]*int_sna_t3_GB_re[f];
+                  up_ver3_GB_im_R2 += up_ver2_re[f]*int_sna_t3_GB_im[f];
+
                   up_ver3_EA_re += up_ver2_re[f]*int_sna_t3_EA_re[f];
                   up_ver3_EA_im_NR += up_ver2_im_NR[f]*int_sna_t3_EA_im[f];
-                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R += up_ver2_im_R[f]*int_sna_t3_EA_im[f];   
+                  up_ver3_EA_im_NR1 += up_ver2_im_NR[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_NR2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+                  up_ver3_EA_im_R1 += up_ver2_im_R[f]*int_sna_t3_EA_re[f];
+                  up_ver3_EA_im_R2 += up_ver2_re[f]*int_sna_t3_EA_im[f];                  
+
                 }
+          SE_NR_re = up_ver3_SE_re-up_ver3_SE_im_NR;
+          SE_R_re = up_ver3_SE_re-up_ver3_SE_im_R; 
+          SE_NR_im =  up_ver3_SE_im_NR1+up_ver3_SE_im_NR2;
+          SE_R_im =   up_ver3_SE_im_R1+up_ver3_SE_im_R2;
+
+          GB_NR_re = up_ver3_GB_re-up_ver3_GB_im_NR;
+          GB_R_re  = up_ver3_GB_re-up_ver3_GB_im_R;
+          GB_NR_im = up_ver3_GB_im_NR1+up_ver3_GB_im_NR2;
+          GB_R_im  = up_ver3_GB_im_R1+up_ver3_GB_im_R2;
+
+          EA_NR_re = up_ver3_EA_re-up_ver3_EA_im_NR;
+          EA_R_re  = up_ver3_EA_re-up_ver3_EA_im_R;
+          EA_NR_im = up_ver3_EA_im_NR1+up_ver3_EA_im_NR2;
+          EA_R_im  = up_ver3_EA_im_R1+up_ver3_EA_im_R2;
+
           if (a==b ){
             /*Here only for yzyz zyzy*/
             /* Parallel polarization:*/
+
         float polWeight = polarweight(0, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
             /*Cross polarization*/
             polWeight = polarweight(2, 9);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);            
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);           
           } else{
             /*Here only for zyyz yzzy*/
            /* Parallel polarization:*/
 
          float polWeight = polarweight(0, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pa,  im_2DES_NR_pa,   im_2DES_R_pa, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pa, re_2DES_R_pa, im_2DES_NR_pa, im_2DES_R_pa, non);
             /*Perpendicular polarization*/
             polWeight = polarweight(1, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_pe,  im_2DES_NR_pe,   im_2DES_R_pe, non);
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_pe, re_2DES_R_pe, im_2DES_NR_pe, im_2DES_R_pe, non);
            
             /*Cross polarization*/
             polWeight = polarweight(2, 15);
-            pe_pa_cr(t1, t2,  t3,  polWeight, up_ver3_SE_re,  up_ver3_GB_re,  up_ver3_EA_re,
-                      up_ver3_SE_im_NR ,  up_ver3_GB_im_NR,    up_ver3_EA_im_NR,   
-                      up_ver3_SE_im_R,  up_ver3_GB_im_R, up_ver3_EA_im_R,
-                      re_2DES_cr,  im_2DES_NR_cr,   im_2DES_R_cr, non);            
+            pe_pa_cr(t1, t2,  t3, polWeight, SE_NR_re, SE_R_re, GB_NR_re,GB_R_re, EA_NR_re, EA_R_re,
+                      SE_NR_im, GB_NR_im, EA_NR_im,   
+                      SE_R_im, GB_R_im, EA_R_im,
+                      re_2DES_NR_cr, re_2DES_R_cr, im_2DES_NR_cr, im_2DES_R_cr, non);          
              }
            }
         }
       }
     }
   }
+
+
+
+
 
   for (t1=0; t1<non->tmax1; t1+=1){
     //for (t2=0; t2<non->tmax2; t2+=1){
@@ -1887,55 +2022,79 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
         //for (a=2; a<3; a+=1){
           index = t1+t3*non->tmax1+t2*non->tmax3*non->tmax1;
           sites = non->tmax3*non->tmax2*non->tmax1;
-          re_2DES_pa_sum[t3][t1]     +=re_2DES_pa[a*sites+index];
-          im_2DES_NR_pa_sum[t3][t1]  +=im_2DES_NR_pa[a*sites+index];
-          im_2DES_R_pa_sum[t3][t1]   +=im_2DES_R_pa[a*sites+index];
-          re_2DES_pe_sum[t3][t1]     +=re_2DES_pe[a*sites+index];
-          im_2DES_NR_pe_sum[t3][t1]  +=im_2DES_NR_pe[a*sites+index];
-          im_2DES_R_pe_sum[t3][t1]   +=im_2DES_R_pe[a*sites+index];
-          re_2DES_cr_sum[t3][t1]     +=re_2DES_cr[a*sites+index];
-          im_2DES_NR_cr_sum[t3][t1]  +=im_2DES_NR_cr[a*sites+index];
-          im_2DES_R_cr_sum[t3][t1]   +=im_2DES_R_cr[a*sites+index];
+          re_2DES_NR_pa_sum[t3][t1]  += re_2DES_NR_pa[a*sites+index];
+          re_2DES_R_pa_sum[t3][t1]   += re_2DES_R_pa[a*sites+index];
+          im_2DES_NR_pa_sum[t3][t1]  += -1*im_2DES_NR_pa[a*sites+index];
+          im_2DES_R_pa_sum[t3][t1]   += -1*im_2DES_R_pa[a*sites+index];
+
+          re_2DES_NR_pe_sum[t3][t1]  += re_2DES_NR_pe[a*sites+index];
+          re_2DES_R_pe_sum[t3][t1]   += re_2DES_R_pe[a*sites+index];
+          im_2DES_NR_pe_sum[t3][t1]  += -1*im_2DES_NR_pe[a*sites+index];
+          im_2DES_R_pe_sum[t3][t1]   += -1*im_2DES_R_pe[a*sites+index];
+
+          re_2DES_NR_cr_sum[t3][t1]  += re_2DES_NR_cr[a*sites+index];
+          re_2DES_R_cr_sum[t3][t1]   += re_2DES_R_cr[a*sites+index];
+          im_2DES_NR_cr_sum[t3][t1]  += -1*im_2DES_NR_cr[a*sites+index];
+          im_2DES_R_cr_sum[t3][t1]   += -1*im_2DES_R_cr[a*sites+index];
 
         }
       //}
     }
   }
-  print2D("RparII.dat", re_2DES_pa_sum, im_2DES_NR_pa_sum, non, sampleCount);
-  print2D("RparI.dat",  re_2DES_pa_sum, im_2DES_R_pa_sum,  non, sampleCount);
-  print2D("RperII.dat", re_2DES_pe_sum, im_2DES_NR_pe_sum, non, sampleCount);
-  print2D("RperI.dat",  re_2DES_pe_sum, im_2DES_R_pe_sum,  non, sampleCount);
-  print2D("RcroII.dat", re_2DES_cr_sum, im_2DES_NR_cr_sum, non, sampleCount);
-  print2D("RcroI.dat",  re_2DES_cr_sum, im_2DES_R_cr_sum, non, sampleCount);
+
+  print2D("RparII.dat", im_2DES_R_pa_sum,  re_2DES_R_pa_sum,  non, sampleCount);
+  print2D("RparI.dat",  im_2DES_NR_pa_sum, re_2DES_NR_pa_sum, non, sampleCount);
+  print2D("RperII.dat", im_2DES_R_pe_sum,  re_2DES_R_pe_sum,  non, sampleCount);
+  print2D("RperI.dat",  im_2DES_NR_pe_sum, re_2DES_NR_pe_sum, non, sampleCount);
+  print2D("RcroII.dat", im_2DES_R_cr_sum,  re_2DES_R_cr_sum,  non, sampleCount);
+  print2D("RcroI.dat",  im_2DES_NR_cr_sum, re_2DES_NR_cr_sum, non, sampleCount);
 /*
-  print2D("RparII.dat", im_2DES_NR_pa_sum, re_2DES_pa_sum, non, sampleCount);
-  print2D("RparI.dat",  im_2DES_R_pa_sum, re_2DES_pa_sum,  non, sampleCount);
-  print2D("RperII.dat", im_2DES_NR_pe_sum, re_2DES_pe_sum, non, sampleCount);
-  print2D("RperI.dat",  im_2DES_R_pe_sum, re_2DES_pe_sum,  non, sampleCount);
-  print2D("RcroII.dat", im_2DES_NR_cr_sum, re_2DES_cr_sum, non, sampleCount);
-  print2D("RcroI.dat",  im_2DES_R_cr_sum, re_2DES_cr_sum,  non, sampleCount);
+
+  print2D("RparII.dat", re_2DES_R_pa_sum,  im_2DES_R_pa_sum,  non, sampleCount);
+  print2D("RparI.dat",  re_2DES_NR_pa_sum, im_2DES_NR_pa_sum, non, sampleCount);
+  print2D("RperII.dat", re_2DES_R_pe_sum,  im_2DES_R_pe_sum,  non, sampleCount);
+  print2D("RperI.dat",  re_2DES_NR_pe_sum, im_2DES_NR_pe_sum, non, sampleCount);
+  print2D("RcroII.dat", re_2DES_R_cr_sum,  im_2DES_R_cr_sum,  non, sampleCount);
+  print2D("RcroI.dat",  re_2DES_NR_cr_sum, im_2DES_NR_cr_sum, non, sampleCount);
+
+  print2D("RparII.dat", re_2DES_NR_pa_sum, im_2DES_NR_pa_sum, non, sampleCount);
+  print2D("RparI.dat",  re_2DES_R_pa_sum,  im_2DES_R_pa_sum,  non, sampleCount);
+  print2D("RperII.dat", re_2DES_NR_pe_sum, im_2DES_NR_pe_sum, non, sampleCount);
+  print2D("RperI.dat",  re_2DES_R_pe_sum,  im_2DES_R_pe_sum,  non, sampleCount);
+  print2D("RcroII.dat", re_2DES_NR_cr_sum, im_2DES_NR_cr_sum, non, sampleCount);
+  print2D("RcroI.dat",  re_2DES_R_cr_sum,  im_2DES_R_cr_sum,  non, sampleCount);
+
+  print2D("RparII.dat", im_2DES_R_pa_sum,  re_2DES_R_pa_sum,  non, sampleCount);
+  print2D("RparI.dat",  im_2DES_NR_pa_sum, re_2DES_NR_pa_sum, non, sampleCount);
+  print2D("RperII.dat", im_2DES_R_pe_sum,  re_2DES_R_pe_sum,  non, sampleCount);
+  print2D("RperI.dat",  im_2DES_NR_pe_sum, re_2DES_NR_pe_sum, non, sampleCount);
+  print2D("RcroII.dat", im_2DES_R_cr_sum,  re_2DES_R_cr_sum,  non, sampleCount);
+  print2D("RcroI.dat",  im_2DES_NR_cr_sum, re_2DES_NR_cr_sum, non, sampleCount);
+
+
+  print2D("RparII.dat", im_2DES_NR_pa_sum,  re_2DES_NR_pa_sum,  non, sampleCount);
+  print2D("RparI.dat",  im_2DES_R_pa_sum,   re_2DES_R_pa_sum,   non, sampleCount);
+  print2D("RperII.dat", im_2DES_NR_pe_sum,  re_2DES_NR_pe_sum,  non, sampleCount);
+  print2D("RperI.dat",  im_2DES_R_pe_sum,   re_2DES_R_pe_sum,   non, sampleCount);
+  print2D("RcroII.dat", im_2DES_NR_cr_sum,  re_2DES_NR_cr_sum,  non, sampleCount);
+  print2D("RcroI.dat",  im_2DES_R_cr_sum,   re_2DES_R_cr_sum,   non, sampleCount);
   */
+
   printf("----------------------------------------\n");
   printf(" 2DES calculation succesfully completed\n");
 
-  free(re_2DES_pa_sum) ;
-  free(im_2DES_NR_pa_sum) ;
-  free(im_2DES_R_pa_sum) ;
-  free(re_2DES_pe_sum);
-  free(im_2DES_NR_pe_sum) ;
-  free(im_2DES_R_pe_sum);
-  free(re_2DES_cr_sum);
-  free(im_2DES_NR_cr_sum);
-  free(im_2DES_R_cr_sum);
+  free(re_2DES_NR_pa_sum) ,free(re_2DES_R_pa_sum),free(im_2DES_NR_pa_sum) ,free(im_2DES_R_pa_sum) ;
+  free(re_2DES_NR_pe_sum),  free(re_2DES_R_pe_sum), free(im_2DES_NR_pe_sum) ,free(im_2DES_R_pe_sum);
+  free(re_2DES_NR_cr_sum),  free(re_2DES_R_cr_sum),free(im_2DES_NR_cr_sum),free(im_2DES_R_cr_sum);
 
   free(int_sna_t1_re),  free(int_sna_t1_im_NR),  free(int_sna_t1_im_R);
   free(int_sna_t3_SE_re),  free(int_sna_t3_SE_im), free(int_sna_t3_GB_re);   
   free(int_sna_t3_GB_im) , free(int_sna_t3_EA_re),  free(int_sna_t3_EA_im); 
   free(PDA_t2),  free(int_PDA), free(up_ver2_re);
   free(up_ver2_im_NR),  free(up_ver2_im_R);
-  free(re_2DES_pa) ,free(im_2DES_NR_pa),  free(im_2DES_R_pa);
-  free(re_2DES_pe),  free(im_2DES_NR_pe) ,free(im_2DES_R_pe);
-  free(re_2DES_cr),  free(im_2DES_NR_cr),  free(im_2DES_R_cr);
+  free(re_2DES_NR_pa) ,  free(re_2DES_R_pa) ,free(im_2DES_NR_pa),  free(im_2DES_R_pa);
+  free(re_2DES_NR_pe),   free(re_2DES_R_pe), free(im_2DES_NR_pe) ,free(im_2DES_R_pe);
+  free(re_2DES_NR_cr),   free(re_2DES_R_cr),  free(im_2DES_NR_cr),  free(im_2DES_R_cr);
   fclose(Rate);
 
   printf("the signal part can run successfully \n");
