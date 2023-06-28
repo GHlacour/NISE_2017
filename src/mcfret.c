@@ -438,7 +438,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     int i,j,k;
     int *ns; /* Segment dimensions */
     int t1;
-    float *rate_response;
+    float *rate_response,*abs_rate_response;
     float rate;
     float isimple,is13; /* Variables for integrals */
     float *re_aux_mat,*im_aux_mat;
@@ -449,6 +449,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     nn2=non->singles*non->singles;
 
     rate_response=(float *)calloc(non->tmax,sizeof(float));
+    abs_rate_response=(float *)calloc(non->tmax,sizeof(float));
     re_aux_mat=(float *)calloc(nn2,sizeof(float));
     im_aux_mat=(float *)calloc(nn2,sizeof(float));
     re_aux_mat2=(float *)calloc(nn2,sizeof(float));
@@ -475,6 +476,10 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
                     re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
             /* Take the trace */
                 rate_response[t1]=trace_rate(re_aux_mat,non->singles)*twoPi*twoPi;
+		abs_rate_response[t1]=sqrt(trace_rate(re_aux_mat,non->singles)
+			*trace_rate(re_aux_mat,non->singles)+
+			trace_rate(im_aux_mat,non->singles)
+			*trace_rate(im_aux_mat,non->singles))*twoPi*twoPi;
 		fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
             }
             /* Update rate matrix */
@@ -483,7 +488,8 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
             rate_matrix[si*segments+sj]=rate;
             rate_matrix[sj*segments+sj]-=rate;
 	    /* Calculate the rate of coherence decay in ps-1 */
-	    coherence_matrix[si*segments+sj]=1000*rate_response[0]/is13/non->deltat;
+	    integrate_rate_response(abs_rate_response,non->tmax,&is13,&isimple);
+	    coherence_matrix[si*segments+sj]=1000*abs_rate_response[0]/is13/non->deltat;
         }
 
       }
@@ -491,6 +497,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     fclose(ratefile);
 
     free(rate_response);
+    free(abs_rate_response);
     free(re_aux_mat);
     free(im_aux_mat);
     free(re_aux_mat2);
