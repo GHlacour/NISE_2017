@@ -602,6 +602,10 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
              }
             }
 	         eq_den(Hamil_i_e,rho_l,N,non);
+
+
+           //printf(" %d\n",rho_l[0]);
+          //printf(" %f\n",rho_l[0]);
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
           clearvec(mid_ver,non->singles);
           for (a=0;a<N;a++){
@@ -1320,9 +1324,9 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
 }
 
 
-void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
+void CG_full_2DES_segments(t_non *non,float *re_doorway,  float *im_doorway,
                                       float *re_window_SE,float *im_window_SE,
-                                      float *re_window_GB, float *im_window_GB,
+                                      float *re_window_GB,float *im_window_GB,
                                       float *re_window_EA,float *im_window_EA){
   float  *P_DA, *K, *PDA_t2;
   float *int_sna_t1_re,*int_sna_t1_im_NR,*int_sna_t1_im_R; 
@@ -1352,6 +1356,10 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   FILE *outone,*log, *Rate;
   pro_dim=project_dim(non);
   //P0 =(float *)calloc(pro_dim*pro_dim,sizeof(float));
+  if (non->tmax2<1){
+    printf(RED "RunTime for t2 must be at least 1!\n");
+    exit(0);
+  }
   K =(float *)calloc(pro_dim*pro_dim,sizeof(float));
   PDA_t2 = (float *)calloc(pro_dim*pro_dim,sizeof(float));
   P_DA = (float *)calloc(pro_dim*pro_dim*non->tmax2,sizeof(float)); 
@@ -1729,7 +1737,6 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                 for (int b=0;b<pro_dim;b++){
                   PDA_t2[pro_dim*b+a]=P_DA[t2*pro_dim+pro_dim*b*non->tmax2+a];
                   //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
-              
               }
             }
             /*dimention 1*N* N*N *N*1*/

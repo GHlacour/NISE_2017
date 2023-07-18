@@ -17,6 +17,7 @@
 
 /*Here we defined the equilibrium density operator*/
 void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
+ 
   int index;
   float *H,*e,*e_1;
   float *rho_r;
@@ -27,8 +28,6 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   e=(float *)calloc(N,sizeof(float));
   e_1=(float *)calloc(N,sizeof(float));
   rho_r=(float *)calloc(N*N,sizeof(float));
-  //rho_l=(float *)calloc(N*N,sizeof(float));
-  //rho_l=(float *)calloc(N*N,sizeof(float));
   int a,b,c,pro_dim;
   int site_num,site_num_1,site_num_2,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
 
@@ -41,7 +40,7 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   /* projection */
   pro_dim=project_dim(non);
   diag_sum = (float *)calloc(pro_dim,sizeof(float));
-
+  
   /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
   if (non->Npsites==non->singles){
     zero_coupling(Hamiltonian_i,non);
@@ -64,73 +63,66 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
 /*Here we diagonalize the square Hamiltonian, the H is replaced by the eigenvector in eigen basis, e is the eigenvalue */
 
   diagonalizeLPD(H,e,N);
-
-  // Exponentiate [u=exp(-H*kBT)]
-
-    for (a = 0; a < N; a++) {
-      float temp = exp(-e[a]/kBT);    
-      e_1[a] = temp;
-      u += temp;
-    }
-
-   //printf("eq U ");
-  //printf("%f  \n",u);
-  /*Here calculate the inverse of u*/
-  i_u=1.0/u;
-
-  // Transform to site basis, H*u*H
-  /*Here we first calculate the right side u*H, which output rho_r */
-  /*for (a=0;a<N;a++){
-    for (b=0;b<N;b++){
-      rho_r[b+a*N]+=H[b+a*N]*e_1[b]*i_u;
-    }
-  }*/ 
   
-
-   for (a = 0; a < N * N; a++) {
-    rho_r[a] += H[a] * e_1[a % N] * i_u;
-   }
-  
-  /*Secondly, we calculate the left side H*u_r, which output rho_l */
+  /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
-    for (b=0;b<N;b++){
-      for (c=0;c<N;c++){
-        rho_l[a+c*N]+=H[b+a*N]*rho_r[b+c*N];
-
+      e_1[a]=exp(-e[a]/kBT);
+      /* Apply strict high temperature limit when T>100000 */
+      if (non->temperature>100000){
+	      e_1[a]=1;
+   
       }
-    }
   }
-
-
-/* The weights in the site basis were calculated, 
-Here we should not combine the two loop in one loop as it would results in the heary calcuation.*/
+  
 
 /*Here we need to normalize rho, exp(-KB*H)/[Trexp(-KB*H)] within every segment*/
 /*We first sum the diagonal element in one segment*/
   for (site_num=0;site_num<non->singles;site_num++){
     seg_num=non->psites[site_num];
-    diag_sum[seg_num]+= rho_l[site_num*N+site_num];
+    diag_sum[seg_num]+= e_1[site_num];
   }
 
     /*Secondly, we normalize the density matrix within one segment*/
     //for (seg_num=0;seg_num<pro_dim;seg_num++){
   for (site_num_1=0;site_num_1<non->singles;site_num_1++){
     seg_num=non->psites[site_num_1];
-    for (site_num_2=0;site_num_2<non->singles;site_num_2++){
-      if (seg_num==non->psites[site_num_2]){
-        rho_l[site_num_1*N+site_num_2]=rho_l[site_num_2*N+site_num_1]=rho_l[site_num_1*N+site_num_2]/diag_sum[seg_num];
-      }
-    }
+    //for (site_num_2=0;site_num_2<non->singles;site_num_2++){
+      //if (seg_num==non->psites[site_num_2]){
+      e_1[site_num_1]=e_1[site_num_1]=e_1[site_num_1]/diag_sum[seg_num];
+     //printf(" %f\n", e_1[0]);
+     //printf(" %f\n", e_1[1]);
+      //}
+    //}
   }
-        //printf("eq rho_l ");
-        //printf("%f  \n",rho_l[1]); 
+  //exit(0);
+  /* Transform back to site basis */ 
+  for (a=0;a<N;a++){
+      for (b=0;b<N;b++){
+          rho_r[b+a*N]+=H[b+a*N]*e_1[b];
+          rho_l[b+a*N]=0;
+
+      }
+  }  
+
+  for (a=0;a<N;a++){
+      for (b=0;b<N;b++){
+          for (c=0;c<N;c++){
+              rho_l[a+c*N]+=H[b+a*N]*rho_r[b+c*N];
+          }
+      }
+  }
+ //printf(" %f\n", rho_l[1]);
+/* The weights in the site basis were calculated, 
+Here we should not combine the two loop in one loop as it would results in the heary calcuation.*/
 
   free(H);
   free(e_1);
   free(e);
   free(rho_r);
   //free(rho_l);
+   //
   return ;
+  
 }
 
 // Multiply a real matrix on a real vector (vr,vi)
