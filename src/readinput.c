@@ -23,13 +23,14 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->interpol = 1;
     non->begin = 0;
     non->end = 0;
+    non->is = 0; /* By default use direct diagonalization for equilibrium density matrix */
     non->ts = 5;
-    non->anharmonicity = 0;
-    non->couplingcut = 0;
+    non->anharmonicity = 0; /* Default anharmonicity parameters read from file */
+    non->couplingcut = 0; /* By default include all non-zero couplings */
     non->temperature = 300;
     non->cluster = -1; // Average over all snapshots no clusters
     non->fft = 0;
-    non->printLevel = 1; // Set to standard print level
+    non->printLevel = 1; /* Set to standard print level */
     non->tmax1=256;
     non->tmax2=0;
     non->tmax3=256;
@@ -146,7 +147,7 @@ void readInput(int argc, char* argv[], t_non* non) {
         if (keyWord3I("RunTimes", Buffer, &non->tmax1, &non->tmax2, &non->tmax3, LabelLength) == 1) continue;
 
         // Read integration steps
-        if (keyWordI("Integrationsteps", Buffer, &non->is, LabelLength) == 1) continue;
+        if (keyWordI("ImaginaryTimesteps", Buffer, &non->is, LabelLength) == 1) continue;
 
         // Read trotter steps
         if (keyWordI("Trotter", Buffer, &non->ts, LabelLength) == 1) continue;

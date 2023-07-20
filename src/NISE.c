@@ -170,8 +170,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Call the Luminescence Routine
-    if (!strcmp(non->technique, "Luminescence")) {
-        // Does not support MPI
+    if (compare_string(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
+    	    // Does not support MPI
         if (parentRank == 0)
             luminescence(non);
     }
