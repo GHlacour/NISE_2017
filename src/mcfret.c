@@ -708,11 +708,18 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
  
   /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
+      if (non->temperature==0){
+        printf("Temperature is 0, the equilirbium density matrix will be nan,we suggestion to use a low non-zero temperature instead");
+        exit(0);
+      }
+
       c2[a]=exp(-e[a]/kBT);
       /* Apply strict high temperature limit when T>100000 */
       if (non->temperature>100000){
 	 c2[a]=1;
       }
+
+
   }
 
   /* Transform back to site basis */ 
@@ -819,7 +826,7 @@ void write_matrix_to_file(char fname[],float *matrix,int N){
   file_handle=fopen(fname,"w");
   for (i=0;i<N;i++){
     for (j=0;j<N;j++){
-      fprintf(file_handle,"%e ",matrix[i*N+j]);
+      fprintf(file_handle,"%10.14e ",matrix[i*N+j]);
     }
     fprintf(file_handle,"\n");
   }
