@@ -39,11 +39,17 @@ void zero_coupling(float *Hamil_i_e, t_non *non){
     for (i=0;i<non->singles;i++){
         for (j=i+1;j<non->singles;j++){
             if (non->psites[i]!=non->psites[j]){
-               Hamil_i_e[Sindex(i,j,non->singles)]==0;
+               Hamil_i_e[Sindex(i,j,non->singles)]=0;
+               //printf("%f \n", Hamil_i_e[Sindex(i,j,non->singles)]); 
+
             }
         }
     }
+   return;
 }
+
+
+
 
 // Analyse projection input
 int project_dim(t_non* non){
