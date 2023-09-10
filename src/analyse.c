@@ -372,9 +372,9 @@ void analyse(t_non *non){
   }
   fclose(outone);
 
-  outone=fopen("SquareDensityMatrix.dat","w");
+  outone=fopen("AbsoluteDensityMatrix.dat","w");
   if (outone==NULL){
-    printf("Problem encountered opening SquareDensityMatrix.dat for writing.\n");
+    printf("Problem encountered opening AbsoluteDensityMatrix.dat for writing.\n");
     printf("Disk full or write protected?\n");
     exit(1);
   }
@@ -579,7 +579,7 @@ void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *local_rho,float
         /* Find density matrix element */
         d=H[i+j*N]*H[i+k*N];
         rho[j+k*N]+=d;
-	rho2[j+k*N]+=d*d;
+	rho2[j+k*N]+=fabs(d);
         if (e[i]>min-shift && e[i]<max-shift){
           local_rho[j+k*N]+=d;
           spec_rho[j+k*N]+=d*dip2[i];
