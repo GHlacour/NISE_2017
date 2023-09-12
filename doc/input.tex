@@ -141,13 +141,13 @@ states, 5 recommended for the Sparse propagation scheme, for the Coupling propag
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
 %\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
-\item [Technique] [Absorption / DOS / Luminescence / CD / Raman / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / 2DIRraman / 2DIRramanI / 2DIRramanII / 2DIRraman1 / 2DIRraman2 / 2DIRraman3 / Pop / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
+\item [Technique] [Absorption / DOS / Luminescence / CD / Raman / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / 2DIRraman / 2DIRramanI / 2DIRramanII / 2DIRraman1 / 2DIRraman2 / 2DIRraman3 / Pop / MCFRET / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used. If left out no zeropadding is used (recommended).]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
 \item [Format] [Matlab/Dislin/Python/Gnuplot Different output formats for the 2D spectral files. For Matlab format rephasing and non-rephasing spectra are not added. The Matlab format refer to a format used by the Tokmakoff group. Dislin and Python are the same and the format used in the tutorials within the package. Gnuplot is suited for gnuplot and an example is given in the tutorial. Details are given in the section on Fourier transforms.] 
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
-\item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read Projectfile [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers.)
+\item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read Projectfile [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers. For MCFRET the project file is instead used to specify to which segment each site belongs. In this case the number of sites must be equal to the number of singles.)
 \item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.)
 \end{description}
 
@@ -222,6 +222,8 @@ time in femtoseconds the second is the probability that if a site was initially 
 after the given time. This is averaged over all sites. The file PopF.dat contain more detailed information.
 The first column is the time. The following columns are the probability that if a particular site was excited
 initially other sites are excited later. The first N columns are the populations of the N sites following an initial excitation of the first site. Then follows the populations after excitation of the second site etc. This file might be a very large file for big systems.
+
+The MCFRET calculation provides, which contains the rate matrix in the file  {\tt RateMatrix.dat}. As required for a master equation the sum of the rates out of a segment is (minus the value of the diagonal element) is equal to the sum of the rates of what is transferred to other segments and the sum of each column is zero. It also outputs the quantum corrected rate matrix, QC\_RateMatrix.dat, with the Oxtoby quantum correction factor $c = \frac{2}{1+e^{-\hbar \omega_{ab}/K_BT}}$. Notice the unit used for the rates is ps$^{-1}$ as processes where MCFRET is relevant are typically slow!
 
 For the exciton diffusion the output file is Dif.dat It has three columns. The first is the time in femto seconds. The second column is the mean square displacement of the wave function assuming that
 one site is initially excited. The third column is the mean square displacement of the center of the 
