@@ -47,27 +47,31 @@ void mcfret(t_non *non){
      if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
       || (!strcmp(non->technique, "MCFRET-Emission")) || (!strcmp(non->technique, "MCFRET-Coupling")) || (!strcmp(non->technique,
       "MCFRET-Rate")) || (!strcmp(non->technique, "MCFRET-Analyse")) ) {
-          printf("Performing the MCFRET calculation.\n");
+          printf("Performing MCFRET calculation.\n");
     }
 
 /* Call the absorption routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Absorption"))){
+        printf("Starting calculation of the absorption matrix.\n");
         mcfret_response_function(re_Abs,im_Abs,non,0);
     }
    
 /* Call the emission routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
+	printf("Starting calculation of the emission matrix.\n");
         mcfret_response_function(re_Emi,im_Emi,non,1);
     }
     
 /* Call the coupling routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Coupling"))){
+	printf("Starting calculation of the average inter segment coupling.\n");
         mcfret_coupling(J,non);
 
     }
 
 /* Call the rate routine routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Rate"))){
+	printf("Starting calculation of the rate response function.\n");
         if ((!strcmp(non->technique, "MCFRET-Rate"))){
             /* Read in absorption, emission and coupling from file if needed */
 	    printf("Calculating rate from precalculated absorption, emission\n");
@@ -87,6 +91,7 @@ void mcfret(t_non *non){
 
 /* Call the MCFRET Analyse routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
+	 printf("Starting analysis of the MCFRET rate.\n");
 	 /* If analysis is done as post processing first read the rate matrix */
 	 if ((!strcmp(non->technique, "MCFRET-Analyse"))){
            read_matrix_from_file("RateMatrix.dat",rate_matrix,segments);
@@ -235,7 +240,11 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished Calculating Response!\n");
+    if (emission==1){
+        fprintf(log,"Finished Calculating Emission Response Matrix!\n");
+    } else {
+	fprintf(log,"Finished Calculating Absorption Response Matrix!\n");
+    }
     fprintf(log,"Writing to file!\n");  
     fclose(log);
 
@@ -405,7 +414,7 @@ void mcfret_coupling(float *J,t_non *non){
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished Calculating Response!\n");
+    fprintf(log,"Finished Averaging Intersegment Coupling Response!\n");
     fprintf(log,"Writing to file!\n");  
     fclose(log);
 
@@ -655,7 +664,7 @@ void mcfret_energy(float *E,t_non *non,int segments){
 
     /* The calculation is finished, lets write output */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished Calculating Response!\n");
+    fprintf(log,"Finished Calculating Segment Energies!\n");
     fprintf(log,"Writing to file!\n");
     fclose(log);
 
@@ -810,10 +819,23 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
           simp13+=4*rate_response[i]/3;
         }
     }
+
+    /* Check for difference between integration methods */
     if (fabs(simple-simp13)/fabs(simp13)>0.05){
       printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
       printf(YELLOW "Simple integral value %f and Simpson 1/3 %f.\n" RESET,simple,simp13);
+      printf(YELLOW "This difference is larger than 5%.\n" RESET);
     }
+
+    /* Check for difference between initial and final value */
+    if (fabs(rate_response[T-1])*100>rate_response[0]){
+        printf(YELLOW "Final value of rate response is larger than\n");
+	printf("1% of the initial value. You may avearge over too\n");
+	printf("few samples (decrease the value of Samplerate) or\n");
+	printf("your chosen coherence time of %d steps, may\n",T);
+	printf("be too short for the coherence to decay.\n." RESET);
+    }
+
     /* Store results in variables for return */
     *isimple=simple;
     *is13=simp13;
