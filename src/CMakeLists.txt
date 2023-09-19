@@ -15,7 +15,7 @@ add_executable(NISE
     luminescence.c calc_Diffusion.h calc_Diffusion.c anisotropy.c
     anisotropy.h calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c
     analyse.h readinput.c readinput.h propagate.c propagate.h
-    read_trajectory.c read_trajectory.h
+    read_trajectory.c read_trajectory.h correlate.h correlate.c
     project.c project.h types_MPI.h types_MPI.c
     $<TARGET_OBJECTS:random_lib>
 )
