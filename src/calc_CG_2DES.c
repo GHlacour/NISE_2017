@@ -1236,7 +1236,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
               /* Propagate single excited states vecr and veci backwards with propagate */
               /* Propagate dipole moment */
             for (a=0;a<N;a++){
-               propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,-1,samples,tk*alpha);
+               propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,1,samples,tk*alpha);
 	        //propagate_matrix(non,Hamil_i_ee,vecr,veci,1,samples,tk*alpha);
             }
           }
