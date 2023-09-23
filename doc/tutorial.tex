@@ -11,59 +11,61 @@ The angle between the assumed fixed transition dipoles can be adjusted as well. 
 parameters is given in the script named run. 
 
 After generating the frequency trajectory with the stochastic program one can look at the generated
-trajectories in Energy.tex and Dipole.tex. The should the be converted to binary input for the NISE
-program. This is done with the translate program with the input given in the file inpTra.
+trajectories in \ilc{Energy.tex} and \ilc{Dipole.tex}. The should the be converted to binary input for the NISE
+program. This is done with the translate program with the input given in the file \ilc{inpTra}.
 The command line entry:
-\begin{verbatim}
+\begin{lstlisting}[style=mystyle]
 ~/NISE_2017/bin/translate inpTra
-\end{verbatim}
+\end{lstlisting}
 will accomplish this. (It is assumed that you installed NISE in your home directory. If the programme was installed somewhere else you need to run the programme from the alternative bin directory where it was installed.)
 
-When the binary trajectory exist we can calculate the linear absorption using the input from the file input1D.
-\begin{verbatim}
+When the binary trajectory exist we can calculate the linear absorption using the input from the file \ilc{input1D}.
+\begin{lstlisting}[style=mystyle]
 ~/NISE_2017/bin/NISE input1D
-\end{verbatim}
+\end{lstlisting}
 One should plot the output in TD\_Absorption.dat and Absorption.dat to get familiar with this. It is 
 important that the response function has decayed almost completely within the simulated 
-time to avoid ringing and other artifact in the spectrum. The program should finish in a 
-about 10 seconds. The python script plot.py will plot both the response function and the absorption spectrum. Simply type {\tt python plot.py} assuming that python 3 is installed. Alternatively, you can plot the two first columns of each file with your own favourite plotting programme.
+time to avoid ringing, noise, and other artifacts in the spectrum. 
+If the spectrum is noisy a shorter time can be selected for the apodization function or if possible one can average over more realizations either by making the trajectory longer or decreasing the number of steps between realizations as set by the keyword \ilk{Samplerate}.
+The program should finish in a 
+about 10 seconds. The python script \ilc{plot.py} will plot both the response function and the absorption spectrum. Simply type \ilc{python plot.py} assuming that python 3 is installed. Alternatively, you can plot the two first columns of each file with your own favourite plotting programme.
 
-The linear dichroism signal can be calculated by changing the {\tt Technique} to {\tt LD} which generate corresponding files with the names TD\_LD.dat and LD.dat. In the turotial this is 
+The linear dichroism signal can be calculated by changing the \ilk{Technique} to \ilo{LD} which generate corresponding files with the names TD\_LD.dat and LD.dat. In the turotial this is 
 not so interesting as it is simply minus half of the absorption signal, since the dipoles are in the 
 x, y plane and the unique angle for linear dichroism is defined to be the z-axis.
 
 The two-dimensional infrared spectra are calculated with the input file input2D. This corresponds to the spectrum of two coupled three-level systems in this case, where the anharmonicity is 20 cm$^{-1}$ for both three-level systems as specified in the input2D file. The programme is executed with the command:
-\begin{verbatim}
+\begin{lstlisting}[style=mystyle]
 ~/NISE_2017/bin/NISE input2D
-\end{verbatim}
+\end{lstlisting}
 The percentage wise progress of the calculation can be followed in the output. One should expect that the calculation of one sample point takes about 10 seconds with the given settings. For a test about 100 samples are sufficient, while for nice spectra at least 1000 samples are needed. Typically more samples are needed for two-dimensional spectra than for linear absorption spectra and the more different distinct chromophore environments are present the more samples are needed. The given example should take about 15 minutes to simulate (of course depending on the computer).
 If you have multiple cores on your computer you can run the MPI parallel version typing:
-\begin{verbatim}
+\begin{lstlisting}[style=mystyle]
 mpirun -n 4 ~/NISE_2017/bin/NISE input2D
-\end{verbatim}
-The number 4 tells mpi that the job should be split in 4. For this small system mpi is likely more efficient then OpenMP on typical computer architectures. The output of the NISE programme is the time domain response functions. To get the frequency domain spectra the 2DFFT program must be executed as described below.
+\end{lstlisting}
+The number 4 tells mpi that the job should be split in 4. For this small system mpi is likely more efficient then OpenMP on typical computer architectures. The output of the NISE programme is the time domain response functions. To get the frequency domain spectra the \ilc{2DFFT} program must be executed as described below. For longer simulations you should use the que system of your computer cluster. Check the instructions on running on your local computer cluster to do this.
 
-The NISE code was originally build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can now be achieved with the 2DUVvis technique. Previously this was achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
+The NISE code was originally build to consider coupled three-level systems, which is what is needed to simulate infrared spectra. If one want to simulate two-dimensional electronic spectra coupled two-level systems usually need to be considered. This can now be achieved with the \ilo{2DUVvis} technique. Previously this was achieved by using an anharmonicity that moves the third-level out of the spectral window and sufficiently far away that the coupling between the third-level for each monomer and double excitations involving pairs of sites can be neglected \cite{Olbrich.2011.JPCB.115.8609,Liang.2012.JCTC.8.1706}. 
 
-The 2D simulations can be performed in parallel using openMP. The program does this by distributing the calculations for different values of t1 on different CPUs. When running parallel it is advantageous to ensure that ([t1 max]+1) divided by the number of used CPUs is an integer number or slightly smaller than an integer number. To run the code parallel the OMP\_NUM\_THREADS variable has to be set equal to the number of CPUs that one want to use in the submission script (or if not running under a queueing system the variable has to be set in the used linux shell). On most clusters one should further specify to the queuing system how many CPUs are needed when submitting the job. The user is referred to the manual of the cluster used for this kind of information as it varies from system to system. For parts of the code, where the mkl library is used for solving eigen value problems these may be run in parallel as well by setting the MKL\_NUM\_THREADS variable equal to the number of CPUs used for this task. The general experience is that for small problems running parallel is not efficient. The mkl library also does not perform well on large numbers of CPUs, however, the 2D simulations were found to scale well up to about 32 CPUs in recent simulations on 864 coupled OH-stretch oscillators \cite{Shi.2016.PCCP}. For large problems the calculation of polarization contributions and samples can efficiently be spread over different CPUs and/or nodes for efficent massively parallel calculations.
+The 2D simulations can be performed in parallel using openMP. The program does this by distributing the calculations for different values of t1 on different CPUs. When running parallel it is advantageous to ensure that ([\ilo{t1max}]+1) divided by the number of used CPUs is an integer number or slightly smaller than an integer number. To run the code parallel the \ilc{OMP\_NUM\_THREADS} variable has to be set equal to the number of CPUs that one want to use in the submission script (or if not running under a queueing system the variable has to be set in the used linux shell). On most clusters one should further specify to the queuing system how many CPUs are needed when submitting the job. The user is referred to the manual of the cluster used for this kind of information as it varies from system to system. For parts of the code, where the mkl library is used for solving eigen value problems these may be run in parallel as well by setting the \ilc{MKL\_NUM\_THREADS} variable equal to the number of CPUs used for this task. The general experience is that for small problems running parallel is not efficient. The mkl library also does not perform well on large numbers of CPUs and is only recommended for working with large Hamiltonians.  For large problems the calculation of polarization contributions and samples can efficiently be spread over different CPUs and/or nodes for efficent massively parallel calculations. 2D simulations for mid-size systems can efficiently be spread over 10s of nodes each with more than 100 CPUs.
 
 The response functions calculated in time domain can be converted to frequency domain spectra using the double Fourier transform code with the same input as for the calculation of the response function.
-\begin{verbatim}
+\begin{lstlisting}[style=mystyle]
 ~/NISE_2017/bin/2DFFT input2D
-\end{verbatim}
-The output can be visualized with one of the plotting scripts provided with the tutorial. The recommended metod is using the {\tt plot2D.py} python script, which is written to plot the parallel polarization spectra. The line {\tt Data = np.loadtxt('2D.par.dat')} in the beginning of the script can be changed to load and plot one of the other data files (perpendicular spectrum {\tt 2D.per.dat} or cross polarization {\tt 2D.cro.dat'}. The plot at the cover of the manual is the parallel polarization 2DIR spectrum obtained from the tutorial.
+\end{lstlisting}
+The output can be visualized with one of the plotting scripts provided with the tutorial. The recommended metod is using the \ilc{plot2D.py} python script, which is written to plot the parallel polarization spectra. The line \ilc{Data = np.loadtxt('2D.par.dat')} in the beginning of the script can be changed to load and plot one of the other data files (perpendicular spectrum \ilc{2D.per.dat} or cross polarization \ilc{2D.cro.dat}. The plot at the cover of the manual is the parallel polarization 2DIR spectrum obtained from the tutorial.
 
 The user is encouraged to play with the settings of the run script in the tutorial to get familiar with the code.
 The simple example can also be useful for getting familiar with the basics of two-dimensional spectroscopy in particular regarding the effects of coupling, correlation, relative angles between
 coupled chromophores.
 
 The delocalization length \cite{Thouless.1974.PR.13.93} can be calculated with the analysis option as given in 
-the example input file inputAnalyse. Note that for including the complete trajectory [t1 
-max] should be 1. 
-\begin{verbatim}
+the example input file \ilc{inputAnalyse}. Note that for including the complete trajectory [t1max] should be set to 1. 
+\begin{lstlisting}[style=mystyle]
 ~/NISE_2017/bin/NISE inputAnalyse 
-\end{verbatim}
+\end{lstlisting}
+By specifying a frequency range the delocalization of eigenstates within that range is also determined. Furthermore, the density matrix average over all states within the given range is determined along with the density matrix weighted with the square of the transition-dipole for each eigenstate.
 %A separate tutorial exists for the SFG part of the code. The script for creating the  trajectory is called runSFG. The input files for the translate and NISE3 programs are  called inpTraSFG, and input(2D)SFG, respectively. In this tutorial two sites are given. The  transition dipole of the first is parallel to the z-axis and pointing in the positive direction. The angle with the other dipole can be specified in the script. The transition polarizability components for both sites are $\alpha_{xx}$ = $\alpha_{yy}$ = 1 and $\alpha_{zz}$ = 10. The frequency fluctuation parameters can be specified as in the main tutorial.
 
-A more extensive set of tutorials can be found at \url{https://github.com/GHlacour/NISE\_Tutorials}. This include examples for the LH2 light-harvesting system.
+A more extensive set of tutorials can be found at \url{https://github.com/GHlacour/NISE\_Tutorials}. This include examples for the LH2 light-harvesting system, FMO, and LHCII.
 This tutorial repository also contains useful scripts for plotting the spectra calculated with this code.

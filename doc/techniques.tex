@@ -7,7 +7,7 @@ The Hamiltonian is analysed and different statistical properties are provided in
 \end{equation}
 In a file named Analyse.dat statistics is given for each site including. This include the average energy and the standard deviation. The average coupling strength (signed sum of all couplings of a given site with all other sites) and the standard deviation of this quantity.
 In a file named Av\_Hamiltonian.txt. The average Hamiltonian is stored as a single snapshot in the GROASC format.
-Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \textbf{MinFrequencies} and \textbf{MaxFrequencies}. This is done both with and without a weight determined by the contribution to the absorption spectrum as:
+Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \ilo{MinFrequencies} and \ilo{MaxFrequencies}. This is done both with and without a weight determined by the contribution to the absorption spectrum as:
 \begin{equation}
 \rho_{ij}=\sum_k \Big\langle c_{ik}^* c_{jk}  \Theta(\omega_{k}-\omega_{min})\Theta(\omega_{max}-\omega_k)\Big\rangle
 \end{equation}
@@ -16,7 +16,8 @@ Where $c_{jk}$ is the wavefunction coefficient of eigenstate $k$ on site $j$ and
 \rho^{\textrm{spectral}}_{ij}=\sum_k \Big\langle |\vec{\mu}_k|^2 c_{ik}^* c_{jk}  \Theta(\omega_{k}-\omega_{min})\Theta(\omega_{max}-\omega_k)\Big\rangle
 \end{equation}
 Here $\vec{\mu}_k$ is the transition-dipole vector of eigenstate $k$. This weighted density matrix, thus, emphasizes the states contributing to the absorption spectrum in the given spectral window. These density matrices are stored in the files named LocalDensityMatrix.dat, and SpectralDensityMatrix.dat. The former should be identical to the unit matrix if the full region of all eigenstates is included.
-
+\section{Correlation}
+This technique calculates the frequency correlation functions including cross correlations between all sites. The correlation functions are stored up to \ilo{t1max}$\times$\ilo{Timestep} femto seconds. The first colum in the file \ilc{CorrelationMatrix.dat} contains the time in femtoseconds, while the following colums contain the correlations functions ordered as in a tridiagonal matrix. The time-dependent skewness $\langle \omega(t)\omega^2(0) \rangle$, and the time-dependent kutosis $\langle \omega^2(t)\omega^2(0) \rangle$ are stored in the files \ilc{Skewness.dat} and \ilc{Kutosis.dat}, respectively. These files only contain these higher-order correlation functions for individual sites.
 \section{Pop (population transfer)}
 The population transfer is calculated between sites. In general, this is governed by the equation:
 \begin{equation}
@@ -25,7 +26,7 @@ P_{fi}(t)=\langle |U_{fi}(t,0)|^2 \rangle
 Here $f$ and $i$ are the final and initial sites. Generally two files are generated. In Pop.dat average of the population remaining on the initial site ($P_{ii}$) is calculated resulting in a value starting at 1 (all popiulation is on the initial state) and decaying to the equilibrium value 1/N (equal population on all states). In the PopF.dat file a full matrix op all combinations of initial and final states is given. The columns start start with the first initial state and all possible final states continuing to the second possible initial state and all possible final states. This file may be very large for large system sizes!
 
 \section{MCFRET}
-The MCFRET part calculates the Excitation Energy Transfer (EET) rate with Multichromophoric Förster Resonance Energy Transfer (MC-FRET) method.\cite{Jang.2004.Phys.Rev.Lett..92.218301a,Jang.2007.J.Phys.Chem.B.111.6807,zhong2023efficient} The rate is calculated based on the equation:
+The MCFRET part calculates the Excitation Energy Transfer (EET) rate with Multichromophoric Förster Resonance Energy Transfer (MC-FRET) method.\cite{Jang.2004.Phys.Rev.Lett..92.218301,Jang.2007.J.Phys.Chem.B..111.6807,Zhong.2023.J.Chem.Phys..158.064103} The rate is calculated based on the equation:
 \begin{equation}\label{eq:17} 
     k=\frac{\rm 2Re}{\hbar^2}\int_{0}^{\infty}dt\ \textrm{Tr}[J^{\textrm {AD}}E^{\textrm D}(t)J^{\textrm {DA}}I^{\textrm A}(t)],
 \end{equation}

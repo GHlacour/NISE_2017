@@ -1,20 +1,20 @@
 \chapter{Program descriptions}
-This chapter contain the description of the various input parameters, file formats, and output files for the NISE code.
-\section{Units}
-The code use wavenumbers (cm$^{-1}$) for frequencies and times are in femtoseconds (fs). Users are discouraged from trying to use other units at this may lead to numerical instabilities or unit conversion errors. The transition
-dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly. However, for using the on-the-fly coupling calculations the transition dipoles should be provided in Debye and positions should be provided in \AA ngstr\"{o}m. 
+This chapter contains the description of the various input parameters, file formats, and output files for the NISE code.
+%\section{Units}
+%The code use wavenumbers (cm$^{-1}$) for frequencies and times are in femtoseconds (fs). Users are discouraged from trying to use other units at this may lead to numerical instabilities or unit conversion errors. The transition dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly. However, for using the on-the-fly coupling calculations the transition dipoles should be provided in Debye and positions should be provided in \AA ngstr\"{o}m. 
 
 \section{Programs}
-Overview over programs for calculating spectra and analysis:\\
+The NISE package contains three major programs. These are:
 \begin{description}
-\item [translate] [Convert Hamiltonian and dipole trajectory between different formats.]
-\item [NISE] [General code for calculating spectra]
-\item [2DFFT] [Do the 2D Fourier transform]
+\item [translate] [A program that can convert the Hamiltonian and dipole trajectory between different formats.]
+\item [NISE] [The general code for calculating spectra.]
+\item [2DFFT] [Do the 2D Fourier transform.]
 \end{description}
+These programs will be described below. 
 
 \section{Translate}
 The Hamiltonian \textbf{must} be saved in binary format (GROBIN/SKIBIN) for use in the NISE program.
-The translate program convert between different formats. The program also allows selecting specific sites in a Hamiltonian file and modification of the fundamental frequencies corresponding to isotope labeling. The input file format is:
+The translate program converts between different formats. The program also allows selecting specific sites in a Hamiltonian file and modification of the fundamental frequencies corresponding to isotope labeling. The input file format is:
 \begin{description}
 \item[InputEnergy] [filename]
 \item[InputDipole] [filename (only needed for GRO/SKI formats)]
@@ -69,7 +69,7 @@ Then the x components of the transition dipole matrix are given in floats, follo
 \begin{center}
 \includegraphics[width=10cm]{file_structure.pdf}
 \end{center}
-\caption{\label{fig:filestructure}The file structure for the dipole, and position files.}
+\caption{\label{fig:filestructure}The file structure for the dipole, and position files. For the extended dipole position file first all x-components of the first set sites are given and then all x-components of the second set of sites.}
 \end{figure}
 
 The anharmonicity file is only given in the SKIBIN format.
@@ -107,8 +107,8 @@ of the snapshot (starting from 1). After this the upper tridiagonal matrix of th
 
 
 \subsection{NISE (Full nonadiabatic simulation)}
-The nonadiabatic linear and third-order response can be simulated with the 'NISE' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in \cite{Jansen.2010.JCP.132.224503}.
-The coupling propagation scheme is described in \cite{Liang.2012.JCTC.8.1706}.
+The nonadiabatic linear and third-order response can be simulated with the 'NISE' program utilizing the numerical integration of the Schr\"odinger equation (NISE) approach\cite{Jansen.2006.JPCB.110.22910,Jansen.2009.ACR.42.1405}. The sparse and double excited state propagation is described in Ref. \citenum{Jansen.2010.JCP.132.224503}.
+The coupling propagation scheme is described in Ref. \citenum{Liang.2012.JCTC.8.1706}. The parallelization of the code is described in Ref. \citenum{Sardjan.2020.J.Phys.Chem.B.124.9420}.
 The program require the Hamiltonian trajectory in binary format.
 The NISE program use the following input:\\
 \begin{description}
