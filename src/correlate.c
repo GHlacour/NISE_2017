@@ -159,7 +159,7 @@ void calc_Correlation(t_non *non){
     }
     fclose(outone);
 
-    outone=fopen("SkewnessMatrix.dat","w");
+    outone=fopen("Skewness.dat","w");
     for (ti=0;ti<T;ti++){
         fprintf(outone,"%f ",ti*non->deltat);
         /* Loop through pairs */
@@ -170,7 +170,7 @@ void calc_Correlation(t_non *non){
     }
     fclose(outone);
 
-    outone=fopen("KurtosisMatrix.dat","w");
+    outone=fopen("Kurtosis.dat","w");
     for (ti=0;ti<T;ti++){
         fprintf(outone,"%f ",ti*non->deltat);
         /* Loop through pairs */
