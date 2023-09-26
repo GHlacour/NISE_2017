@@ -336,7 +336,7 @@ void analyse(t_non *non){
   fprintf(outone,"# Using frequency range %f to %f cm-1\n",non->min1,non->max1);
   fprintf(outone,"# Site AvFreq. SDFreq AvJ SDJ cEig cDOS\n");
   for (i=0;i<non->singles;i++){
-    fprintf(outone,"%d %f %f %f %F %f %f\n",i,average_frequency[i]+non->shifte,fluctuation[i],average_coupling[i],Jfluctuation[i],cEig[i]/counts,cDOS[i]/counts);
+    fprintf(outone,"%d %f %f %f %F %e %e\n",i,average_frequency[i]+non->shifte,fluctuation[i],average_coupling[i],Jfluctuation[i],cEig[i]/counts,cDOS[i]/counts);
   }
   fclose(outone);
 
@@ -350,7 +350,7 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++) normal+=local_rho[i+non->singles*i];
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
-      fprintf(outone,"%f ",local_rho[i+non->singles*j]/normal);
+      fprintf(outone,"%e ",local_rho[i+non->singles*j]/normal);
     }
     fprintf(outone,"\n");
   }
@@ -366,7 +366,7 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++) normal+=spec_rho[i+non->singles*i];
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
-      fprintf(outone,"%f ",spec_rho[i+non->singles*j]/normal);
+      fprintf(outone,"%e ",spec_rho[i+non->singles*j]/normal);
     }
     fprintf(outone,"\n");
   }
@@ -382,7 +382,7 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++) normal+=rho2[i+non->singles*i];
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
-      fprintf(outone,"%f ",rho2[i+non->singles*j]/normal);
+      fprintf(outone,"%e ",rho2[i+non->singles*j]/normal);
     }
     fprintf(outone,"\n");
   }
