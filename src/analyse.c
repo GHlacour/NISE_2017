@@ -25,7 +25,7 @@ void analyse(t_non *non){
   float spectral_participation_ratio;
   float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
-  float *rho,*local_rho,*spec_rho,*rho2;
+  float *rho,*local_rho,*spec_rho,*rho2,*rho4;
 
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
@@ -78,6 +78,7 @@ void analyse(t_non *non){
   dip2=(float *)calloc(N,sizeof(float));
   rho=(float *)calloc(N*N,sizeof(float));
   rho2=(float *)calloc(N*N,sizeof(float));
+  rho4=(float *)calloc(N*N,sizeof(float));
   local_rho=(float *)calloc(N*N,sizeof(float));
   spec_rho=(float *)calloc(N*N,sizeof(float));
   mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
@@ -201,7 +202,7 @@ void analyse(t_non *non){
     spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
     local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
     find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
-    calc_densitymatrix(non,rho,rho2,local_rho,spec_rho,H,e,dip2);
+    calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
     counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
     /* Find Averages */
     for (i=0;i<non->singles;i++){
@@ -388,6 +389,21 @@ void analyse(t_non *non){
   }
   fclose(outone);
 
+  outone=fopen("ParticipationRatioMatrix.dat","w");
+  if (outone==NULL){
+    printf("Problem encountered opening ParticipationRatioMatrix.dat for writing.\n");
+    printf("Disk full or write protected?\n");
+    exit(1);
+  }
+  
+  normal=(non->singles*Nsam); 
+  for (i=0;i<non->singles;i++){
+    for (j=0;j<non->singles;j++){
+      fprintf(outone,"%e ",rho4[i+non->singles*j]/normal);
+    }
+    fprintf(outone,"\n");
+  }
+  fclose(outone);
 
   free(average_frequency);
   free(fluctuation);
@@ -404,6 +420,7 @@ void analyse(t_non *non){
   free(dip2);
   free(rho);
   free(rho2);
+  free(rho4);
   free(local_rho);
   free(spec_rho);
   
@@ -562,7 +579,7 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,floa
 
 /* Calculate full density matrix and density matrix is specific frequency
  * range in the site basis */
-void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *local_rho,float *spec_rho,float *H,float* e,float *dip2){
+void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *rho4,float *local_rho,float *spec_rho,float *H,float* e,float *dip2){
   int i,j,k,N;
   float shift,d;
   float max,min;
@@ -579,8 +596,11 @@ void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *local_rho,float
         /* Find density matrix element */
         d=H[i+j*N]*H[i+k*N];
         rho[j+k*N]+=d;
-	rho2[j+k*N]+=fabs(d);
+	rho4[j+k*N]+=d*d;
+	/* Only include the eigenstate if it is within the *
+	 * given spectral region */
         if (e[i]>min-shift && e[i]<max-shift){
+	  rho2[j+k*N]+=fabs(d);
           local_rho[j+k*N]+=d;
           spec_rho[j+k*N]+=d*dip2[i];
         }
