@@ -20,6 +20,16 @@ void subtractMean(float* signal, int N) {
     for (int i = 0; i < N; i++) {
         signal[i]-=sum;
     }
+
+    /* Repeat to remove errors for very long trajectories */
+    sum=0.0;
+    for (int i = 0; i < N; i++) {
+        sum += signal[i];
+    }
+    sum=sum/N;
+    for (int i = 0; i < N; i++) {
+        signal[i]-=sum;
+    }
 }
 
 
