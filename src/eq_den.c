@@ -61,56 +61,72 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   }
 
 /*Here we diagonalize the square Hamiltonian, the H is replaced by the eigenvector in eigen basis, e is the eigenvalue */
-
+  //write_matrix_to_file("ham_site.dat",H,N);
   diagonalizeLPD(H,e,N);
-  
+
+  //write_matrix_to_file("ham_eigen.dat",H,N);
   /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
       e_1[a]=exp(-e[a]/kBT);
       /* Apply strict high temperature limit when T>100000 */
-      if (non->temperature>100000){
-	      e_1[a]=1;
+      //if (non->temperature>100000){
+	      //e_1[a]=1;
    
-      }
+     // }
   }
   
 
 /*Here we need to normalize rho, exp(-KB*H)/[Trexp(-KB*H)] within every segment*/
 /*We first sum the diagonal element in one segment*/
-  for (site_num=0;site_num<non->singles;site_num++){
-    seg_num=non->psites[site_num];
-    diag_sum[seg_num]+= e_1[site_num];
+  for (seg_num=0;seg_num<pro_dim;seg_num++){
+    for (site_num=0;site_num<non->singles;site_num++){
+      if (seg_num == non->psites[site_num]){
+        diag_sum[seg_num]+= e_1[site_num];
+      }
+    }
   }
 
     /*Secondly, we normalize the density matrix within one segment*/
     //for (seg_num=0;seg_num<pro_dim;seg_num++){
   for (site_num_1=0;site_num_1<non->singles;site_num_1++){
     seg_num=non->psites[site_num_1];
+
+
     //for (site_num_2=0;site_num_2<non->singles;site_num_2++){
       //if (seg_num==non->psites[site_num_2]){
-      e_1[site_num_1]=e_1[site_num_1]=e_1[site_num_1]/diag_sum[seg_num];
-     //printf(" %f\n", e_1[0]);
-     //printf(" %f\n", e_1[1]);
+      e_1[site_num_1]=e_1[site_num_1]/diag_sum[seg_num];
+
       //}
     //}
   }
+    /*printf("this is e_1[0] ") ;
+    printf(" %f\n", e_1[0]);
+    printf("this is e_1[1] ") ;
+    printf(" %f\n", e_1[1]);
+    printf("this is e_1[2] ") ;
+    printf(" %f\n", e_1[2]);
+    printf("this is e_1[3] ") ;
+    printf(" %f\n", e_1[3]);*/
   //exit(0);
+
   /* Transform back to site basis */ 
   for (a=0;a<N;a++){
       for (b=0;b<N;b++){
-          rho_r[b+a*N]+=H[b+a*N]*e_1[b];
+          rho_r[b+a*N]+=H[b+a*N]*e_1[a];
           rho_l[b+a*N]=0;
-
       }
   }  
+
 
   for (a=0;a<N;a++){
       for (b=0;b<N;b++){
           for (c=0;c<N;c++){
-              rho_l[a+c*N]+=H[b+a*N]*rho_r[b+c*N];
+            rho_l[a+c*N]+=H[b+a*N]*rho_r[b+c*N];
+            //rho_l[a+c*N]+=rho_r[b+a*N]*H[b+c*N];
           }
       }
   }
+
  //printf(" %f\n", rho_l[1]);
 /* The weights in the site basis were calculated, 
 Here we should not combine the two loop in one loop as it would results in the heary calcuation.*/
@@ -276,25 +292,37 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
     free(Kcopy), free(work), free(pivot);
     return;
 }
+/* Write a square matrix to a text file */
+void write_matrix_to_file(char fname[],float *matrix,int N){
+  FILE *file_handle;
+  int i,j;
+  file_handle=fopen(fname,"w");
+  for (i=0;i<N;i++){
+    for (j=0;j<N;j++){
+      fprintf(file_handle,"%10.14e ",matrix[i*N+j]);
+    }
+    fprintf(file_handle,"\n");
+  }
+  fclose(file_handle);
+}
 
-void pe_pa_cr(int t1, int t2, int t3, float polWeight, 
-float up_ver3_SE_re_NR, float up_ver3_SE_re_R, float up_ver3_GB_re_NR, float up_ver3_GB_re_R,
- float up_ver3_EA_re_NR, float up_ver3_EA_re_R,
-float up_ver3_SE_im_NR , float up_ver3_GB_im_NR,   float up_ver3_EA_im_NR,   
-float up_ver3_SE_im_R,   float up_ver3_GB_im_R,    float up_ver3_EA_im_R,
-float *re_2DES_NR_pe,float *re_2DES_R_pe, float *im_2DES_NR_pe,  float *im_2DES_R_pe,  t_non *non){
+/* Write a Hamiltonian to a text file */
+void write_ham_to_file(char fname[],float *Hamiltonian_i,int N){
+  FILE *file_handle;
+  int i,j;
+  int index;
+  //float *H;
+  //H=(float *)calloc(N*N,sizeof(float));
+
+  // Build Hamiltonian, convert the triangular Hamiltonian to the  square Hamiltonian
 
 
-re_2DES_NR_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_re_NR*polWeight;
-re_2DES_NR_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_re_NR*polWeight;
-re_2DES_NR_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_re_NR*polWeight;
-re_2DES_R_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_re_R*polWeight;
-re_2DES_R_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_re_R*polWeight;
-re_2DES_R_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_re_R*polWeight;
-im_2DES_NR_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_im_NR*polWeight;
-im_2DES_NR_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_im_NR*polWeight;
-im_2DES_NR_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_im_NR*polWeight;
-im_2DES_R_pe[t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_SE_im_R*polWeight;
-im_2DES_R_pe[non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_GB_im_R*polWeight;
-im_2DES_R_pe[2*non->tmax1*non->tmax2*non->tmax3+t1+t3*non->tmax1+t2*non->tmax1*non->tmax3]+=up_ver3_EA_im_R*polWeight;
-}       
+  file_handle=fopen(fname,"w");
+  for (i=0;i<N;i++){
+    for (j=0;j<N;j++){
+      fprintf(file_handle,"%10.14e ",Hamiltonian_i[Sindex(i,j,N)]);
+    }
+    fprintf(file_handle,"\n");
+  }
+  fclose(file_handle);
+}

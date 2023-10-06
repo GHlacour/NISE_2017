@@ -701,8 +701,7 @@ int time_evolution_mat(t_non* non, float* Hamiltonian_i, float* Ur, float* Ui, i
             H[a + N * b] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
             H[b + N * a] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
         }
-    }
-    diagonalizeLPD(H, e, N);
+    }    diagonalizeLPD(H, e, N);
     /* Exponentiate [U=exp(-i/h H dt)] */
     for (a = 0; a < N; a++) {
         re_U[a] = cos(e[a] * f);
