@@ -388,6 +388,9 @@ void analyse(t_non *non){
     fprintf(outone,"\n");
   }
   fclose(outone);
+  /* Do clustering with Absolute Density Matrix */
+  cluster(non,rho2);
+
 
   outone=fopen("ParticipationRatioMatrix.dat","w");
   if (outone==NULL){
@@ -608,3 +611,58 @@ void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *rho4,float *loc
     }
   }        
 }
+
+/* Define Segments depending on a clustering of the absolute density matrix */
+void cluster(t_non *non,float *rho){
+   int *segments;
+   int i,j,k;
+   int N;
+   int n_seg;
+   FILE *handle;
+   N=non->singles;
+
+   segments=(int *)calloc(N,sizeof(int));
+
+   /* Assign all sites their own segment as a start */
+   for (i=0;i<N;i++){
+       segments[i]=i;
+   }
+
+   /* Run over all possible segments */
+   for (i=0;i<N;i++){
+       /* Run over all other sites */
+       for (j=i+1;j<N;j++){
+	   if (rho[i+j*N]>0.5*sqrt(rho[i+i*N]*rho[j+j*N])){
+	      segments[j]=segments[i];
+	   }
+       }
+   }
+
+   /* Reduce segments numbers */
+   n_seg=0;
+   for (i=0;i<N;i++){
+       if (segments[i]>n_seg){
+	  /* Update segment numbers */
+	  n_seg=n_seg+1;
+	  for (j=i+1;j<N;j++){
+              if (segments[j]==segments[i]){
+		 segments[j]=n_seg;
+              }
+	  }
+	  segments[i]=n_seg;
+       }
+   }
+   printf("\nIdentified %d segments\n\n",n_seg+1); 
+   
+
+   handle=fopen("Segments.dat","w");
+   fprintf(handle,"%d\n",N);
+   /* Run over all sites */
+   for (i=0;i<N;i++){
+     fprintf(handle,"%d ",segments[i]);	   
+   }
+   fclose(handle);
+
+   free(segments);
+}
+
