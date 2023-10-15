@@ -187,6 +187,7 @@ int determine_samples (t_non *non){
 
 // Forms a string with the time difference between the given times
 char* time_diff(time_t t0, time_t t1) {
+    int control;
     int s = difftime(t1, t0);
     int h = s / 3600;
     s = s % 3600;
@@ -194,12 +195,13 @@ char* time_diff(time_t t0, time_t t1) {
     s = s % 60;
 
     char* text;
-    asprintf(&text, "Time spent: %dh %dmin %ds\n", h, m, s);
+    control=asprintf(&text, "Time spent: %dh %dmin %ds\n", h, m, s);
     return text;
 }
 
 // Forms a string with the times for MPI_Wtime
 char* MPI_time(double t0) {
+    int control;
     int ms =t0*1000; // Convert to milliseconds
     int h = ms / 3600000;
     ms = ms % 3600000;
@@ -209,7 +211,7 @@ char* MPI_time(double t0) {
     ms = ms % 1000;
 
     char* text;
-    asprintf(&text, " %dh %dmin %ds %dms\n", h, m, s, ms);
+    control=asprintf(&text, " %dh %dmin %ds %dms\n", h, m, s, ms);
     return text;
 }
 
@@ -359,8 +361,10 @@ int autodetect_singles(t_non* non){
     int samples;
     int n,nn2;
     int identified;
+    int identified2;
 
     identified=0;
+    identified2=0;
     nn2=non->singles*(non->singles+1)/2;
     Hamil_i_e = (float *)calloc(nn2, sizeof(float));
     /* Open Trajectory files */
@@ -369,20 +373,50 @@ int autodetect_singles(t_non* non){
         printf("Hamiltonian file not found!\n");
         return 1;
     }
-    for (n=1;n<non->singles*10;n++){
-      if (!strcmp(non->hamiltonian, "Coupling")) {
-         identified=-2;
-      }
-      if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
-         identified=-2;
-      }
-      if (!strcmp(non->hamiltonian, "Full")) {
-	 fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
-	 fread(&i,sizeof(int),1,H_traj);
+
+    /* Check if user provided Singles is correct */
+    n=non->singles;
+    if (!strcmp(non->hamiltonian, "Coupling")) {
+       identified2=-2;
+    }
+    if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+       identified2=-2;
+    }
+    if (!strcmp(non->hamiltonian, "Full")) {
+         fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+         fread(&i,sizeof(int),1,H_traj);
          fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
          fread(&f,sizeof(float),1,H_traj);
-	 //printf("%d %d %f\n",n,i,f);
+         //printf("%d %d %f\n",n,i,f);
          if (abs(i)<1000 || f==floorf(f)){
+            printf("Autodetected potential singles at %d\n",n);
+            if (n==non->singles){
+               identified2=-1;
+            }
+            if (n!=non->singles){
+               identified2=n;
+            }
+         }
+      }
+
+    /* Check alternative settings */
+    if (identified2==-1){
+      identified=-1;
+    } else {
+      for (n=1;n<non->singles*10;n++){
+        if (!strcmp(non->hamiltonian, "Coupling")) {
+           identified=-2;
+        }
+        if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+           identified=-2;
+        }
+        if (!strcmp(non->hamiltonian, "Full")) {
+	  fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+	  fread(&i,sizeof(int),1,H_traj);
+          fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+          fread(&f,sizeof(float),1,H_traj);
+	  //printf("%d %d %f\n",n,i,f);
+          if (abs(i)<1000 || f==floorf(f)){
             printf("Autodetected potential singles at %d\n",n);
 	    if (n==non->singles){
 	       identified=-1;
@@ -392,11 +426,13 @@ int autodetect_singles(t_non* non){
 	       identified=n;
 	       break;
 	    }
-	 }
+	  }
+        }
       }
     }
+
     if (identified==0){
-       printf(RED "Warning: Autodetection of sites failed. You may need to increase Singles\n" RESET);
+       printf(RED "Warning: Autodetection of sites failed. Verify that your Singles setting is correct.\n" RESET);
     }
     if (identified==-1){
        printf("Singles confirmed by auto detection.\n");

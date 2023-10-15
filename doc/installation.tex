@@ -1,0 +1,141 @@
+\chapter{Installation and options}
+A demonstration for installing NISE can be found on YouTube: \url{https://www.youtube.com/watch?v=npvV9UOFmDg&t=7s}.
+NISE has a number of dependencies:
+\begin{itemize}
+\item FFTW3 library, possibly with OpenMP/MPI support. See \url{http://www.fftw.org/}.
+\item LAPACK library, often preinstalled. See \url{http://www.netlib.org/lapack/}.
+\item CMake v3.10 or higher
+\item MPI v3 implementation, such as OpenMPI, MPICH (Unix) or MS-MPI (Windows)
+\item Modern C compiler, implementing a recent OpenMP version
+\item LaTeX + BibTex distribution if you want to build the documentation. Not required
+\item DISLIN, python, MATLAB, or gnuplot, for plotting the results using the included scripts
+\end{itemize}
+As some FFTW3 installations do not come with the correct CMake compatibility, it might be useful to use \href{https://github.com/microsoft/vcpkg}{vcpkg} as package manager for C++ libraries. This package manager is cross-platform compatible.
+
+\section{Building}
+In order to build and compile the NISE software, it is recommended to use the CMake build system. This will try to automatically link the libraries and pick the correct compiler settings.
+\begin{enumerate}
+\item Extract the source code files.
+\item Create a \texttt{build} directory in the main folder using \ilc{mkdir build}.
+\item Run \ilc{cmake ..} inside this new \ilc{build} directory.
+\item If \ilc{cmake} was successful, run ilc{make} in the same directory to start compilation.
+\item All executables should be available in a new \ilc{bin} directory in the main folder.
+\end{enumerate}
+
+\noindent
+Additional steps to install on MacOS and Windows can be found in section 2.2.\\
+
+There are several options you can provide to the \ilc{cmake} command in order to customize your build:
+\begin{itemize}
+\item \ilc{-DCMAKE\_BUILD\_TYPE}: By default, this is set to \ilc{ RelWithDebInfo}. Other options include \ilc{Debug}, \ilc{Release} and \ilc{MinSizeRel}. Refer to the CMake documentation for more information
+\item \ilc{-DGENERATE\_DOCS}: When not set, CMake will attempt to compile this documentation only when building a Release build. You can override this by setting this variable to \ilc{true} or \ilc{false}.
+\item \ilc{-DACCURATE\_MATHS}: When set, CMake will compile the code to use accurate mathematics implementations (as is default when using a C compiler). When not set, the compiler will use the fast-math option (\ilc{-ffast-math}, \ilc{/fp:fast} or equivalent) which may yield upto 2x speed-up at the minor cost of numerical accuracy.
+\end{itemize}
+
+After running CMake, the following build targets will have been provided for \ilc{make}:
+\begin{itemize}
+\item \ilc{all}: Same as not providing a build target, will build all source code for the program, but will skip the documentation and the examples
+\item \ilc{2DFFT}: Will build the 2DFFT executable, used to process results
+\item \ilc{translate}: Will build the translation utility, used to convert between input formats
+\item \ilc{NISE}: Will build the main NISE executable
+\item \ilc{doc}: Will build this documentation from scratch
+\item \ilc{examples}: Will build the code necessary for the examples, used later in this document.
+\end{itemize}
+
+\section{Installation Trouble Shooting}
+If the automatic installation procedure outlined above does not work this section contains a few potential solutions. It is of course important first to verify that the libraries specified in the dependencies are available.
+
+If the FFTW libraries are not detected by the cmake routine the follwing cmake options may be specified by hand:
+\begin{lstlisting}[style=mystyle]
+cmake .. -DFFTW_ROOT=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/lib
+ -DFFTW_LIBRARY=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/lib
+ -DFFTW_INCLUDE_DIRS=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/include
+\end{lstlisting}
+The names of the directory locations nust then be changed to the actual locations on the given system.  The example abouve is for a fftw library compiled with the gcc compiler.
+
+The program can also be installed on the Mac OSX system. However, the standard compiler does not come with OpenMP support. An OpenMP library must therefore be installed first. This can be done using the homebrew system. Details of the installation of homebrew are given on \texttt{http://brew.sh}. Then an OpenMP library as lipomp can be installed with \texttt{brew install libomp}. If the version of cmake is also not recent enough a suitable cmake version can be installed with homebrew as well. Finally, the programme can be build following the general instructions above for building, but with useing the command:
+\begin{lstlisting}[style=mystyle]
+/usr/local/bin/cmake .. -DCMAKE_C_COMPILER="clang"
+ -DOpenMP_C_LIB_NAMES="libomp" -DOpenMP_CXX_LIB_NAMES="libomp"
+ -DOpenMP_libomp_LIBRARY="/usr/local/lib/libomp.dylib"
+ -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp /usr/local/lib/libomp.dylib
+ -I/usr/local/opt/include"
+\end{lstlisting}
+Here, the location of the installed cmake version and the libomp version may have to be changed to match the location when these were installed by homebrew.
+
+Alternatively macports can be used in a very similar way to homebrew. Install libomp with \ilc{sudo port install libomp}. The location of omp.h may be different than expected by CMake, which may be fixed with\\ \ilc{sudo ln -s /opt/local/include/libomp/omp.h /opt/local/include/omp.h} or\\ \ilc{sudo port install libomp +top\_level}.
+
+The code can also be installed on a Raspberry Pi 4. This requires the installation of the already discussed packages which can be done with:
+\begin{lstlisting}[style=mystyle]
+sudo apt update
+sudo apt install -y cmake
+sudo apt install libopenblas-dev
+sudo apt install libfftw3-dev
+sudo apt install libopenmpi-dev
+sudo apt install python3-matplotlib
+\end{lstlisting}
+When running on this system one needs to keep in mind the limited disk space and memory of the system. However, the NISE program itself easily installs and run on this system. 
+
+The program can also be installed with Windows 10 and newer, using the Windows Subsystem for Linux (WSL). This is a feature built into Windows that allows users to run Linux virtual machines. To install WSL, follow the instructions at \url{https://learn.microsoft.com/en-us/windows/wsl/install}. After that, a Linux terminal can be opened from the Start Menu. The process to install NISE will be identical to the installation process on Raspberry Pi 4.
+
+\section{Parallelization}
+NISE is equipped with support for MPI and OpenMP, to provide a tiered parallelization solution. Currently, both the time consuming 2DIR and 2DUVvis techniques support MPI. The linear techniques do not have a parallel implementation as they are generally fast. (Techniques relying on LAPACK including Luminescence may use the MLK OpenMP support for limited speedup.)
+
+For the two-dimensional techniques, it is recommended to understand the implemented approach for parallelization in order to achieve good performance. Each run will calculate a specified number of samples, each for 21 different polarization directions. The calculation time for each polarization direction is determined by the chosen values for \ilo{t1max}, \ilo{t2max}, and \ilo{t3max}.
+
+All polarization directions may efficiently be calculated in parallel using MPI, distributed over all registered tasks (more explanation follows later). As long as you have sufficiently many samples, this will scale very well. In general, it is recommended to have a fraction or multiple of 21 as number of tasks, in order to make sure that no cores are simply waiting around after completing their part of the calculations.
+
+Within each polarization direction, loops over the t1 coherence times are parallelized using OpenMP. Due to communication overhead and data sharing difficulties, this does not scale as well as the MPI parallelization. If possible, it is recommended to overprovision your cores, i.e. to make the system spawn more threads than there are cores available. The larger the computation per polarization direction (so higher t2, t3, system size \ilk{Singles}), the better this part will scale. It is recommended that the number of OpenMP threads is either small compared to \ilo{t1max } or that \ilo{t1max}+1 is equal to an integer times the number of OpenMP threads.
+
+For example, to run 4 tasks with each 12 threads with OpenMPI, use the following command:
+\begin{lstlisting}[style=BashInputStyle]
+mpirun -np 4 -x OMP_NUM_THREADS=12 --bind-to-socket ~/pathToNISE/NISE inputFile
+\end{lstlisting}
+
+For cluster computing refer to the manual for the cluster. Special commands as \ilc{srun} may be required for {\tt SLURM} systems. The MPI implementation require all input files to be located at a disk available to all nodes.
+
+\subsection{Efficiency considerations}
+Some considerations and examples to achieve higher performance:
+\begin{itemize}
+\item As OpenMP parallelization uses shared memory, it is necessary to limit each task to one node. If possible, it is recommended to limit a task even to one socket, or in case of more modern chips, 1 NUMA node. However, this might make the runtime for one polarization direction too high, so it might be worthwhile to trade some efficiency for shorter runtimes.
+\item It is recommended to overprovision your OpenMP threads by a factor of 2-3. So if a NUMA node has 12 cores, you could pin the threads of this task to this NUMA node and tell OpenMP to create 24-36 threads. Thread pinning differs per OS and more details can be found online. Many popular workload schedulers like SLURM, and some MPI implementations, offer this built-in (for example, \ilc{--bind-to-socket} in the command above).
+\item The most efficient workload division also depends on the problem size, for larger problems with fewer samples, the OpenMP scaling is more efficient than for smaller problems with more samples.
+\item For example, on a machine with 2 12-core Xeon processors (single NUMA node per socket), it is most efficient to run 4 tasks, with 12 threads assigned to each task (overprovisioning). However, for very large problems with only 2 or 3 samples, it might be better to scale down to 2 tasks, each with 24 threads. For smaller problems with many samples, 8 tasks with 6 threads might be better. In general, it is good to do some quick performance tests beforehand.
+\end{itemize}
+
+\section{Changelog}
+\subsection{Version 3.4 in progress}
+{\small Work by Thomas Jansen, Carleen D. N. van Hengel, Hoang Long Nguyen, and Kim van Adrichem}
+\begin{itemize}
+\item Improve manual for Windows 10 installation. (Hoang Long Nguyen)
+\item The 2DFFT code was cleaned up
+\item Raman and 2DIRraman techniques were added (Carleen D. N. van Hengel)
+\item openMP parallel CD and DOS were implemented
+\item Diffusion calculations were added
+\item On the fly transition-dipole and extended-dipole coupling schemes were impemented
+\item Added project file option to project on substructures - including multi segment options for linear techniques
+\item Added inhomogeneous and homogeneous apodization functions
+\item Added automatic check on Singles keyword providing warning to user if it may be incorrect
+\item Implemented speed-up (x2) of 2D calculations by removing if statements in propagation of double excited states (2DIR by Kim van Adrichem)
+\end{itemize}
+\subsection{Version 3.3}
+{\small Work by Thomas Jansen}
+\begin{itemize}
+\item Extended MPI support to 2DIR
+\item Implemented true two-state behaviour for the *UVvis techniques
+\item Added linear dichroism
+\item Changed timing information for two-dimensional calculations to percentage of full calculation based
+\item Important change in naming of 2DIR sub techniques to contain IR at the end (GBIR, SEIR, EAIR, etc.).
+\end{itemize}
+	\subsection{Version 3.2}
+{\small Work by Floris Westerman}
+\begin{itemize}
+\item Added CMake build system and improved cross-platform compatibility
+\item Added MPI support to offer significantly better scaling across multiple nodes, instead of just a single one
+\item Improved code efficiency, around 4x speed-up of main algorithm code of *UVvis techniques
+\end{itemize}
+
+\subsection{Version 3.1}
+\begin{itemize}
+\item Included OpenMP support for two-dimensional calculations
+\end{itemize}

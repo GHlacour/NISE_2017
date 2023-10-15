@@ -23,6 +23,7 @@
 #include "anisotropy.h"
 #include "mcfret.h"
 #include "propagate.h"
+#include "correlate.h"
 #include <mpi.h>
 
 /* This is the 2017 version of the NISE program
@@ -131,6 +132,13 @@ int main(int argc, char* argv[]) {
         // Does not support MPI
         if (parentRank == 0)
             analyse(non);
+    }
+
+    // Call the Hamiltonian Correlate routine
+    if (!strcmp(non->technique, "Correlation")) {
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Correlation(non);
     }
 
     // Call the Population Transfer routine
