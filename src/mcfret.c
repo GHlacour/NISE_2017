@@ -822,18 +822,21 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
 
     /* Check for difference between integration methods */
     if (fabs(simple-simp13)/fabs(simp13)>0.05){
+      printf("\n");
       printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
       printf(YELLOW "Simple integral value %f and Simpson 1/3 %f.\n" RESET,simple,simp13);
-      printf(YELLOW "This difference is larger than 5%.\n" RESET);
+      printf(YELLOW "This difference is larger than 5%.\n\n" RESET);
     }
 
     /* Check for difference between initial and final value */
     if (fabs(rate_response[T-1])*100>rate_response[0]){
+	printf("\n");
         printf(YELLOW "Final value of rate response is larger than\n");
-	printf("1% of the initial value. You may avearge over too\n");
+	printf("1\% of the initial value. You may avearge over too\n");
 	printf("few samples (decrease the value of Samplerate) or\n");
 	printf("your chosen coherence time of %d steps, may\n",T);
 	printf("be too short for the coherence to decay.\n." RESET);
+	printf("\n");
     }
 
     /* Store results in variables for return */

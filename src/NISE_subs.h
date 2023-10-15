@@ -4,7 +4,7 @@
 #include "lapack.h"
 void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
-
+void not_parallel();
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
 void clearvec_double(double* a, int N);

@@ -30,6 +30,13 @@ void free2D(void** arr) {
     free(arr);
 }
 
+/* Inform user that they are trying to run code in parallel that is not parallelized */
+void not_parallel(){
+    printf(RED "This part of the code is not parallel!!!\n");
+    printf("You may waiste valuable computational resources.\n");
+    printf("Consider running in serial if possible.\n\n" RESET);
+}
+
 // Copy a vector
 void copyvec(float* a, float* b, int N) {
     int i;
