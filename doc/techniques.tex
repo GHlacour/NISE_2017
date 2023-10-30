@@ -48,19 +48,19 @@ Not implemented yet (check NISE\_2015)
 \section{DOS$^{+}$}
 The density of states is calculated using the response function:
 \begin{equation}
-	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/T_1).
+	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain density of states, which is stored in the file DOS.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
 \section{Absorption}
 The linear absorption is calculated using the first-order response function \cite{Duan_2015}
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. 
 \section{Luminescence}
 The luminescence is calculated using the first-order response function
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function ($Z$). 
 \section{LD (linear dichroism)}
@@ -68,13 +68,13 @@ The linear dichroism is calculated identically to the linear absorption except t
 \section{CD (circular dichroism)$^{+}$}
 The circular dichroism is calculated using the first-order response function
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. Note that the positions of the chromophores must be provided in the Positions file. The calculation does \textit{not} account for periodic boundary positions and the positions must at all times along the position trajectory be specified accordingly.
 \section{Raman}
 The Raman response is calculated as \cite{Torii.2002.J.Phys.Chem.A.106.3281,Shi.2012.J.Phys.Chem.B.116.13821}
 \begin{equation}
-        I^{VV/VH}(t)=\sum_{a,b,c,d}^{x,y,z}A^{VV/VH}_{abcd}\langle\alpha_{ab}(t)U(t,0)\alpha_{cd}(0)\rangle\exp(-t/T_1),
+        I^{VV/VH}(t)=\sum_{a,b,c,d}^{x,y,z}A^{VV/VH}_{abcd}\langle\alpha_{ab}(t)U(t,0)\alpha_{cd}(0)\rangle\exp(-t/2T_1),
 \end{equation}
 where $A^{VV/VH}_{abcd}$ is the orientational weighting factor as defined in Ref. \citenum{Shi.2012.J.Phys.Chem.B.116.13821}. 
 Both the all parallel (VV) and perpendicular (VH) components are calculated. The calculation require that the transition-polarizability file is provided with all six independent components stored. The data are stored in the files Raman\_VV.dat and Raman\_VH.dat.
