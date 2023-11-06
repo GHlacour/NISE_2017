@@ -22,6 +22,7 @@
 #include "population.h"
 #include "anisotropy.h"
 #include "propagate.h"
+#include "correlate.h"
 #include <mpi.h>
 
 /* This is the 2017 version of the NISE program
@@ -132,6 +133,13 @@ int main(int argc, char* argv[]) {
             analyse(non);
     }
 
+    // Call the Hamiltonian Correlate routine
+    if (!strcmp(non->technique, "Correlation")) {
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Correlation(non);
+    }
+
     // Call the Population Transfer routine
     if (!strcmp(non->technique, "Pop")) {
         // Does not support MPI
@@ -201,8 +209,8 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "SFG")) { }
 
     // Call the 2DIR calculation routine
-    if (!strcmp(non->technique, "2DIR") || (!strcmp(non->technique, "GB")) || (!strcmp(non->technique, "SE")) || (!
-        strcmp(non->technique, "EA")) || (!strcmp(non->technique, "noEA"))) {
+    if (!strcmp(non->technique, "2DIR") || (!strcmp(non->technique, "GBIR")) || (!strcmp(non->technique, "SEIR")) || (!
+        strcmp(non->technique, "EAIR")) || (!strcmp(non->technique, "noEAIR"))) {
         // Does support MPI
         calc_2DIR(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
