@@ -270,17 +270,20 @@ void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float
     float cr1, cr2, ci1, ci2;
     float co, si;
     int i, k, kmax;
+    int N2;
 
     N = non->singles;
+    N2=(N*(N-1))/2;
     f = non->deltat * icm2ifs * twoPi * sign / m;
-    H0 = (float *)calloc(N, sizeof(float));
-    H1 = (float *)calloc(N * N, sizeof(float));
-    col = (int *)calloc(N * N / 2, sizeof(int));
-    row = (int *)calloc(N * N / 2, sizeof(int));
-    re_U = (float *)calloc(N, sizeof(float));
-    im_U = (float *)calloc(N, sizeof(float));
-    ocr = (float *)calloc(N, sizeof(float));
-    oci = (float *)calloc(N, sizeof(float));
+    H0 = (float *)malloc(N*sizeof(float));
+    H1 = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    re_U = (float *)malloc(N*sizeof(float));
+    im_U = (float *)malloc(N*sizeof(float));
+    ocr = (float *)malloc(N*sizeof(float));
+    oci = (float *)malloc(N*sizeof(float));
+
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
     k = 0;
@@ -343,14 +346,14 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
     const float f = non->deltat * icm2ifs * twoPi / m;
     float si, co;
     float si2, co2;
-    float* H0 = calloc(N2, sizeof(float));
-    float* H1 = calloc(N * N / 2, sizeof(float));
-    int* col = calloc(N * N / 2, sizeof(int));
-    int* row = calloc(N * N / 2, sizeof(int));
-    float* re_U = calloc(N2, sizeof(float));
-    float* im_U = calloc(N2, sizeof(float));
-    float* ocr = calloc(N2, sizeof(float));
-    float* oci = calloc(N2, sizeof(float));
+    float* H0 = malloc(N2* sizeof(float));
+    float* H1 = malloc(N * N / 2* sizeof(float));
+    int* col = malloc(N * N / 2* sizeof(int));
+    int* row = malloc(N * N / 2* sizeof(int));
+    float* re_U = malloc(N2* sizeof(float));
+    float* im_U = malloc(N2* sizeof(float));
+    float* ocr = malloc(N2* sizeof(float));
+    float* oci = malloc(N2* sizeof(float));
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
     for (int a = 0; a < N; a++) {
