@@ -697,22 +697,26 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
 /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
 void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments){
     int index,N;
-    float *H,*e,*c2;
-    float *cnr;
+    float *H,*e;
+    double *c2;
+    double *cnr;
+    double *matrix;
 
     N=non->singles;
     H=(float *)calloc(N*N,sizeof(float));
     e=(float *)calloc(N,sizeof(float));
-    c2=(float *)calloc(N,sizeof(float));
-    cnr=(float *)calloc(N*N,sizeof(float));
+    c2=(double *)calloc(N,sizeof(double));
+    cnr=(double *)calloc(N*N,sizeof(double));
+    matrix=(double *)calloc(N*N,sizeof(double));
 
     int a,b,c;
-    float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
-    float *Q,iQ;
+    double kBT=(double) non->temperature*k_B; /* Kelvin to cm-1 */
+    double *Q,iQ;
  
     clearvec(density_matrix,N*N);
 
-    Q=(float *)calloc(segments,sizeof(float));  
+    Q=(double *)calloc(segments,sizeof(double));  
+
     /* Build Hamiltonian */
     for (a=0;a<N;a++){
         H[a+N*a]=Hamiltonian_i[a+N*a-(a*(a+1))/2]; /* Diagonal */
@@ -722,8 +726,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
         }
     }
     /* Find eigenvalues and eigenvectors */
-    diagonalizeLPD(H,e,N);
-  
+    diagonalizeLPD(H,e,N); 
  
     /* Exponentiate [U=exp(-H/kBT)] */
     for (a=0;a<N;a++){
@@ -732,35 +735,35 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
             exit(0);
         }
 
-        c2[a]=exp(-e[a]/kBT);
+        c2[a]=exp(-((double) (e[a]-e[N-1]))/kBT);
         /* Apply strict high temperature limit when T>100000 */
         if (non->temperature>100000){
-	        c2[a]=1;
+	        c2[a]=1.0;
         }
     }
 
     /* Transform back to site basis */ 
     for (a=0;a<N;a++){
         for (b=0;b<N;b++){
-            cnr[b+a*N]+=H[b+a*N]*c2[b];
+            cnr[b+a*N]+=((double) H[b+a*N])*c2[b];
         }
     }  
     for (a=0;a<N;a++){
         for (b=0;b<N;b++){
             for (c=0;c<N;c++){
-                density_matrix[a+c*N]+=H[b+a*N]*cnr[b+c*N];
+                matrix[a+c*N]+=H[b+a*N]*cnr[b+c*N];
             }
         }
     }
   
     /* Find the partition function for each segment */
     for (a=0;a<N;a++){
-        Q[non->psites[a]]+=density_matrix[a+a*N];
+        Q[non->psites[a]]+=matrix[a+a*N];
     }
     /* Re-normalize */
     for (a=0;a<N;a++){
         for (b=0;b<N;b++){
-    	    density_matrix[a+b*N]=density_matrix[a+b*N]/Q[non->psites[a]];
+    	    density_matrix[a+b*N]=(float) (matrix[a+b*N]/Q[non->psites[a]]);
         }
     }      
 
