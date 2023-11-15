@@ -22,6 +22,7 @@ void mcfret(t_non *non){
     float *E;
     float *rate_matrix;
     float *coherence_matrix;
+    float *ave_vecr;
 
     /* Allocate memory for the response functions */
     nn2=non->singles*non->singles;
@@ -31,6 +32,7 @@ void mcfret(t_non *non){
     im_Emi=(float *)calloc(nn2*non->tmax1,sizeof(float));
     J=(float *)calloc(nn2,sizeof(float));
     E=(float *)calloc(non->singles,sizeof(float));
+    ave_vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
 
     /* The rate matrix is determined by the integral over t1 for */
     /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
@@ -50,17 +52,17 @@ void mcfret(t_non *non){
     ) {
         printf("Performing MCFRET calculation.\n");
     }
-
-    /* Call the absorption routine */
+    /*calculate the average density matrix*/
+    average_density_matrix(ave_vecr,non);
+    write_matrix_to_file("Average_Density.dat",ave_vecr,non->singles);
+ /* Call the absorption routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Absorption"))){
-        printf("Starting calculation of the absorption matrix.\n");
-        mcfret_response_function(re_Abs,im_Abs,non,0);
+        mcfret_response_function(re_Abs,im_Abs,non,0,ave_vecr);
     }
    
-    /* Call the emission routine */
+/* Call the emission routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
-	      printf("Starting calculation of the emission matrix.\n");
-        mcfret_response_function(re_Emi,im_Emi,non,1);
+        mcfret_response_function(re_Emi,im_Emi,non,1,ave_vecr);
     }
     
     /* Call the coupling routine */
@@ -98,7 +100,7 @@ void mcfret(t_non *non){
 	    }
 
 	    /* Calculate the expectation value of the segment energies */
-	    mcfret_energy(E,non,segments);
+	    mcfret_energy(E,non,segments, ave_vecr);
 	    /* Analyse the rate matrix */
         mcfret_analyse(E,rate_matrix,non,segments);	    
     }
@@ -116,7 +118,7 @@ void mcfret(t_non *non){
 }
 
 /* Calculate Absorption/Emission matrix (depending on emission variable 0/1) */
-void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission){
+void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission,float *ave_vecr){
     /* Define variables and arrays */
     /* Integers */
     int nn2;
@@ -203,12 +205,11 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
                 multi_projection_Hamiltonian(Hamil_i_e,non);
 
                 /* Use the thermal equilibrium as initial state */
-                density_matrix(vecr,Hamil_i_e,non,segments);
-		        if (samples==0) write_matrix_to_file("Density.dat",vecr,non->singles);
-            } else { 
+                copyvec(ave_vecr,vecr,non->singles*non->singles);
+              } else { 
                 unitmat(vecr,non->singles);
-		        if (samples==0) write_matrix_to_file("Unit.dat",vecr,non->singles);
-            }
+                write_matrix_to_file("Unit.dat",vecr,non->singles);
+                    }
             clearvec(veci,non->singles*non->singles);
         
             /* Loop over delay */ 
@@ -555,7 +556,7 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
 }
 
 /* Find the energy of each segment */
-void mcfret_energy(float *E,t_non *non,int segments){
+void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){c
     /* Define variables and arrays */
     /* Integers */
     int nn2;
@@ -632,7 +633,7 @@ void mcfret_energy(float *E,t_non *non,int segments){
             /* Remove couplings between segments */
             multi_projection_Hamiltonian(Hamil_i_e,non);	    
             /* Find density matrix */
-	        density_matrix(vecr,Hamil_i_e,non,segments);
+            copyvec(ave_vecr,vecr,non->singles*non->singles);
 	        // if (samples==0){
 		    //     write_matrix_to_file("DensityE.dat",vecr,non->singles);
 	        // }
@@ -769,6 +770,64 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
     free(cnr);
     free(Q);
     return;
+}
+
+void average_density_matrix(float *ave_den_mat,t_non *non){
+/* Define variables and arrays */
+   /* Integers */
+    int ti;
+    int segments;
+    int samples;
+    int ele;
+    int my_samples;
+    int N,a,b;
+    /* Vectors representing time dependent states: real and imaginary part */
+    float *vecr;
+    float *Hamiltonian_i;
+    /* File handles */
+    FILE *H_traj;
+    FILE *mu_traj;
+    FILE *Cfile;
+    /* Open Trajectory files */
+    open_files(non,&H_traj,&mu_traj,&Cfile);
+
+    /* Allocating memory for the real and imaginary part of the wave function that we need to propagate */
+    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
+    Hamiltonian_i=(float *)calloc(non->singles*(non->singles+1)/2,sizeof(float));
+    //ave_den_mat=(float *)calloc(non->singles*non->singles,sizeof(float));
+    /* Initialize sample numbers */
+    segments=project_dim(non);
+    N=non->singles;
+  
+   clearvec(ave_den_mat,N*N);
+  /* Initialize sample numbers */
+  my_samples=determine_samples(non);
+
+    if (non->end-non->begin<samples){
+      my_samples=non->end-non->begin;
+    }
+    for (samples=non->begin;samples<non->end;samples++){
+      ti=samples*non->sample; 
+      read_Hamiltonian(non,Hamiltonian_i,H_traj,ti);
+      /* Use the thermal equilibrium as initial state */
+      density_matrix(vecr,Hamiltonian_i,non,segments);
+
+      for (ele=0; ele<non->singles*non->singles; ele++){
+          ave_den_mat[ele] +=vecr[ele]/my_samples; 
+      }
+    }
+/*zero the coupling between different segments for the averaged density matrix*/
+for (a=0;a<non->singles;a++){
+    for (b=0;b<non->singles;b++){
+        if (non->psites[a] != non->psites[b]){
+          ave_den_mat[non->singles*a+b]=0.0;
+          ave_den_mat[non->singles*b+a]=0.0;
+        } 
+    }
+}
+  free(vecr); 
+  free(Hamiltonian_i); 
+  return;
 }
 
 /* Matrix multiplication for different segments */
