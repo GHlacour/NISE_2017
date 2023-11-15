@@ -556,7 +556,7 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
 }
 
 /* Find the energy of each segment */
-void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){c
+void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
     /* Define variables and arrays */
     /* Integers */
     int nn2;
