@@ -45,7 +45,7 @@ void propagate_matrix(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int s
    N=non->singles;
 #pragma omp parallel for
    for (j=0;j<non->singles;j++){
-        propagate_vector(non,Hamil_i_e,vecr+j*N,veci+j*N,1,samples,display*j);
+        propagate_vector(non,Hamil_i_e,vecr+j*N,veci+j*N,sign,samples,display*j);
    }
    return;
 }
