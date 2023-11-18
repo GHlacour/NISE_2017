@@ -243,7 +243,8 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "SFG")) { }
 
     // Call the 2DIR calculation routine
-    if (string_in_array(non->technique,(char*[]){"2DIR","GB","SE","EA","noEA"},5)){
+
+    if (string_in_array(non->technique,(char*[]){"2DIR","GBIR","SEIR","EAIR","noEAIR"},5)){
 	    // Does support MPI
         calc_2DIR(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
