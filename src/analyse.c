@@ -632,7 +632,7 @@ void cluster(t_non *non,float *rho){
    for (i=0;i<N;i++){
        /* Run over all other sites */
        for (j=i+1;j<N;j++){
-	   if (rho[i+j*N]>0.5*sqrt(rho[i+i*N]*rho[j+j*N])){
+	   if (rho[i+j*N]>non->thres*sqrt(rho[i+i*N]*rho[j+j*N])){
 	      segments[j]=segments[i];
 	   }
        }
