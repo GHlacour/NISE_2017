@@ -632,25 +632,25 @@ void cluster(t_non *non,float *rho){
    for (i=0;i<N;i++){
        /* Run over all later sites */
        for (j=i+1;j<N;j++){
-	   /* Test if two sites belong to the same segment */
-	   if (rho[i+j*N]>non->thres*sqrt(rho[i+i*N]*rho[j+j*N])){
-              /* If so merge segments to the one with lowest index */
-              if (segments[j]<segments[i]){
-		  segments[i]=segments[j];
-		  for (k=0;k<N;k++){
-	              if (segments[k]==segments[i]){
-			  segments[k]=segments[j];
-		      }
-		  }
-	      } else {
-                  segments[j]=segments[i];
-                  for (k=0;k<N;k++){
-                      if (segments[k]==segments[j]){
-                          segments[k]=segments[i];
-                      }
-                  }
-	      }
-	   }
+	         /* Test if two sites belong to the same segment */
+	         if (rho[i+j*N]>non->thres*sqrt(rho[i+i*N]*rho[j+j*N])){
+               /* If so merge segments to the one with lowest index */
+               if (segments[j]<segments[i]){
+		               segments[i]=segments[j];
+		               for (k=0;k<N;k++){
+	                      if (segments[k]==segments[i]){
+			                      segments[k]=segments[j];
+		                    }
+		               }
+	             } else {
+                   segments[j]=segments[i];
+                   for (k=0;k<N;k++){
+                       if (segments[k]==segments[j]){
+                           segments[k]=segments[i];
+                       }
+                   }
+	             }
+	         }
        }
    }
 
