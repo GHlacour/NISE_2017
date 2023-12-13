@@ -52,16 +52,28 @@ void mcfret(t_non *non){
     ) {
         printf("Performing MCFRET calculation.\n");
     }
-    /*calculate the average density matrix*/
-    average_density_matrix(ave_vecr,non);
-    write_matrix_to_file("Average_Density.dat",ave_vecr,non->singles);
- /* Call the absorption routine */
+
+    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-density"))){
+        /* Calculate the average density matrix */
+	printf("Starting calculation of the average density matrix.\n");
+        average_density_matrix(ave_vecr,non);
+        write_matrix_to_file("Average_Density.dat",ave_vecr,non->singles);
+    }
+
+    /* Call the absorption routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Absorption"))){
+	printf("Starting calculation of the MCFRET absorption matrix.\n");
         mcfret_response_function(re_Abs,im_Abs,non,0,ave_vecr);
     }
    
 /* Call the emission routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
+        printf("Starting calculation of the MCFRET emission matrix.\n");
+	/* Read precalculated average density matrix */ 
+	if (!strcmp(non->technique, "MCFRET-Emission")){
+            printf("Using precalculated average density matrix from file Average_Density.dat.\n");
+	    read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles);
+	}
         mcfret_response_function(re_Emi,im_Emi,non,1,ave_vecr);
     }
     
@@ -204,18 +216,18 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
                 /* Remove couplings between segments */
                 multi_projection_Hamiltonian(Hamil_i_e,non);
 
-                /* Use the thermal equilibrium as initial state */
+                /* Use the provided density matrix as initial state */
                 copyvec(ave_vecr,vecr,non->singles*non->singles);
-              } else { 
+            } else { 
                 unitmat(vecr,non->singles);
-                write_matrix_to_file("Unit.dat",vecr,non->singles);
-                    }
+                /* write_matrix_to_file("Unit.dat",vecr,non->singles); */
+            }
             clearvec(veci,non->singles*non->singles);
         
             /* Loop over delay */ 
             for (t1=0;t1<non->tmax1;t1++){
-	            tj=ti+t1;
-	            /* Read Hamiltonian */
+	        tj=ti+t1;
+	        /* Read Hamiltonian */
                 read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
 	          
                 /* Remove couplings between segments */
@@ -227,7 +239,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
                     propagate_matrix(non,Hamil_i_e,vecr,veci,-1,samples,t1*x);
                 } else {
 		            propagate_matrix(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
-		        }	   
+		}	   
             }/* We are closing the loop over time delays - t1 times */
         } /* We are closing the cluster loop */
 
