@@ -46,14 +46,14 @@ void mcfret(t_non *non){
     coherence_matrix=(float *)calloc(segments*segments,sizeof(float));
 
     /* Tell the user that we are in the MCFRET Routine */
-    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Autodetect")) || (!strcmp(non->technique, "MCFRET-Absorption"))
-        || (!strcmp(non->technique, "MCFRET-Emission")) || (!strcmp(non->technique, "MCFRET-Coupling")) || (!strcmp(non->technique,
-        "MCFRET-Rate")) || (!strcmp(non->technique, "MCFRET-Analyse"))
-    ) {
+    if (string_in_array(non->technique,(char*[]){"MCFRET",
+        "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
+        "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
+        "MCFRET-density"},8)){
         printf("Performing MCFRET calculation.\n");
     }
 
-    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-density"))){
+    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Density"))){
         /* Calculate the average density matrix */
 	printf("Starting calculation of the average density matrix.\n");
         average_density_matrix(ave_vecr,non);
