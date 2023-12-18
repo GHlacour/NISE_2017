@@ -796,6 +796,7 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     int ele;
     int my_samples;
     int N,a,b;
+    float i_samples;
     /* Vectors representing time dependent states: real and imaginary part */
     float *vecr;
     float *Hamiltonian_i;
@@ -814,11 +815,11 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     segments=project_dim(non);
     N=non->singles;
   
-   clearvec(ave_den_mat,N*N);
-  /* Initialize sample numbers */
-  my_samples=determine_samples(non);
+    clearvec(ave_den_mat,N*N);
+    /* Initialize sample numbers */
+    my_samples=determine_samples(non);
 
-    if (non->end-non->begin<samples){
+    if (non->end-non->begin<my_samples){
       my_samples=non->end-non->begin;
     }
     for (samples=non->begin;samples<non->end;samples++){
@@ -828,21 +829,24 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
       density_matrix(vecr,Hamiltonian_i,non,segments);
 
       for (ele=0; ele<non->singles*non->singles; ele++){
-          ave_den_mat[ele] +=vecr[ele]/my_samples; 
+          ave_den_mat[ele] +=vecr[ele]; 
       }
     }
-/*zero the coupling between different segments for the averaged density matrix*/
-for (a=0;a<non->singles;a++){
-    for (b=0;b<non->singles;b++){
-        if (non->psites[a] != non->psites[b]){
-          ave_den_mat[non->singles*a+b]=0.0;
-          ave_den_mat[non->singles*b+a]=0.0;
-        } 
+    /* Zero the coupling between different segments for the averaged density *
+     * matrix and normalize */
+    i_samples=1.0/my_samples;
+    for (a=0;a<non->singles;a++){
+        for (b=0;b<non->singles;b++){
+	    ave_den_mat[non->singles*b+a]*=i_samples;
+            if (non->psites[a] != non->psites[b]){
+               ave_den_mat[non->singles*a+b]=0.0;
+               /* ave_den_mat[non->singles*b+a]=0.0; */
+            } 
+        }
     }
-}
-  free(vecr); 
-  free(Hamiltonian_i); 
-  return;
+    free(vecr); 
+    free(Hamiltonian_i); 
+    return;
 }
 
 /* Matrix multiplication for different segments */
