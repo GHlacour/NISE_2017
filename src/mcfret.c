@@ -516,13 +516,14 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
 		            fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
                 }
                 /* Update rate matrix */
-	            integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
-                rate=2*is13*non->deltat*icm2ifs*icm2ifs*1000;
+	        integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
+		/* We use the Trapezium, which is most accurate in most cases */
+                rate=2*isimple*non->deltat*icm2ifs*icm2ifs*1000;
                 rate_matrix[si*segments+sj]=rate;
                 rate_matrix[sj*segments+sj]-=rate;
-	            /* Calculate the rate of coherence decay in ps-1 */
-	            integrate_rate_response(abs_rate_response,non->tmax,&is13,&isimple);
-	            coherence_matrix[si*segments+sj]=1000*abs_rate_response[0]/is13/non->deltat;
+	        /* Calculate the rate of coherence decay in ps-1 */
+	        integrate_rate_response(abs_rate_response,non->tmax,&is13,&isimple);
+	        coherence_matrix[si*segments+sj]=1000*abs_rate_response[0]/isimple/non->deltat;
             }
         }
     }
@@ -622,6 +623,7 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
     log=fopen("NISE.log","a");
     fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
     fclose(log);
+
 
     /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
     for (samples=non->begin;samples<non->end;samples++){
@@ -925,36 +927,37 @@ float trace_rate(float *matrix,int N){
 /* Integrate the rate response */
 void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
     int i;
-    float simple; /* Variable for naieve box integral */
+    float simple; /* Variable for trapezium integral */
     float simp13; /* Variable for Simpsons 1/3 rule integral */
     simple=0;
     simp13=0;
     for (i=0;i<T;i++){
         if (i==0){
-	        simple+=rate_response[i]/2;
-	        simp13+=rate_response[i]/3;
-	    } else if (i%2==0){
-	        simple+=rate_response[i];
+	    simple+=rate_response[i]/2;
+	    simp13+=rate_response[i]/3;
+	} else if (i%2==0){
+	    simple+=rate_response[i];
             simp13+=2*rate_response[i]/3;
         } else {
-	        simple+=rate_response[i];
+	     simple+=rate_response[i];
             simp13+=4*rate_response[i]/3;
         }
     }
 
     /* Check for difference between integration methods */
-    if (fabs(simple-simp13)/fabs(simp13)>0.05){
+    if (fabs(simple-simp13)/fabs(simple)>0.05){
         printf("\n");
         printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
-        printf(YELLOW "Simple integral value %f and Simpson 1/3 %f.\n" RESET,simple,simp13);
-        printf(YELLOW "This difference is larger than 5%%.\n\n" RESET);
+        printf(YELLOW "Simple integral value: %f\n Simpson 1/3: %f\n",simple,simp13);
+        printf(YELLOW "This difference is larger than 5%%.\n" RESET);
+	printf(YELLOW "The trapezium rule value is used.\n\n" RESET);
     }
 
     /* Check for difference between initial and final value */
-    if (fabs(rate_response[T-1])*100>rate_response[0]){
+    if (fabs(rate_response[T-1])*50>rate_response[0]){
 	    printf("\n");
-        printf(YELLOW "Final value of rate response is larger than\n");
-	    printf("1%% of the initial value. You may avearge over too\n");
+            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100);
+	    printf("of the initial value. You may avearge over too\n");
 	    printf("few samples (decrease the value of Samplerate) or\n");
 	    printf("your chosen coherence time of %d steps, may\n",T);
 	    printf("be too short for the coherence to decay.\n." RESET);
