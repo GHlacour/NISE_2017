@@ -79,21 +79,21 @@ void mcfret(t_non *non){
     
     /* Call the coupling routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Coupling"))){
-	      printf("Starting calculation of the average inter segment coupling.\n");
+        printf("Starting calculation of the average inter segment coupling.\n");
         mcfret_coupling(J,non);
     }
 
     /* Call the rate routine routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Rate"))){
-	    printf("Starting calculation of the rate response function.\n");
+        printf("Starting calculation of the rate response function.\n");
         if ((!strcmp(non->technique, "MCFRET-Rate"))){
             /* Read in absorption, emission and coupling from file if needed */
-	        printf("Calculating rate from precalculated absorption, emission\n");
-	        printf("and coupling!\n");
-	        read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
-	        read_response_from_file("TD_absorption_matrix.dat",re_Abs,im_Abs,non->singles,non->tmax1);
-	        read_response_from_file("TD_emission_matrix.dat",re_Emi,im_Emi,non->singles,non->tmax1);
-	        printf("Completed reading pre-calculated data.\n");
+	    printf("Calculating rate from precalculated absorption, emission\n");
+	    printf("and coupling!\n");
+	    read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
+	    read_response_from_file("TD_absorption_matrix.dat",re_Abs,im_Abs,non->singles,non->tmax1);
+	    read_response_from_file("TD_emission_matrix.dat",re_Emi,im_Emi,non->singles,non->tmax1);
+            printf("Completed reading pre-calculated data.\n");
         }
         mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
     }
@@ -105,15 +105,15 @@ void mcfret(t_non *non){
 
     /* Call the MCFRET Analyse routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
-	    printf("Starting analysis of the MCFRET rate.\n");
-	    /* If analysis is done as post processing first read the rate matrix */
-	    if ((!strcmp(non->technique, "MCFRET-Analyse"))){
+        printf("Starting analysis of the MCFRET rate.\n");
+	/* If analysis is done as post processing first read the rate matrix */
+        if ((!strcmp(non->technique, "MCFRET-Analyse"))){
             read_matrix_from_file("RateMatrix.dat",rate_matrix,segments);
-	    }
+        }
 
-	    /* Calculate the expectation value of the segment energies */
-	    mcfret_energy(E,non,segments, ave_vecr);
-	    /* Analyse the rate matrix */
+        /* Calculate the expectation value of the segment energies */
+        mcfret_energy(E,non,segments, ave_vecr);
+        /* Analyse the rate matrix */
         mcfret_analyse(E,rate_matrix,non,segments);	    
     }
 
@@ -256,7 +256,7 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     if (emission==1){
         fprintf(log,"Finished Calculating Emission Response Matrix!\n");
     } else {
-	      fprintf(log,"Finished Calculating Absorption Response Matrix!\n");
+	fprintf(log,"Finished Calculating Absorption Response Matrix!\n");
     }
     fprintf(log,"Writing to file!\n");  
     fclose(log);
@@ -297,7 +297,6 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
 	    fprintf(absorption_matrix,"\n");
     }
     fclose(absorption_matrix);
-    
     
     /*Free the memory*/
     free(vecr);	
@@ -457,7 +456,10 @@ void mcfret_coupling(float *J,t_non *non){
 
 
 /* Find MCFRET segments using an automatic scheme */
-void mcfret_autodetect(t_non *non, float treshold);
+void mcfret_autodetect(t_non *non, float treshold){
+    printf("Use the analyse technique for auto detection.\n");
+    return;
+}
 
 /* Calculate actual rate matrix */
 void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs,
@@ -500,20 +502,20 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
                 for (t1=0;t1<non->tmax;t1++){
                     /* Matrix multiplication - J Emi */
                     segment_matrix_mul(J,Zeros,re_Emi+nn2*t1,im_Emi+nn2*t1,
-                        re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
+                    re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
                     /* Matrix multiplication - Abs (J Emi) */
                     segment_matrix_mul(re_Abs+nn2*t1,im_Abs+nn2*t1,re_aux_mat,im_aux_mat,
-                        re_aux_mat2,im_aux_mat2,non->psites,segments,si,si,sj,N);
+                    re_aux_mat2,im_aux_mat2,non->psites,segments,si,si,sj,N);
                     /* Matrix multiplication - J (Abs J Emi) */
                     segment_matrix_mul(J,Zeros,re_aux_mat2,im_aux_mat2,
-                        re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
+                    re_aux_mat,im_aux_mat,non->psites,segments,sj,si,sj,N);
                     /* Take the trace */
                     trace_reaux=trace_rate(re_aux_mat,N);
                     trace_imaux=trace_rate(im_aux_mat,N);
                     rate_response[t1]=trace_reaux*twoPi2;
-		            abs_rate_response[t1]=sqrt(trace_reaux*trace_reaux+
-		    	    trace_imaux*trace_imaux)*twoPi2;
-		            fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
+	            abs_rate_response[t1]=sqrt(trace_reaux*trace_reaux
+                                    +trace_imaux*trace_imaux)*twoPi2;
+                    fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
                 }
                 /* Update rate matrix */
 	        integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
@@ -627,8 +629,7 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
 
     /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
     for (samples=non->begin;samples<non->end;samples++){
-	    ti=samples*non->sample;
-	    //printf("%d\n",ti);
+	ti=samples*non->sample;
         if (non->cluster!=-1){
             if (read_cluster(non,ti,&cl,Cfile)!=1){
                 printf("Cluster trajectory file to short, could not fill buffer!!!\n");
@@ -648,27 +649,20 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
             multi_projection_Hamiltonian(Hamil_i_e,non);	    
             /* Find density matrix */
             copyvec(ave_vecr,vecr,non->singles*non->singles);
-	        // if (samples==0){
-		    //     write_matrix_to_file("DensityE.dat",vecr,non->singles);
-	        // }
-	        /* H * rho */
+	    /* H * rho */
             triangular_on_square(Hamil_i_e,vecr,non->singles); 
-	        // if (samples==0){
-	        //     write_matrix_to_file("EDensity.dat",vecr,non->singles);
-	        // }
-	        /* Add energy contribution for each segment */
-	        /* that is take the trace for each segment */
-	        for (i=0;i<non->singles;i++){
-	            E[non->psites[i]]+=vecr[i*non->singles+i];    
+	    /* Add energy contribution for each segment */
+	    /* that is take the trace for each segment */
+	    for (i=0;i<non->singles;i++){
+	        E[non->psites[i]]+=vecr[i*non->singles+i];    
             }
 	    
-	        // printf("Debug %d %d %f %f %f %f\n",samples,ti,vecr[0*non->singles+0],vecr[1*non->singles+1],Hamil_i_e[0]/2,Hamil_i_e[7]/2);
-	        clearvec(vecr,non->singles*non->singles);
+	    clearvec(vecr,non->singles*non->singles);
         } /* We are closing the cluster loop */
 
         /* Update NISE log file */
         log=fopen("NISE.log","a");
-        fprintf(log,"SE Finished sample %d\n",samples);
+        fprintf(log,"Segement Energy Finished sample %d\n",samples);
 
         time_now=log_time(time_now,log);
         fclose(log);
@@ -678,7 +672,6 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
     for (i=0;i<segments;i++){
         E[i]=E[i]/N_samples;
     }
-    //write_matrix_to_file("CouplingMCFRET.dat",J,non->singles);
     Efile=fopen("SegmentEnergies.dat","w");
     fprintf(Efile,"# Segment number - Average segment energy - %d\n",N_samples);
     for (i=0;i<segments;i++){
