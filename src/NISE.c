@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
 
     /* Call the MCFRET Routine */
         if (string_in_array(non->technique,(char*[]){"MCFRET",
-	   "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
+	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
 	   "MCFRET-Density"},8)){
         /* Does not support MPI */
