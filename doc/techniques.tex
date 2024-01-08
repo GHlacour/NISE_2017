@@ -26,19 +26,19 @@ P_{fi}(t)=\langle |U_{fi}(t,0)|^2 \rangle
 Here $f$ and $i$ are the final and initial sites. Generally two files are generated. In Pop.dat average of the population remaining on the initial site ($P_{ii}$) is calculated resulting in a value starting at 1 (all popiulation is on the initial state) and decaying to the equilibrium value 1/N (equal population on all states). In the PopF.dat file a full matrix op all combinations of initial and final states is given. The columns start start with the first initial state and all possible final states continuing to the second possible initial state and all possible final states. This file may be very large for large system sizes!
 
 \section{MCFRET}
-The MCFRET part calculates the Excitation Energy Transfer (EET) rate with Multichromophoric Förster Resonance Energy Transfer (MC-FRET) method.\cite{Jang.2004.Phys.Rev.Lett..92.218301,Jang.2007.J.Phys.Chem.B..111.6807,Zhong.2023.J.Chem.Phys..158.064103} The rate is calculated based on the equation:
+The MCFRET part calculates the Excitation Energy Transfer (EET) rate with Multichromophoric Förster Resonance Energy Transfer (MC-FRET) method.\cite{Jang.2004.Phys.Rev.Lett..92.218301,Jang.2007.J.Phys.Chem.B..111.6807,Zhong.2023.J.Chem.Phys..158.064103}The rate is calculated based on the equation:
 \begin{equation}\label{eq:17} 
     k=\frac{\rm 2Re}{\hbar^2}\int_{0}^{\infty}dt\ \textrm{Tr}[J^{\textrm {AD}}E^{\textrm D}(t)J^{\textrm {DA}}I^{\textrm A}(t)],
 \end{equation}
 with $I^{\textrm A}(t)$ and $E^{\textrm D}(t)$ are the absorption time domain matrix and emission time domain matrix. 
 
 The techniques MCFRET-Absorption and MCFRET-Emission can provide the time domain absorption matrix, and time domain emission matrix separately.
+For MCFRET-Emission the expectation value of the density matrix is required, which can be obtained with MCFRET-Density.
 The technique of MCFRET-Coupling determines the average coupling between segments over a trajectory. The intermediate results are stored in the files:
  {\tt TD\_absorption\_matrix.dat} for the time domain absorption matrix, {\tt TD\_emission\_matrix.dat} for the time domain emission matrix, and  {\tt CouplingMCFRET.dat} for the average couplings. 
-The technique of MCFRET-Rate can be used to calculate the EET rate with the input of the time domain absorption matrix, time domain emission matrix, and the coupling to generate the results in steps and introduce possible changes in only some of these steps.  The calculated rate matrix is written in the file {\tt RateMatrix.dat} (in units of ps${-1}$). The quantum corrected rate matrix is stored in 'QC\_RateMatrix.dat' (this includes the Oxtoby correction to give a thermal distribution). The intermediate  rate response is stored in {\tt RateFile.dat}. It is good to validate that the response do decay to zero within the chosen simulation time. The coherence decay matrix is stored in {\tt CoherenceMatrix.dat}. The coherence decay should be faster than the transfer rate for MCFRET to be a suitable approximation for the energy transfer.
-%The MCFRET-Analyse technique will analyze the results for the rate matrix.
-The MCFRET technique will perform all steps sequentially to calculate the EET rate matrix.
-
+The technique of MCFRET-Rate can be used to calculate the EET rate with the input of the time domain absorption matrix, time domain emission matrix, and the coupling to generate the results in steps and introduce possible changes in only some of these steps.  The calculated rate matrix is written in the file {\tt RateMatrix.dat} (in units of ps${-1}$). The MCFRET-Analyse technique calculates the expectation value of the segment energies and the quantum corrected rate matrix, which is stored in 'QC\_RateMatrix.dat' (this includes the Oxtoby correction to give a thermal distribution). The intermediate  rate response is stored in {\tt RateFile.dat}. It is recommended to validate that the response do decay to zero within the chosen simulation time. The coherence decay matrix is stored in {\tt CoherenceMatrix.dat}. The coherence decay should be faster than the transfer rate for MCFRET to be a suitable approximation for the energy transfer.
+The MCFRET technique will perform all steps sequentially to calculate the EET rate matrix, but they can be performed sequentially, which may be useful if one for example only change the couplings between segments. 
+The MCFRET keyword, thus, corresponds to running the following techniques sequentially: MCFRET-Density, MCFRET-Absorption, MCFRET-Emission, MCFRET-Coupling, MCFRET-Rate, and MCFRET-Analyse.
 
 \section{Dif (diffusion)$^{+}$}
 The mean square displacement of excitons are calculated using the positions provided in the Positions file. Periodic boundary conditions are applied assuming a cube box. The box size must be provided in the first column of the Positions file.
