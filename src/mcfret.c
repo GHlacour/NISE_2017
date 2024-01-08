@@ -49,7 +49,7 @@ void mcfret(t_non *non){
     if (string_in_array(non->technique,(char*[]){"MCFRET",
         "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
         "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
-        "MCFRET-density"},8)){
+        "MCFRET-Density"},8)){
         printf("Performing MCFRET calculation.\n");
     }
 
