@@ -51,9 +51,9 @@ cmake .. -DFFTW_ROOT=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/lib
  -DFFTW_LIBRARY=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/lib
  -DFFTW_INCLUDE_DIRS=/cm/shared/apps/fftw/openmpi/gcc/64/3.3.8/include
 \end{lstlisting}
-The names of the directory locations nust then be changed to the actual locations on the given system.  The example abouve is for a fftw library compiled with the gcc compiler.
+The names of the directory locations must then be changed to the actual locations on the given system.  The example above is for a fftw library compiled with the gcc compiler.
 
-The program can also be installed on the Mac OSX system. However, the standard compiler does not come with OpenMP support. An OpenMP library must therefore be installed first. This can be done using the homebrew system. Details of the installation of homebrew are given on \texttt{http://brew.sh}. Then an OpenMP library as lipomp can be installed with \texttt{brew install libomp}. If the version of cmake is also not recent enough a suitable cmake version can be installed with homebrew as well. Finally, the programme can be build following the general instructions above for building, but with useing the command:
+The program can also be installed on the Mac OSX system. However, the standard compiler does not come with OpenMP support. An OpenMP library must therefore be installed first. This can be done using the homebrew system. Details of the installation of homebrew are given on \texttt{http://brew.sh}. Then an OpenMP library as libomp can be installed with \texttt{brew install libomp}. If the version of cmake is also not recent enough a suitable cmake version can be installed with homebrew as well. Finally, the programme can be build following the general instructions above for building, but with using the command:
 \begin{lstlisting}[style=mystyle]
 /usr/local/bin/cmake .. -DCMAKE_C_COMPILER="clang"
  -DOpenMP_C_LIB_NAMES="libomp" -DOpenMP_CXX_LIB_NAMES="libomp"
