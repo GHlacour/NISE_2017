@@ -12,6 +12,7 @@
 #include "calc_DOS.h"
 #include "luminescence.h"
 #include "raman.h"
+#include "sfg.h"
 #include "calc_2DIR.h"
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
@@ -240,8 +241,14 @@ int main(int argc, char* argv[]) {
 	}
      }
 
-    // Call the Sum Frequency Generation Routine
-    if (!strcmp(non->technique, "SFG")) { }
+    /* Call the Sum Frequency Generation Routine */
+    if (!strcmp(non->technique, "SFG")) {
+        //Does not support MPI
+        if (parentRank == 0){
+            if (cpus>1) not_parallel();
+            sfg(non);
+        }
+    }
 
     // Call the 2DIR calculation routine
 
