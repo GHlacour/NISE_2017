@@ -872,6 +872,7 @@ void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
         }
     }
 
+#pragma omp parallel for
     for (i=0;i<N;i++){
         if (psites[i]==si){
             for (cj=0;cj<Npsj;cj++){
