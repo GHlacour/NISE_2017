@@ -86,7 +86,7 @@ void sfg(t_non *non){
 
   alpha_traj=fopen(non->alphaFName,"rb");
   if (alpha_traj==NULL){
-    printf("Raman file %s not found!\n",non->alphaFName);
+    printf("Polarizability file %s not found!\n",non->alphaFName);
     exit(1);
   }
 
