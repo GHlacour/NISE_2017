@@ -383,7 +383,8 @@ void analyse(t_non *non){
   for (i=0;i<non->singles;i++) normal+=rho2[i+non->singles*i];
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
-      fprintf(outone,"%e ",rho2[i+non->singles*j]/normal);
+      rho2[i+non->singles*j]=rho2[i+non->singles*j]/normal;
+      fprintf(outone,"%e ",rho2[i+non->singles*j]);
     }
     fprintf(outone,"\n");
   }
@@ -553,22 +554,22 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,floa
     dip2[i]=0;
   }
   for (x=0;x<3;x++){
-     	/* Read mu(tj) */
+      /* Read mu(tj) */
       if (!strcmp(non->hamiltonian,"Coupling")){
           copyvec(mu_xyz+non->singles*x,dip,non->singles);
       } else {
-	        if (read_mue(non,dip,mu_traj,step,x)!=1){
-	            printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	            printf("JTIME %d %d\n",step,x);
-	            exit(1);
-	        }
+          if (read_mue(non,dip,mu_traj,step,x)!=1){
+              printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+	      printf("JTIME %d %d\n",step,x);
+	      exit(1);
+	  }
       }
     
     // Transform to eigen basis
     for (i=0;i<N;i++){
       dipeb[i]=0;
       for (j=0;j<N;j++){
-	        dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
+          dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
       }
     }
     for (i=0;i<N;i++){
@@ -618,6 +619,7 @@ void cluster(t_non *non,float *rho){
    int i,j,k;
    int N;
    int n_seg;
+   float norm;
    FILE *handle;
    N=non->singles;
 
@@ -628,12 +630,20 @@ void cluster(t_non *non,float *rho){
        segments[i]=i;
    }
 
+   /* Normalize absolute value density matrix */
+   norm=rho[0];
+   for (i=0;i<N;i++){
+       for (j=0;j<N;j++){
+	   rho[i+j*N]=rho[i+j*N]/norm;
+       }
+   }
+
    /* Run over all possible segments */
    for (i=0;i<N;i++){
        /* Run over all later sites */
        for (j=i+1;j<N;j++){
            /* Test if two sites belong to the same segment */
-	   if (rho[i+j*N]>non->thres*sqrt(rho[i+i*N]*rho[j+j*N])){
+	   if (rho[i+j*N]>non->thres){
                /* If so merge segments to the one with lowest index */
                if (segments[j]<segments[i]){
 		   for (k=0;k<N;k++){
@@ -668,6 +678,7 @@ void cluster(t_non *non,float *rho){
 	  segments[i]=n_seg;
        }
    }
+   printf("Using cluster threshold %f.\n",non->thres);
    printf("\nIdentified %d segments\n\n",n_seg+1); 
    
 

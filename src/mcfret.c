@@ -18,6 +18,9 @@ void mcfret(t_non *non){
     /* Response functions for emission and absorption: real and imaginary part*/
     float *re_Abs,*im_Abs;
     float *re_Emi,*im_Emi;
+    float *re_e,*im_e; /* Eigenvalues */
+    float *vl,*vr; /* Left and right eigenvectors */
+    float *energy_cor; /* Effective correction energy for QC */
     float *J;
     float *E;
     float *rate_matrix;
@@ -49,7 +52,7 @@ void mcfret(t_non *non){
     if (string_in_array(non->technique,(char*[]){"MCFRET",
         "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
         "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
-        "MCFRET-density"},8)){
+        "MCFRET-Density"},8)){
         printf("Performing MCFRET calculation.\n");
     }
 
@@ -111,10 +114,20 @@ void mcfret(t_non *non){
             read_matrix_from_file("RateMatrix.dat",rate_matrix,segments);
         }
 
+	/* Define various arrays */
+	re_e=(float *)calloc(segments,sizeof(float));
+	im_e=(float *)calloc(segments,sizeof(float));
+	vl=(float *)calloc(segments*segments,sizeof(float));
+	vr=(float *)calloc(segments*segments,sizeof(float));
+	energy_cor=(float *)calloc(segments,sizeof(float));
+	/* Find Eigenvalues and vectors */
+	mcfret_eigen(non,rate_matrix,re_e,im_e,vl,vr,segments,energy_cor);
         /* Calculate the expectation value of the segment energies */
-        mcfret_energy(E,non,segments, ave_vecr);
+        mcfret_energy(E,non,segments, ave_vecr,energy_cor);
         /* Analyse the rate matrix */
-        mcfret_analyse(E,rate_matrix,non,segments);	    
+        mcfret_analyse(E,rate_matrix,non,segments);	
+        free(re_e),free(im_e),free(vl),free(vr);	
+	free(energy_cor);
     }
 
 
@@ -545,6 +558,91 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
 /* Check if mcfret rates are in the incoherent limit */
 void mcfret_validate(t_non *non);
 
+/* Find Eigenvalues and eigenvectors of rate matrix */
+void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *vl,float *vr,int segments,float *energy_cor){
+    char jobvl = 'V';  // Compute left eigenvectors
+    char jobvr = 'V';  // Compute right eigenvectors
+    int lwork = segments * segments;  // Work array size
+    float work[lwork];
+    float *rate; /* Rate Matrix to be destroyed */
+    int *degen; /* Degeneracies of segments */
+    int info;
+    int i;
+    int imax;
+    float fmax;
+    float popnorm;
+    FILE *Efile;
+
+    rate=(float *)calloc(segments*segments,sizeof(float));
+    degen=(int *)calloc(segments,sizeof(int));
+
+    copyvec(rate_matrix,rate,segments*segments);
+
+    /* Call LAPACK function sgeev to compute eigenvalues and eigenvectors */
+    sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
+    free(rate);
+
+    /* Check for errors */
+    if (info != 0) {
+        fprintf(stderr, "Error in sgeev: info = %d\n", info);
+        exit(0);
+    }
+
+    /* Check for imaginary eigenvalues and find the one closest to zero */
+    imax=0;
+    fmax=re_e[0];
+    for (i=0;i<segments;i++){
+	/* Weak check */
+	if (fabs(im_e[i])>0.1*fabs(re_e[i])){
+           printf(RED "An imaginary rate matrix eigenvalue larger than 10\%\n");
+	   printf("of the real value found! Averaging over more relaizations\n");
+	   printf("is adviseable. Use rate matrix with caution!\n" RESET);
+	   exit(0);
+
+	/* Hard Check */
+	} else if (fabs(im_e[i])>1e-8) {
+           printf(YELLOW "Warning! An imaginary eigenvalue of the rate matrix was found.");
+           printf("Check validity. Averaging over more disorder realizations\n");
+	   printf("may remove imaginary eigenvalues." RESET);
+	}
+
+	/* Check if it is larger than the previous ones */
+	if (re_e[i]>fmax){
+            fmax=re_e[i];
+	    imax=i;
+	}
+    }
+
+    /* Write eigenvalues to file and find normalization for the */
+    /* equilibrium population. */
+    popnorm=0;
+    Efile=fopen("RateMatrixEigenvalues.dat","w");
+    fprintf(Efile,"# - Eigenvalue (real and imaginary part in ps-1) \n");
+    for (i=0;i<segments;i++){
+        fprintf(Efile,"%d %f %f\n",i,re_e[i],im_e[i]);
+	popnorm+=vl[i+segments*imax];
+    }
+    fclose(Efile);
+
+    /* Find number of degeneracies */
+    project_degeneracies(non,degen,segments);
+
+    /* Write Segment Equilibrium Populations to file */
+    /* and find effective energy correction to give equal populations */
+    Efile=fopen("SegmentPopulation.dat","w");
+    fprintf(Efile,"# - Equilibrium Population\n");
+    for (i=0;i<segments;i++){
+        fprintf(Efile,"%d %f\n",i,vl[i+segments*imax]/popnorm);
+	energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
+    }
+    fclose(Efile);
+
+    write_matrix_to_file("LeftVectorRateMatrix.dat",vl,segments);
+    write_matrix_to_file("RightVectorRateMatrix.dat",vr,segments);
+    free(degen);
+    return;
+}
+
 /* Analyse rate matrix */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
     float *qc_rate_matrix;
@@ -571,7 +669,7 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
 }
 
 /* Find the energy of each segment */
-void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
+void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *energy_cor){
     /* Define variables and arrays */
     /* Integers */
     int nn2;
@@ -673,9 +771,10 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr){
         E[i]=E[i]/N_samples;
     }
     Efile=fopen("SegmentEnergies.dat","w");
-    fprintf(Efile,"# Segment number - Average segment energy - %d\n",N_samples);
+    fprintf(Efile,"# Segment number - Average segment energy - Energy correction %d\n",N_samples);
     for (i=0;i<segments;i++){
-        fprintf(Efile,"%d %f\n",i,E[i]+shift1);
+        fprintf(Efile,"%d %f %f\n",i,E[i]+shift1,energy_cor[i]);
+	E[i]=E[i]-energy_cor[i];
     }
     fclose(Efile);
 
@@ -872,6 +971,7 @@ void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
         }
     }
 
+#pragma omp parallel for
     for (i=0;i<N;i++){
         if (psites[i]==si){
             for (cj=0;cj<Npsj;cj++){

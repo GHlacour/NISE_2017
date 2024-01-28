@@ -5,9 +5,10 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
 void mcfret_autodetect(t_non *non, float treshold);
 void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission, float *ave_vecr);
 void mcfret_coupling(float *J,t_non *non);
-void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr);
+void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *energy_cor);
 void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs,float *re_Emi,float *im_Emi,float *J,t_non *non);
 void mcfret_validate(t_non *non);
+void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *vl,float *vr,int segments,float *energy_cor);
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments);
 void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci);
 void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,float *rC,float *iC,int *psites,int segments,int si,int sj,int sk,int N);
