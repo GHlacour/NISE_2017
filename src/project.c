@@ -93,3 +93,16 @@ int project_dim(t_non* non){
    exit(0);
 }
 
+/* Find degeneracies of segments */
+void project_degeneracies(t_non* non,int *degen,int segments){
+    int i;
+    /* Clear array */
+    for (i=0;i<segments;i++){
+        degen[i]=0;
+    }
+    /* Count members of each segment */
+    for (i=0;i<non->singles;i++){
+	degen[non->psites[i]]++;
+    }
+    return;    
+}
