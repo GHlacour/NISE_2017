@@ -634,7 +634,7 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     for (i=0;i<segments;i++){
         fprintf(Efile,"%d %f\n",i,vl[i+segments*imax]/popnorm);
 	/* Skip adjusting quantum correction in the high-temperature limit */
-	if (non->temperature>100000){
+	if (non->temperature<100000){
 	    energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
 	}
     }
