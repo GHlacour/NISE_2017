@@ -633,7 +633,10 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     fprintf(Efile,"# - Equilibrium Population\n");
     for (i=0;i<segments;i++){
         fprintf(Efile,"%d %f\n",i,vl[i+segments*imax]/popnorm);
-	energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
+	/* Skip adjusting quantum correction in the high-temperature limit */
+	if (non->temperature>100000){
+	    energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
+	}
     }
     fclose(Efile);
 
