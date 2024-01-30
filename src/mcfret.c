@@ -560,10 +560,10 @@ void mcfret_validate(t_non *non);
 
 /* Find Eigenvalues and eigenvectors of rate matrix */
 void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *vl,float *vr,int segments,float *energy_cor){
-    char jobvl = 'V';  // Compute left eigenvectors
-    char jobvr = 'V';  // Compute right eigenvectors
-    int lwork = segments * segments;  // Work array size
-    float work[lwork];
+    //char jobvl = 'V';  // Compute left eigenvectors
+    //char jobvr = 'V';  // Compute right eigenvectors
+    //int lwork = segments * segments;  // Work array size
+    //float work[lwork];
     float *rate; /* Rate Matrix to be destroyed */
     int *degen; /* Degeneracies of segments */
     int info;
@@ -572,15 +572,20 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     float fmax;
     float popnorm;
     FILE *Efile;
+    float *ivr,*ivl;
 
     rate=(float *)calloc(segments*segments,sizeof(float));
     degen=(int *)calloc(segments,sizeof(int));
+    ivr=(float *)calloc(segments*segments,sizeof(float));
+    ivl=(float *)calloc(segments*segments,sizeof(float));
 
     copyvec(rate_matrix,rate,segments*segments);
 
+    diagonalize_real_nonsym(rate_matrix,re_e,im_e,vl,ivl,vr,ivr,segments);
+
     /* Call LAPACK function sgeev to compute eigenvalues and eigenvectors */
-    sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
-    free(rate);
+    //sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
+    //free(rate);
 
     /* Check for errors */
     if (info != 0) {
@@ -643,6 +648,8 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     write_matrix_to_file("LeftVectorRateMatrix.dat",vl,segments);
     write_matrix_to_file("RightVectorRateMatrix.dat",vr,segments);
     free(degen);
+    free(ivr);
+    free(ivl);
     return;
 }
 
