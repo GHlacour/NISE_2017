@@ -655,28 +655,34 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
 
 /* Analyse rate matrix */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
-    float *qc_rate_matrix;
-    float C;
-    int i,j;
-    float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
-
-    qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-    /* Find quantum correction factors */
-    for (i=0;i<segments;i++){
-        for (j=0;j<segments;j++){
-            if (i!=j){
-	            /* Quantum correction factor from D.W. Oxtoby. */
-	            /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/
-	            C=2/(1+exp((E[i]-E[j])/kBT));
-	            qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
-	            qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
-            }
-        }
-    }
-
-    write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
-    return;
-}
+      float *qc_rate_matrix,*qc;
+      float C;
+      int i,j;
+      float kBT=non->temperature*k_B; /* Kelvin to cm-1 */                     
+  
+      qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+      qc=(float *)calloc(segments*segments,sizeof(float));                     
+      /* Find quantum correction factors */                                    
+      for (i=0;i<segments;i++){
+          for (j=0;j<segments;j++){                                            
+              if (i!=j){
+                      /* Quantum correction factor from D.W. Oxtoby. */
+                      /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
+                      C=2/(1+exp((E[i]-E[j])/kBT));                            
+                      qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
+                      qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
+                  qc[i*segments+j]=C;
+              }       
+              else{   
+                  qc[i*segments+j]=0;
+              }       
+          }
+      }
+  
+      write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+      write_matrix_to_file("QC.dat",qc,segments);                              
+      return;                                                                  
+  }
 
 /* Find the energy of each segment */
 void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *energy_cor){
