@@ -307,7 +307,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
     /* We assume the Hamiltonian to be time independent! */
 
     /* Find k1 */
-    for (k=0;k<=kmax;k++){
+    for (k=0;k<kmax;k++){
        k1r[col[k]]+=H0[k]*ci[row[k]];
        k1i[col[k]]-=H0[k]*cr[row[k]];
        if (row[k]!=col[k]){
@@ -316,7 +316,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
        }
     }
     /* Find k2 */
-    for (k=0;k<=kmax;k++){
+    for (k=0;k<kmax;k++){
        k2r[col[k]]+=H0[k]*(ci[row[k]]+k1i[row[k]]*0.5);
        k2i[col[k]]-=H0[k]*(cr[row[k]]+k1r[row[k]]*0.5);
        if (row[k]!=col[k]){
@@ -325,7 +325,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
        }
     }
     /* Find k3 */
-    for (k=0;k<=kmax;k++){
+    for (k=0;k<kmax;k++){
        k3r[col[k]]+=H0[k]*(ci[row[k]]+k2i[row[k]]*0.5);
        k3i[col[k]]-=H0[k]*(cr[row[k]]+k2r[row[k]]*0.5);
        if (row[k]!=col[k]){
@@ -334,7 +334,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
        }
     }
     /* Find k4 */
-    for (k=0;k<=kmax;k++){
+    for (k=0;k<kmax;k++){
        k4r[col[k]]+=H0[k]*(ci[row[k]]+k3i[row[k]]);
        k4i[col[k]]-=H0[k]*(cr[row[k]]+k3r[row[k]]);
        if (row[k]!=col[k]){
