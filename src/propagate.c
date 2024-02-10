@@ -273,7 +273,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
     int N2;
 
     /* printf("Entered the RK4 routine.\n"); */
-    m=1; /* No multi-step buildin */
+    
     N = non->singles;
     N2=(N*(N+1))/2;
     f = non->deltat * icm2ifs * twoPi * sign / m;
@@ -306,47 +306,60 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
 
     /* We assume the Hamiltonian to be time independent! */
 
-    /* Find k1 */
-    for (k=0;k<kmax;k++){
-       k1r[col[k]]+=H0[k]*ci[row[k]];
-       k1i[col[k]]-=H0[k]*cr[row[k]];
-       if (row[k]!=col[k]){
-          k1r[row[k]]+=H0[k]*ci[col[k]];
-          k1i[row[k]]-=H0[k]*cr[col[k]];
-       }
-    }
-    /* Find k2 */
-    for (k=0;k<kmax;k++){
-       k2r[col[k]]+=H0[k]*(ci[row[k]]+k1i[row[k]]*0.5);
-       k2i[col[k]]-=H0[k]*(cr[row[k]]+k1r[row[k]]*0.5);
-       if (row[k]!=col[k]){
-          k2r[row[k]]+=H0[k]*(ci[col[k]]+k1i[col[k]]*0.5);
-          k2i[row[k]]-=H0[k]*(cr[col[k]]+k1r[col[k]]*0.5);
-       }
-    }
-    /* Find k3 */
-    for (k=0;k<kmax;k++){
-       k3r[col[k]]+=H0[k]*(ci[row[k]]+k2i[row[k]]*0.5);
-       k3i[col[k]]-=H0[k]*(cr[row[k]]+k2r[row[k]]*0.5);
-       if (row[k]!=col[k]){
-          k3r[row[k]]+=H0[k]*(ci[col[k]]+k2i[col[k]]*0.5);
-          k3i[row[k]]-=H0[k]*(cr[col[k]]+k2r[col[k]]*0.5);
-       }
-    }
-    /* Find k4 */
-    for (k=0;k<kmax;k++){
-       k4r[col[k]]+=H0[k]*(ci[row[k]]+k3i[row[k]]);
-       k4i[col[k]]-=H0[k]*(cr[row[k]]+k3r[row[k]]);
-       if (row[k]!=col[k]){
-          k4r[row[k]]+=H0[k]*(ci[col[k]]+k3i[col[k]]);
-          k4i[row[k]]-=H0[k]*(cr[col[k]]+k3r[col[k]]);
-       }
-    }
+    /* Multi-step loop */
+    for (i=0;i<m;i++){
+	if (i>0) {
+            clearvec(k1r,N);
+            clearvec(k1i,N);
+            clearvec(k2r,N);
+            clearvec(k2i,N);
+            clearvec(k3r,N);
+            clearvec(k3i,N); 
+            clearvec(k4r,N);
+            clearvec(k4i,N);	    
+	}
+        /* Find k1 */
+        for (k=0;k<kmax;k++){
+            k1r[col[k]]+=H0[k]*ci[row[k]];
+            k1i[col[k]]-=H0[k]*cr[row[k]];
+            if (row[k]!=col[k]){
+                k1r[row[k]]+=H0[k]*ci[col[k]];
+                k1i[row[k]]-=H0[k]*cr[col[k]];
+            }
+        }
+        /* Find k2 */
+        for (k=0;k<kmax;k++){
+            k2r[col[k]]+=H0[k]*(ci[row[k]]+k1i[row[k]]*0.5);
+            k2i[col[k]]-=H0[k]*(cr[row[k]]+k1r[row[k]]*0.5);
+            if (row[k]!=col[k]){
+                k2r[row[k]]+=H0[k]*(ci[col[k]]+k1i[col[k]]*0.5);
+                k2i[row[k]]-=H0[k]*(cr[col[k]]+k1r[col[k]]*0.5);
+            }
+        }
+        /* Find k3 */
+        for (k=0;k<kmax;k++){
+            k3r[col[k]]+=H0[k]*(ci[row[k]]+k2i[row[k]]*0.5);
+            k3i[col[k]]-=H0[k]*(cr[row[k]]+k2r[row[k]]*0.5);
+            if (row[k]!=col[k]){
+                k3r[row[k]]+=H0[k]*(ci[col[k]]+k2i[col[k]]*0.5);
+                k3i[row[k]]-=H0[k]*(cr[col[k]]+k2r[col[k]]*0.5);
+            }
+        }
+        /* Find k4 */
+        for (k=0;k<kmax;k++){
+            k4r[col[k]]+=H0[k]*(ci[row[k]]+k3i[row[k]]);
+            k4i[col[k]]-=H0[k]*(cr[row[k]]+k3r[row[k]]);
+            if (row[k]!=col[k]){
+                k4r[row[k]]+=H0[k]*(ci[col[k]]+k3i[col[k]]);
+                k4i[row[k]]-=H0[k]*(cr[col[k]]+k3r[col[k]]);
+            }
+        }
 
-    /* Update wavefunction */
-    for (k=0;k<N;k++){
-       cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
-       ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+        /* Update wavefunction */
+        for (k=0;k<N;k++){
+            cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+        }
     }
 
     free(H0),free(col),free(row);
