@@ -373,7 +373,8 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
 void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign,float *Anh){
     float f;
     int index, N;
-    float *H0;
+    int indexa;
+    float *H0,*HD;
     float *k1r,*k2r,*k3r,*k4r;
     float *k1i,*k2i,*k3i,*k4i;
     int *col, *row;
@@ -390,23 +391,24 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     N2=(N*(N+1))/2;
     f = non->deltat * icm2ifs * twoPi * sign / m;
     H0 = (float *)malloc(N2*sizeof(float));
+    HD = (float *)malloc(N2*sizeof(float));
     col = (int *)malloc(N2*sizeof(int));
     row = (int *)malloc(N2*sizeof(int));
-    k1r = (float *)calloc(N,sizeof(float));
-    k1i = (float *)calloc(N,sizeof(float));
-    k2r = (float *)calloc(N,sizeof(float));
-    k2i = (float *)calloc(N,sizeof(float));
-    k3r = (float *)calloc(N,sizeof(float));
-    k3i = (float *)calloc(N,sizeof(float));
-    k4r = (float *)calloc(N,sizeof(float));
-    k4i = (float *)calloc(N,sizeof(float));
+    k1r = (float *)calloc(N2,sizeof(float));
+    k1i = (float *)calloc(N2,sizeof(float));
+    k2r = (float *)calloc(N2,sizeof(float));
+    k2i = (float *)calloc(N2,sizeof(float));
+    k3r = (float *)calloc(N2,sizeof(float));
+    k3i = (float *)calloc(N2,sizeof(float));
+    k4r = (float *)calloc(N2,sizeof(float));
+    k4i = (float *)calloc(N2,sizeof(float));
 
-    /* Build sparse Hamiltonians H0 */
+    /* Build sparse Hamiltonians H0 (only couplings) */
     k = 0;
     for (a = 0; a < N; a++) {
-        for (b = a; b < N; b++) {
+        for (b = a+1; b < N; b++) {
             index = Sindex(a, b, N);
-            if (fabs(Hamiltonian_i[index]) > non->couplingcut || a==b) {
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut) {
                 index = Sindex(a, b, N);
                 H0[k] = f* Hamiltonian_i[index];
                 col[k] = a, row[k] = b;
@@ -416,6 +418,59 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     }
     kmax = k;
 
+    /* Build Diagonal Hamiltonian */
+    for (a = 0; a < N; a++) {
+	indexa = Sindex(a, a, N);
+        for (b = a; b < N; b++) {
+	    index = Sindex(a, b, N);
+            HD[index]=Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)];
+	    if (a == b) {
+                if (non->anharmonicity == 0) {
+                    HD[index] -= Anh[a];
+                }
+                else {
+                    HD[index] -= non->anharmonicity;
+                }
+            }
+        }
+    }
+
+
+    /* Multi-step loop */
+    for (i=0;i<m;i++){
+        if (i>0) {
+            clearvec(k1r,N2);
+            clearvec(k1i,N2);
+            clearvec(k2r,N2);
+            clearvec(k2i,N2);
+            clearvec(k3r,N2);
+            clearvec(k3i,N2);
+            clearvec(k4r,N2);
+            clearvec(k4i,N2);
+	}
+    /* Find k1 */
+    /* Diagonal part */
+        for (k=0;k<kmax;k++){
+            k1r[col[k]]+=HD[k]*ci[row[k]];
+            k1i[col[k]]-=HD[k]*cr[row[k]];
+            if (row[k]!=col[k]){
+                k1r[row[k]]+=H0[k]*ci[col[k]];
+                k1i[row[k]]-=H0[k]*cr[col[k]];
+            }
+        }
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+
+    /* c < a,b */
+
+    /* c == a */
+
+    /* a < c < b */
+
+    /* c == b */
+
+    /* c > a,b */
+
+    }
 
     printf("Not implemented yet!\n");
     exit(0);
