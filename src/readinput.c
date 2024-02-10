@@ -216,7 +216,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     if (!strcmp(prop, "Coupling")) {
         non->propagation = 1;
         printf("\nUsing propagation scheme 'Coupling'!\n");
-        printf("Coupling cutoff %f effective during t1 and t3.\n\n",
+        printf("Coupling cutoff %f effective during t1, t2, and t3.\n\n",
                non->couplingcut);
     }
     if (!strcmp(prop, "Diagonal")) {
@@ -224,6 +224,12 @@ void readInput(int argc, char* argv[], t_non* non) {
         printf("\nUsing propagation with full diagonalization!\n\n");
         printf(RED "Presently NOT implemented. Use sparse with no cutoff!\n" RESET);
         exit(0);
+    }
+    if (!strcmp(prop, "RK4")) {
+        non->propagation = 3;
+        printf("\nUsing propagation scheme 'RK4' with coupling cut!\n");
+        printf("Coupling cutoff %f effective during t1, t2, and t3.\n\n",
+               non->couplingcut);
     }
 
     if (non->propagation == 0) {

@@ -20,6 +20,7 @@
 void propagate_vector(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int sign,int samples,int display){
    int elements;
    if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,sign);
+   if (non->propagation==3) propagate_vec_RK4(non,Hamil_i_e,vecr,veci,non->ts,sign);
    if (non->propagation==0){
       if (non->thres==0 || non->thres>1){
          propagate_vec_DIA(non,Hamil_i_e,vecr,veci,sign);
@@ -256,7 +257,104 @@ int propagate_vec_DIA_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, 
     return elements;
 }
 
+/* Propagate using the Runge Kutta 4 algorithm */
+void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign){
+    float f;
+    int index, N;
+    float *H0;
+    float *k1r,*k2r,*k3r,*k4r;
+    float *k1i,*k2i,*k3i,*k4i;
+    int *col, *row;
+    float *ocr, *oci;
+    int a, b, c;
+    float J;
+    float cr1, cr2, ci1, ci2;
+    int i, k, kmax;
+    int N2;
 
+    /* printf("Entered the RK4 routine.\n"); */
+    m=1; /* No multi-step buildin */
+    N = non->singles;
+    N2=(N*(N+1))/2;
+    f = non->deltat * icm2ifs * twoPi * sign / m;
+    H0 = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    k1r = (float *)calloc(N,sizeof(float));
+    k1i = (float *)calloc(N,sizeof(float));
+    k2r = (float *)calloc(N,sizeof(float));
+    k2i = (float *)calloc(N,sizeof(float));
+    k3r = (float *)calloc(N,sizeof(float));
+    k3i = (float *)calloc(N,sizeof(float));
+    k4r = (float *)calloc(N,sizeof(float));
+    k4i = (float *)calloc(N,sizeof(float));
+
+    /* Build sparse Hamiltonians H0 */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        for (b = a; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut || a==b) {
+                index = Sindex(a, b, N);
+                H0[k] = f* Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+    /* We assume the Hamiltonian to be time independent! */
+
+    /* Find k1 */
+    for (k=0;k<=kmax;k++){
+       k1r[col[k]]+=H0[k]*ci[row[k]];
+       k1i[col[k]]-=H0[k]*cr[row[k]];
+       if (row[k]!=col[k]){
+          k1r[row[k]]+=H0[k]*ci[col[k]];
+          k1i[row[k]]-=H0[k]*cr[col[k]];
+       }
+    }
+    /* Find k2 */
+    for (k=0;k<=kmax;k++){
+       k2r[col[k]]+=H0[k]*(ci[row[k]]+k1i[row[k]]*0.5);
+       k2i[col[k]]-=H0[k]*(cr[row[k]]+k1r[row[k]]*0.5);
+       if (row[k]!=col[k]){
+          k2r[row[k]]+=H0[k]*(ci[col[k]]+k1i[col[k]]*0.5);
+          k2i[row[k]]-=H0[k]*(cr[col[k]]+k1r[col[k]]*0.5);
+       }
+    }
+    /* Find k3 */
+    for (k=0;k<=kmax;k++){
+       k3r[col[k]]+=H0[k]*(ci[row[k]]+k2i[row[k]]*0.5);
+       k3i[col[k]]-=H0[k]*(cr[row[k]]+k2r[row[k]]*0.5);
+       if (row[k]!=col[k]){
+          k3r[row[k]]+=H0[k]*(ci[col[k]]+k2i[col[k]]*0.5);
+          k3i[row[k]]-=H0[k]*(cr[col[k]]+k2r[col[k]]*0.5);
+       }
+    }
+    /* Find k4 */
+    for (k=0;k<=kmax;k++){
+       k4r[col[k]]+=H0[k]*(ci[row[k]]+k3i[row[k]]);
+       k4i[col[k]]-=H0[k]*(cr[row[k]]+k3r[row[k]]);
+       if (row[k]!=col[k]){
+          k4r[row[k]]+=H0[k]*(ci[col[k]]+k3i[col[k]]);
+          k4i[row[k]]-=H0[k]*(cr[col[k]]+k3r[col[k]]);
+       }
+    }
+
+    /* Update wavefunction */
+    for (k=0;k<N;k++){
+       cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
+       ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+    }
+
+    free(H0),free(col),free(row);
+    free(k1r),free(k2r),free(k3r),free(k4r);
+    free(k1i),free(k2i),free(k3i),free(k4i);
+    return;
+
+}
 
 /* Propagate using diagonal vs. coupling sparce algorithm */
 void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, int m, int sign) {
