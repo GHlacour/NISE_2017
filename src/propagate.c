@@ -257,7 +257,7 @@ int propagate_vec_DIA_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, 
     return elements;
 }
 
-/* Propagate using the Runge Kutta 4 algorithm */
+/* Propagate singles using the Runge Kutta 4 algorithm */
 void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign){
     float f;
     int index, N;
@@ -368,6 +368,59 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
     return;
 
 }
+
+/* Propagate singles using the Runge Kutta 4 algorithm */
+void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign,float *Anh){
+    float f;
+    int index, N;
+    float *H0;
+    float *k1r,*k2r,*k3r,*k4r;
+    float *k1i,*k2i,*k3i,*k4i;
+    int *col, *row;
+    float *ocr, *oci;
+    int a, b, c;
+    float J;
+    float cr1, cr2, ci1, ci2;
+    int i, k, kmax;
+    int N2;
+
+    /* printf("Entered the RK4 routine.\n"); */
+
+    N = non->singles;
+    N2=(N*(N+1))/2;
+    f = non->deltat * icm2ifs * twoPi * sign / m;
+    H0 = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    k1r = (float *)calloc(N,sizeof(float));
+    k1i = (float *)calloc(N,sizeof(float));
+    k2r = (float *)calloc(N,sizeof(float));
+    k2i = (float *)calloc(N,sizeof(float));
+    k3r = (float *)calloc(N,sizeof(float));
+    k3i = (float *)calloc(N,sizeof(float));
+    k4r = (float *)calloc(N,sizeof(float));
+    k4i = (float *)calloc(N,sizeof(float));
+
+    /* Build sparse Hamiltonians H0 */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        for (b = a; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut || a==b) {
+                index = Sindex(a, b, N);
+                H0[k] = f* Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+
+    printf("Not implemented yet!\n");
+    exit(0);
+}
+
 
 /* Propagate using diagonal vs. coupling sparce algorithm */
 void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, int m, int sign) {
