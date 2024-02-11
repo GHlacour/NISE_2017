@@ -577,6 +577,9 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
         }
 
     }
+    free(HD),free(H0),free(col),free(row);
+    free(k1r),free(k2r),free(k3r),free(k4r);
+    free(k1i),free(k2i),free(k3i),free(k4i);
     return;
 }
 
