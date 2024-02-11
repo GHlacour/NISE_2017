@@ -571,6 +571,35 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
                         );
                     }
                 }
+		/* RK4 propagation */
+		else if(non->propagation == 3) {
+                    // Key parallel loop 1
+                    // Initial step
+                    propagate_vec_RK4_doubles(
+                        non, Hamil_i_e, fr, fi, non->ts,Anh);
+
+                    int t1;
+                    #pragma omp parallel for \
+                        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
+                        schedule(static, 1)
+
+                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                        propagate_vec_RK4_doubles(
+                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts,Anh);
+                    }
+
+                    // Key parallel loop 2
+                    // Initial step
+                    propagate_vec_RK4(
+                        non, Hamil_i_e, rightnr, rightni, non->ts, -1
+                    );
+
+                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                        propagate_vec_RK4(
+                            non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+                        );
+                    }
+                }
             }
         }
 

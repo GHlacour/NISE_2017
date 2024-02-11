@@ -370,8 +370,8 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
 }
 
 /* Propagate singles using the Runge Kutta 4 algorithm */
-void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign,float *Anh){
-    float f;
+void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,float *Anh){
+    float f,factor;
     int index, N;
     int indexa;
     float *H0,*HD;
@@ -380,6 +380,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     int *col, *row;
     float *ocr, *oci;
     int a, b, c;
+    int index1,index2;
     float J;
     float cr1, cr2, ci1, ci2;
     int i, k, kmax;
@@ -389,7 +390,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 
     N = non->singles;
     N2=(N*(N+1))/2;
-    f = non->deltat * icm2ifs * twoPi * sign / m;
+    f = non->deltat * icm2ifs * twoPi / m;
     H0 = (float *)malloc(N2*sizeof(float));
     HD = (float *)malloc(N2*sizeof(float));
     col = (int *)malloc(N2*sizeof(int));
@@ -423,13 +424,13 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 	indexa = Sindex(a, a, N);
         for (b = a; b < N; b++) {
 	    index = Sindex(a, b, N);
-            HD[index]=Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)];
+            HD[index]=f*(Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]);
 	    if (a == b) {
                 if (non->anharmonicity == 0) {
-                    HD[index] -= Anh[a];
+                    HD[index] -= Anh[a]*f;
                 }
                 else {
-                    HD[index] -= non->anharmonicity;
+                    HD[index] -= non->anharmonicity*f;
                 }
             }
         }
@@ -448,32 +449,135 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             clearvec(k4r,N2);
             clearvec(k4i,N2);
 	}
+
     /* Find k1 */
     /* Diagonal part */
+        for (i=0;i<N2;i++){
+            k1r[i]+=HD[i]*ci[i];
+            k1i[i]-=HD[i]*cr[i];
+        }
+    /* Loop over couplings */
+	for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+	    b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+		factor = 1;
+                    /* c < a,b */
+		    /* c == a */
+		if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+		if (b==a) factor=sqrt2;
+                    /* c > a,b */
+		k1r[index1]+=H0[k]*ci[index2]*factor;
+		k1i[index1]-=H0[k]*cr[index2]*factor;
+		k1r[index2]+=H0[k]*ci[index1]*factor;
+                k1i[index2]-=H0[k]*cr[index1]*factor;
+	    }
+	}
+	
+    /* Find k2 */
+    /* Diagonal part */
+        for (i=0;i<N2;i++){
+            k2r[i]+=HD[i]*(ci[i]+k1i[i]*0.5);
+            k2i[i]-=HD[i]*(cr[i]+k1r[i]*0.5);
+        }
+    /* Loop over couplings */
         for (k=0;k<kmax;k++){
-            k1r[col[k]]+=HD[k]*ci[row[k]];
-            k1i[col[k]]-=HD[k]*cr[row[k]];
-            if (row[k]!=col[k]){
-                k1r[row[k]]+=H0[k]*ci[col[k]];
-                k1i[row[k]]-=H0[k]*cr[col[k]];
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
+                k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
+		k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
+                k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5)*factor;
             }
         }
+
+    /* Find k3 */
+    /* Diagonal part */
+        for (i=0;i<N2;i++){
+            k3r[i]+=HD[i]*(ci[i]+k2i[i]*0.5);
+            k3i[i]-=HD[i]*(cr[i]+k2r[i]*0.5);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
     /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
-
+            a=col[k];
+            b=row[k];
     /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5)*factor;
+                k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5)*factor;
+                k3r[index2]+=H0[k]*(ci[index1]+k2i[index1]*0.5)*factor;
+                k3i[index2]-=H0[k]*(cr[index1]+k2r[index1]*0.5)*factor;
+            }
+        }
 
-    /* c == a */
+    /* Find k4 */
+    /* Diagonal part */
+        for (i=0;i<N2;i++){
+            k4r[i]+=HD[i]*(ci[i]+k3i[i]);
+            k4i[i]-=HD[i]*(cr[i]+k3r[i]);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k4r[index1]+=H0[k]*(ci[index2]+k3i[index2])*factor;
+                k4i[index1]-=H0[k]*(cr[index2]+k3r[index2])*factor;
+                k4r[index2]+=H0[k]*(ci[index1]+k3i[index1])*factor;
+                k4i[index2]-=H0[k]*(cr[index1]+k3r[index1])*factor;
+            }
+        }
 
-    /* a < c < b */
-
-    /* c == b */
-
-    /* c > a,b */
+    /* Update wavefunction */
+	for (k=0;k<N2;k++){
+            cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+        }
 
     }
-
-    printf("Not implemented yet!\n");
-    exit(0);
+    return;
 }
 
 
