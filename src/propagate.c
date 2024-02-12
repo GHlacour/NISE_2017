@@ -383,7 +383,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     int index1,index2;
     float J;
     float cr1, cr2, ci1, ci2;
-    int i, k, kmax;
+    int i,j, k, kmax;
     int N2;
 
     /* printf("Entered the RK4 routine.\n"); */
@@ -452,9 +452,9 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 
     /* Find k1 */
     /* Diagonal part */
-        for (i=0;i<N2;i++){
-            k1r[i]+=HD[i]*ci[i];
-            k1i[i]-=HD[i]*cr[i];
+        for (k=0;k<N2;k++){
+            k1r[k]+=HD[k]*ci[k];
+            k1i[k]-=HD[k]*cr[k];
         }
     /* Loop over couplings */
 	for (k=0;k<kmax;k++){
@@ -465,7 +465,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             for (c=0; c < N; c++) {
                 index1 = Sindex(a,c,N);
                 index2 = Sindex(b,c,N);
-		factor = 1;
+		factor = 1.0;
                     /* c < a,b */
 		    /* c == a */
 		if (c==a) factor=sqrt2;
@@ -482,9 +482,9 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 	
     /* Find k2 */
     /* Diagonal part */
-        for (i=0;i<N2;i++){
-            k2r[i]+=HD[i]*(ci[i]+k1i[i]*0.5);
-            k2i[i]-=HD[i]*(cr[i]+k1r[i]*0.5);
+        for (k=0;k<N2;k++){
+            k2r[k]+=HD[k]*(ci[k]+k1i[k]*0.5);
+            k2i[k]-=HD[k]*(cr[k]+k1r[k]*0.5);
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -495,7 +495,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             for (c=0; c < N; c++) {
                 index1 = Sindex(a,c,N);
                 index2 = Sindex(b,c,N);
-                factor = 1;
+                factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                 if (c==a) factor=sqrt2;
@@ -512,9 +512,9 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 
     /* Find k3 */
     /* Diagonal part */
-        for (i=0;i<N2;i++){
-            k3r[i]+=HD[i]*(ci[i]+k2i[i]*0.5);
-            k3i[i]-=HD[i]*(cr[i]+k2r[i]*0.5);
+        for (k=0;k<N2;k++){
+            k3r[k]+=HD[k]*(ci[k]+k2i[k]*0.5);
+            k3i[k]-=HD[k]*(cr[k]+k2r[k]*0.5);
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -525,7 +525,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             for (c=0; c < N; c++) {
                 index1 = Sindex(a,c,N);
                 index2 = Sindex(b,c,N);
-                factor = 1;
+                factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                 if (c==a) factor=sqrt2;
@@ -542,9 +542,9 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 
     /* Find k4 */
     /* Diagonal part */
-        for (i=0;i<N2;i++){
-            k4r[i]+=HD[i]*(ci[i]+k3i[i]);
-            k4i[i]-=HD[i]*(cr[i]+k3r[i]);
+        for (k=0;k<N2;k++){
+            k4r[k]+=HD[k]*(ci[k]+k3i[k]);
+            k4i[k]-=HD[k]*(cr[k]+k3r[k]);
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -555,7 +555,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             for (c=0; c < N; c++) {
                 index1 = Sindex(a,c,N);
                 index2 = Sindex(b,c,N);
-                factor = 1;
+                factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                 if (c==a) factor=sqrt2;
@@ -572,8 +572,8 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 
     /* Update wavefunction */
 	for (k=0;k<N2;k++){
-            cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
-            ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+            cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
         }
 
     }

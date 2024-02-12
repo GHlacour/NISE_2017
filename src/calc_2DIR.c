@@ -225,13 +225,15 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     exit(1);
                 }
 
+                propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1,1,1);
+		/*
                 if (non->propagation == 1) {
                     propagate_vec_coupling_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
                     );
                 } else if (non->propagation == 0) {
                     propagate_vec_DIA_S(non, Hamil_i_e, leftnr[t1], leftni[t1], 1);
-                }
+                }*/
 
             }
         }
@@ -291,8 +293,9 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
             /* Propagate */
-            if (non->propagation == 1) propagate_vec_coupling_S(non, Hamil_i_e, mut3r, mut3i, non->ts, 1);
-            if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, mut3r, mut3i, 1);
+	    propagate_vector(non, Hamil_i_e, mut3r, mut3i, 1,1,1);
+/*            if (non->propagation == 1) propagate_vec_coupling_S(non, Hamil_i_e, mut3r, mut3i, non->ts, 1);
+            if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, mut3r, mut3i, 1);*/
         }
 
         /* Stimulated emission (SE) */
@@ -417,15 +420,17 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
             /* Propagate left side rephasing */
-            if (non->propagation == 1) {
+	    propagate_vector(non, Hamil_i_e, leftrr, leftri, 1,1,1);
+/*            if (non->propagation == 1) {
                 propagate_vec_coupling_S(non, Hamil_i_e, leftrr, leftri, non->ts, 1);
             } else if (non->propagation == 0) {
                 propagate_vec_DIA_S(non, Hamil_i_e, leftrr, leftri, 1);
-            }
+            }*/
 
             /* Propagate left side nonrephasing */
             for (int t1 = 0; t1 < non->tmax1; t1++) {
-                if (non->propagation == 0) {
+		propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1,1,1);
+/*                if (non->propagation == 0) {
                     propagate_vec_DIA_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], 1
                     );
@@ -433,7 +438,7 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     propagate_vec_coupling_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
                     );
-                }
+                }*/
             }
         }
 
