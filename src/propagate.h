@@ -9,6 +9,7 @@ void propagate_t2_DIA(t_non *non,float *Hamiltonian_i,float *cr,float *ci,float 
 int propagate_vec_DIA_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int sign);
 void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);
 void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,float *Anh);
+void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m);
 void propagate_vec_coupling_S(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign);
 void propagate_vec_coupling_S_doubles(t_non *non,float *Hamiltonian_i,float *cr,float
 *ci,int m,float *Anh);
