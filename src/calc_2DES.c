@@ -208,13 +208,14 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     exit(1);
                 }
 
-                if (non->propagation == 1) {
+		propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1, 1,1);
+                /*if (non->propagation == 1) {
                     propagate_vec_coupling_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
                     );
                 } else if (non->propagation == 0) {
                     propagate_vec_DIA_S(non, Hamil_i_e, leftnr[t1], leftni[t1], 1);
-                }
+                }*/
 
             }
         }
@@ -274,8 +275,9 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
             /* Propagate */
-            if (non->propagation == 1) propagate_vec_coupling_S(non, Hamil_i_e, mut3r, mut3i, non->ts, 1);
-            if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, mut3r, mut3i, 1);
+	    propagate_vector(non, Hamil_i_e, mut3r, mut3i, 1,1,1);
+            /*if (non->propagation == 1) propagate_vec_coupling_S(non, Hamil_i_e, mut3r, mut3i, non->ts, 1);
+            if (non->propagation == 0) propagate_vec_DIA_S(non, Hamil_i_e, mut3r, mut3i, 1);*/
         }
 
         /* Stimulated emission (SE) */
@@ -402,15 +404,17 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
             }
 
             /* Propagate left side rephasing */
-            if (non->propagation == 1) {
+	    propagate_vector(non, Hamil_i_e, leftrr, leftri, 1,1, 1);
+            /*if (non->propagation == 1) {
                 propagate_vec_coupling_S(non, Hamil_i_e, leftrr, leftri, non->ts, 1);
             } else if (non->propagation == 0) {
                 propagate_vec_DIA_S(non, Hamil_i_e, leftrr, leftri, 1);
-            }
+            }*/
 
             /* Propagate left side nonrephasing */
             for (int t1 = 0; t1 < non->tmax1; t1++) {
-                if (non->propagation == 0) {
+		propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1,1,1);
+                /* if (non->propagation == 0) {
                     propagate_vec_DIA_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], 1
                     );
@@ -418,7 +422,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     propagate_vec_coupling_S(
                         non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
                     );
-                }
+                }*/
             }
         }
 
@@ -550,6 +554,34 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
                     for (t1 = 0; t1 < non->tmax1; t1++) {
                         propagate_vec_coupling_S(
+                            non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+                        );
+                    }
+                }
+		else if(non->propagation == 1) {
+                    // Key parallel loop 1
+                    // Initial step
+                    propagate_vec_RK4_doubles_ES(
+                        non, Hamil_i_e, fr, fi, non->ts);
+
+                    int t1;
+                    #pragma omp parallel for \
+                        shared(non,Hamil_i_e,ft1r,ft1i) \
+                        schedule(static, 1)
+
+                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                        propagate_vec_RK4_doubles_ES(
+                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts);
+                    }
+
+                    // Key parallel loop 2
+                    // Initial step
+                    propagate_vec_RK4(
+                        non, Hamil_i_e, rightnr, rightni, non->ts, -1
+                    );
+
+                    for (t1 = 0; t1 < non->tmax1; t1++) {
+                        propagate_vec_RK4(
                             non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
                         );
                     }
