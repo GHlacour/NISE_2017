@@ -83,13 +83,6 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
     fread(&ham->t,sizeof(int),1,FH->IE);
     N=tdat->singles*(tdat->singles+1)/2;
     fread(&ham->He[0],sizeof(float),N,FH->IE);
-    //    for (k=0;k<tdat->singles;k++){
-      //      for (l=k;l<tdat->singles;l++){
-      //      l=k;
-      //	index=Sindex(k,l,tdat->singles);
-	//	printf("%d %d %d %f\n",k,l,index,ham->He[index]);
-	//      }
-    //    }
     N=tdat->doubles*(tdat->doubles+1)/2;
     //    printf("N %d",tdat->doubles);
     fread(&ham->Hf[0],sizeof(float),N,FH->IE);
