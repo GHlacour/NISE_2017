@@ -20,6 +20,7 @@
 #include "eq_den.h"
 #include "mpi.h"
 #include "MPI_subs.h"
+#include <complex.h>
 
 
 /* This is the main routine which will control the flow of the
@@ -351,31 +352,39 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
  printf("The doorway part run successfully!\n");  
 }
 
-/* Here we will calculate the population transfer during the waiting time */
-//void CG_2DES_P_DA(t_non *non,float *P_DA,float* K, float* P0, int N){
-void CG_2DES_P_DA(t_non *non,float *P_DA, int N){
+void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
     printf("Calculate population transfer!\n");
     float *eigK_re, *eigK_im; // eigenvalues of K
     float *evecL, *evecR; // eigenvectors of K
     float *ivecR, *ivecL; //inverse eigenvectors of K
-    float *iP0;
     float *cnr;
-    int a, b, c;
+    float sum_eig_im;
+    int a, b, c,i,j;
+    float *K;
     int nt2;
+    float _Complex *ivecL_com, *ivecR_com;
+    float _Complex *ivecL_com_inv, *ivecR_com_inv;
+    float _Complex *cnr_com;
+    float _Complex *P_DA_com;
     FILE *outone;
     FILE *Rate;
-    float *K;
+    sum_eig_im=0;
     
-    eigK_re = (float *)calloc(N*N,sizeof(float));
-    eigK_im = (float *)calloc(N*N,sizeof(float));
+    eigK_re = (float *)calloc(N,sizeof(float));
+    eigK_im = (float *)calloc(N,sizeof(float));
     evecL = (float *)calloc(N*N,sizeof(float));
     evecR = (float *)calloc(N*N,sizeof(float));
     ivecL = (float *)calloc(N*N,sizeof(float));
     ivecR = (float *)calloc(N*N,sizeof(float));
-    iP0 = (float *)calloc(N*N,sizeof(float));
     cnr = (float *)calloc(N * N, sizeof(float));
     K=(float *)calloc(N*N,sizeof(float));
+    cnr_com =(float _Complex *)calloc(N * N, sizeof(float _Complex));
 
+    ivecL_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+    ivecR_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+    ivecL_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+    ivecR_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+    P_DA_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
   /* Open the rate matrix file */
   Rate=fopen("RateMatrix.dat","r");
   if (Rate==NULL){
@@ -395,33 +404,28 @@ void CG_2DES_P_DA(t_non *non,float *P_DA, int N){
 
     // Diagonalize K matrix
     diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
+    //Here we sum of the absolute value of the imagine part to check the eigenvector is real or complex
     for (int a = 0; a<N; a++) {
-        if (eigK_im[a]!=0) {
-            printf("Transfer lifetime is not real!\n");
-            exit(0);
-        }
+        sum_eig_im += fabs(eigK_im[a]);
     }
+    printf("Here is the sum of the absolute value of the imagine part:");
+    printf("%f\n", sum_eig_im);
+   // Print eigenvectors
+    //printf("Eigenvalues:\n");
+    //for (int i = 0; i < N; i++) {
+    //    printf("%f + %fi\n", eigK_re[i], eigK_im[i]);
+    //}
+    
+    if (sum_eig_im = 0){
+        // calculate the inverse part
+        inversie_real_matrix(eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
 
-    // Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0)
-    //Here P0 will be input outside
-    /*for (a = 0; a < N; a++) {
-        for (b = 0; b < N; b++) {
-            for (c = 0; c < N; c++) {
-                iP0[a + c * N] += ivecR[a + b * N] * P0[b + c * N];
-            }
-        }
-    }*/   
-    // iP0 = ivecR*P(0)
-
-    // Loop over t2
-    /* Here we assume the P0 is a N*N matrix, where N is the number of segments */
-    /* We should change the code so nt2*non->deltat is taken from an array or desired t2 times */
-  //for (int nt2 = 0; nt2<non->tmax2; nt2++) {
-    nt2 =non->tmax2-1;
-	  clearvec(cnr,N*N); /* Empty auxillary vector */ 
+       // Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0)
+        nt2 =non->tmax2-1;
+	      clearvec(cnr,N*N); /* Empty auxillary vector */ 
         for (a = 0; a < N; a++) {
             for (b = 0; b < N; b++) {
-                cnr[a + b * N] += exp(eigK_re[a]/1000 * nt2 * non->deltat) * ivecR[a + b*N];
+                cnr[a + b * N] += exp(eigK_re[a]/1000 * nt2 * non->deltat) * ivecL[a + b*N];
             }
         }   // exp(Eig*t2)*iP0
 
@@ -430,12 +434,10 @@ void CG_2DES_P_DA(t_non *non,float *P_DA, int N){
                 for (c = 0; c < N; c++) {
                     //P_DA[nt2 + (a + c * N)*non->tmax2] += evecR[a + b * N] * cnr[b + c * N];
                     //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
-		                P_DA[c*N+a] += evecR[a + b * N] * cnr[b + c * N];
+		                P_DA[c+N*a] += evecL[a + b * N] * cnr[b + c * N];
                 }
             }
         }   // evecR*cnr
-    //}
-
     /* Write to file */
     outone=fopen("KPop.dat","w");
     //for (int nt2=0;nt2<non->tmax2;nt2++){
@@ -449,21 +451,165 @@ void CG_2DES_P_DA(t_non *non,float *P_DA, int N){
             }
         }
         fprintf(outone,"\n"); 
-    //}
+    } else{
+    //this is deal with the complex eigenvalue and vector
+    inversie_complex_matrix(eigK_re, eigK_im, evecL, evecR, ivecL_com_inv, ivecR_com_inv, N);
+    //here we reconstruct the matrix in a cpmplex number way
+    //Actually we only need the left one
+    
+    /*for (int i = 0; i < N; i++)
+        {// If the current and next eigenvalues form a complex conjugate pair
+            if (i < N - 1 && eigK_im[i] != 0.0 && eigK_im[i + 1] == -eigK_im[i]) {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j) + i*VL(:,j+1)
+                    ivecR_com[i * N + j] = evecR[i * N + j]-evecR[(1 + i) * N + j]*_Complex_I;
+                    ivecR_com[(1+i) * N + j] = evecR[i * N + j]+evecR[(1 + i) * N + j]*_Complex_I;         
+                }
+                // Skip the next eigenvector (since it's part of the complex conjugate pair)
+                i++;
+            } else {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j)
+                    ivecR_com[i * N + j] = evecR[i * N + j]+0*_Complex_I;
+                    //printf("%.8f%+.8fj", evecL[i * N + j], 0);
+                    if (j < N - 1) {
+                        printf(" ");
+                    }
+                }
+            }
+            printf("]");
+            if (i < N - 1) {
+                printf("\n ");
+            }
+        }  
+    printf(" this is ivecR_com\n");    
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f  i%f\n", creal(ivecR_com[i * N + j]), cimag(ivecR_com[i * N + j]));
+        }
+    } 
+        printf(" this is ivecR_com_inv\n");    
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f  i%f\n", creal(ivecR_com_inv[i * N + j]), cimag(ivecR_com_inv[i * N + j]));
+        }
+    } 
+    */
+
+    for (int i = 0; i < N; i++)
+        {// If the current and next eigenvalues form a complex conjugate pair
+            if (i < N - 1 && eigK_im[i] != 0.0 && eigK_im[i + 1] == -eigK_im[i]) {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j) + i*VL(:,j+1)
+                    ivecL_com[i * N + j] = evecL[i * N + j]-evecL[(1 + i) * N + j]*_Complex_I;
+                    ivecL_com[(1+i) * N + j] = evecL[i * N + j]+evecL[(1 + i) * N + j]*_Complex_I;         
+                }
+                // Skip the next eigenvector (since it's part of the complex conjugate pair)
+                i++;
+            } else {
+                for (int j = 0; j < N; j++) {
+                    ivecL_com[i * N + j] = evecL[i * N + j]+0*_Complex_I;
+                }
+            }
+        }
+    /*printf(" this is ivecL_com\n");    
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f  i%f\n", creal(ivecL_com[i * N + j]), cimag(ivecL_com[i * N + j]));
+        }
+    } 
+    printf(" this is ivecL_com_inv\n");    
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f  i%f\n", creal(ivecL_com_inv[i * N + j]), cimag(ivecL_com_inv[i * N + j]));
+        }
+    } */
+
+    // Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0)
+    nt2 =non->tmax2-1;
+    float factor;
+    factor =  ( nt2 * non->deltat)/1000;
+	  clearvec(cnr,N*N); /* Empty auxillary vector */ 
+        for (a = 0; a < N; a++) {
+            for (b = 0; b < N; b++) {
+                //cnr_com[a + b * N] += exp(eigK_re[a]/1000 * nt2 * non->deltat) * ivecR[a + b*N];
+                //exp(a+bi)*(c+di)= exp(a)*[(c*cosb-d*sinb)+(d*cosb+c*sinb)*i]
+                cnr_com[a + b * N] += exp((eigK_re[a])*factor) *((creal(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)-sin((eigK_im[a])*factor)*cimag(ivecL_com_inv[a + b*N]))+(cimag(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)+sin((eigK_im[a])*factor)*creal(ivecL_com_inv[a + b*N]))*_Complex_I);
+                //cnr_com[a + b * N] += (eigK_re[a]*creal(ivecL_com_inv[a + b*N])-eigK_im[a]*cimag(ivecL_com_inv[a + b*N]))+(eigK_re[a]*cimag(ivecL_com_inv[a + b*N])+eigK_im[a]*creal(ivecL_com_inv[a + b*N])) *_Complex_I;         
+            }
+        }  
+        
+                  /*printf(" this is cnr_com\n");    
+                  for (i = 0; i < N; i++) {
+                      for (j = 0; j < N; j++) {
+                            printf("%f  i%f\n", creal(cnr_com[i * N + j]), cimag(cnr_com[i * N + j]));
+                      }
+                  }*/ 
+
+          for (a = 0; a < N; a++) {
+              for (b = 0; b < N; b++) {
+                  for (c = 0; c < N; c++) {
+                      //P_DA[nt2 + (a + c * N)*non->tmax2] += evecR[a + b * N] * cnr[b + c * N];
+                      //P_DA[nt2*N+c*N*non->tmax2+a] += evecR[a + b * N] * cnr[b + c * N];
+                      //P_DA_com[c*N+a] += evecR[a + b * N] * cnr_com[b + c * N];
+                      //P_DA_com[c*N+a] += (creal(ivecL_com[a + b * N])*creal(cnr_com[b + c * N])-cimag(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N]))+(creal(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N])+creal(cnr_com[b + c * N])*cimag(ivecL_com[a + b * N])) *_Complex_I; 
+                        P_DA_com[c+a*N] += (creal(ivecL_com[a + b * N])*creal(cnr_com[b + c * N])-cimag(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N]))+(creal(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N])+creal(cnr_com[b + c * N])*cimag(ivecL_com[a + b * N])) *_Complex_I;
+                  }
+              }
+          }   // evecR*cnr
+      for (i = 0; i < N; i++) {
+          for (j = 0; j < N; j++) {
+              if (fabs(cimag(P_DA_com[i*N+j])) < 0.00001) {
+                  P_DA[i*N+j]=creal(P_DA_com[i*N+j]);
+                  //printf("%f \n", P_DA[i * N + j]);
+              }else  {
+              printf("\nThe imagine part is none zero\n");
+            }     
+          }
+      } 
+   
+    /*printf(" this is P_DA_com\n");    
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f  i%f\n", creal(P_DA_com[i * N + j]), cimag(P_DA_com[i * N + j]));
+        }
+    }*/ 
+
+    /* Write to file */
+    outone=fopen("KPop.dat","w");
+    //for (int nt2=0;nt2<non->tmax2;nt2++){
+      //nt2 =non->tmax2-1;
+        fprintf(outone,"%f ",nt2*non->deltat);
+        for (int a=0;a<N;a++){
+            for (int b=0;b<N;b++){
+                fprintf(outone,"%f ",P_DA[a*N+b]);
+		/* TLC why not P_DA[nt2*N*N+c*N+a]? */
+                                          
+            }
+        }
+        fprintf(outone,"\n"); 
+    }
     fclose(outone);
 
     free(eigK_im);
     free(eigK_re);
-    free(iP0);
     free(evecL);
     free(evecR);
     free(ivecL);
     free(ivecR);
-    free(K);
+    free(P_DA_com);
+    free(ivecL_com);
+    free(ivecR_com);
+    free(ivecL_com_inv);
+    free(ivecR_com_inv);
+    free(cnr_com);
+
 
     printf("The waiting time propagation part run successfully!\n");  
     return;
-}
+};
+
+
 
 
 /* Calcualte doorway function for stimulated emission */

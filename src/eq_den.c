@@ -13,6 +13,8 @@
 #include "1DFFT.h"
 #include "project.h"
 #include "eq_den.h"
+#include <complex.h>
+
 
 
 /*Here we defined the equilibrium density operator*/
@@ -217,7 +219,6 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
     int i, j;
     int *pivot;
     int M;
-
     /* Diagonalization*/
     /* Find lwork for diagonalization */
     lwork = -1;
@@ -233,6 +234,7 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
             Kcopy[i * N + j] = K[i * N + j];
         }
     }
+
     /* Do diagonalization*/
     sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
     if (INFO != 0) {
@@ -248,6 +250,30 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
             ivecR[i * N + j] = evecR[i * N + j];
         }
     }
+
+
+/*    printf("diag left one \n");
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f \n", evecL[i*N+j]);
+        }
+    }
+     printf("diag right one \n");
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+             printf("%f \n", evecR[i*N+j]);
+        }
+    }*/
+    return;
+}
+
+// calculate the inverse real matrix for the left and right side
+void inversie_real_matrix(float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+    int INFO, lwork;
+    float *work;
+    int i, j;
+    int *pivot;
+    int M;
 
     /* Inverse right eigenvectors*/
     pivot = (int *)calloc(N,sizeof(int));
@@ -287,11 +313,102 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
         printf("Something went wrong trying to inverse left eigenvector matrix...\nExit code %d\n",INFO);
         exit(0);
     }
-
     /* Free space */
-    free(Kcopy), free(work), free(pivot);
+     free(work), free(pivot);    
+}
+
+
+// calculate the inverse real matrix for the left and right side
+void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* evecR,  float _Complex* ivecL_com,  float _Complex* ivecR_com, int N) {
+    int INFO, lwork;
+    float *work;
+    int i, j;
+    int *pivot;
+    int M;
+    float _Complex *work_com;
+
+    /* Inverse right eigenvectors*/
+    for (int i = 0; i < N; i++)
+        {// If the current and next eigenvalues form a complex conjugate pair
+            if (i < N - 1 && eig_im[i] != 0.0 && eig_im[i + 1] == -eig_im[i]) {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j) + i*VL(:,j+1)
+                    ivecR_com[i * N + j] = evecR[i * N + j]-evecR[(1 + i) * N + j]*_Complex_I;
+                    ivecR_com[(1+i) * N + j] = evecR[i * N + j]+evecR[(1 + i) * N + j]*_Complex_I;         
+                }
+                // Skip the next eigenvector (since it's part of the complex conjugate pair)
+                i++;
+            } else {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j)
+                    ivecR_com[i * N + j] = evecR[i * N + j]+0*_Complex_I;
+                    //printf("%.8f%+.8fj", evecL[i * N + j], 0);
+                }
+            }
+        }
+
+    pivot = (int *)calloc(N,sizeof(int));
+    cgetrf_(&N, &N, ivecR_com, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }    
+    lwork = -1; 
+    work_com = ( float _Complex *)calloc(1, sizeof( float _Complex));
+    cgetri_(&N, ivecR_com, &N, pivot, work_com, &lwork, &INFO); //Find lwork for diagonalization
+    lwork = work_com[0];
+    free(work_com);
+    work_com = ( float _Complex *)calloc(lwork, sizeof( float _Complex));
+    cgetri_(&N, ivecR_com, &N, pivot, work_com, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work_com), free(pivot);
+
+    /* Inverse left eigenvectors*/
+    for (int i = 0; i < N; i++)
+        {// If the current and next eigenvalues form a complex conjugate pair
+            if (i < N - 1 && eig_im[i] != 0.0 && eig_im[i + 1] == -eig_im[i]) {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j) + i*VL(:,j+1)
+                    ivecL_com[i * N + j] = evecL[i * N + j]-evecL[(1 + i) * N + j]*I;
+                    ivecL_com[(1+i) * N + j] = evecL[i * N + j]+evecL[(1 + i) * N + j]*I;         
+                }
+                // Skip the next eigenvector (since it's part of the complex conjugate pair)
+                i++;
+            } else {
+                for (int j = 0; j < N; j++) {
+                    // u(j) = VL(:,j)
+                    ivecL_com[i * N + j] = evecL[i * N + j]+0*I;
+                    //printf("%.8f%+.8fj", evecL[i * N + j], 0);
+                }
+            }
+        }
+
+    pivot = (int *)calloc(N,sizeof(int));
+    cgetrf_(&N, &N, ivecL_com, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }    
+    lwork = -1; 
+    work_com = ( float _Complex *)calloc(1, sizeof( float _Complex));
+    cgetri_(&N, ivecL_com, &N, pivot, work_com, &lwork, &INFO); //Find lwork for diagonalization
+    lwork = work_com[0];
+    free(work_com);
+    work_com = ( float _Complex *)calloc(lwork, sizeof( float _Complex));
+    cgetri_(&N, ivecL_com, &N, pivot, work_com, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }   
+        /* Free space */
+    free(work_com), free(pivot);
+    
     return;
 }
+
 /* Write a square matrix to a text file */
 void write_matrix_to_file(char fname[],float *matrix,int N){
   FILE *file_handle;

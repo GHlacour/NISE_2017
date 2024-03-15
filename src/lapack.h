@@ -197,5 +197,71 @@ extern void sgetri_(
                 int* 	LWORK,
                 int* 	INFO 
                 );
+// LAPACK functions for complex matrices
+///extern void zgeev_(char* jobvl, 
+                   //char* jobvr, 
+                   //int* N,
+                   //double complex* A, 
+                   //int* lda,
+                   //double complex* W, 
+                   //double complex* VL,
+                   //int* ldvl,
+                   //double complex* VR,
+                   //int* ldvr,
+                   //double complex* work,
+                   //int* lwork, 
+                   //double* rwork, 
+                   //int* info);
+    /*extern void zgeev_( char *jobvl, 
+                        char *jobvr,
+                        int *N, 
+                        double _Complex *A, 
+                        int *lda,
+                        double _Complex *W, 
+                        double _Complex *VL, 
+                        int *ldvl,
+                        double _Complex *VR, 
+                        int *ldvr,
+                        double _Complex *work, 
+                        int *lwork,
+                        double *rwork, 
+                        int *info);
+
+
+extern void zgetrf_ (const int* m, 
+                     const int* n, 
+                     double _Complex * A, 
+                     const int* lda, 
+                     int* ipiv, 
+                     int* info);
+
+extern void zgetri_ (const int* n, 
+                     double _Complex * A, 
+                     const int* LDA,
+                     int* ipiv, 
+                     double _Complex * work, 
+                     const int* LDB, 
+                     int* info);*/
+
+
+extern void cgetrf_(
+                int* 	M,
+                int* 	N,
+                float _Complex * 	A,
+                int* 	LDA,
+                int* 	IPIV,
+                int* 	INFO 
+                );
+extern void cgetri_(
+                int* 	N,
+                float _Complex * 	A,
+                int* 	LDA,
+                int* 	IPIV,
+                float _Complex * 	WORK,
+                int* 	LWORK,
+                int* 	INFO 
+                );   
+
+
 
 #endif // LAPACK
