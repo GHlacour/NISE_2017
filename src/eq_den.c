@@ -32,17 +32,12 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   rho_r=(float *)calloc(N*N,sizeof(float));
   int a,b,c,pro_dim;
   int site_num,site_num_1,site_num_2,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
-
   float kBT=non->temperature*0.6950859; // Here 0.6950859 is the K_b in the unit of cm-1
-  /*Here I have one question, the input1D file does not contain temperature, 
-  where we should include it */
-  
   float i_u = 0; 
   float u = 0; //initialized u
   /* projection */
   pro_dim=project_dim(non);
   diag_sum = (float *)calloc(pro_dim,sizeof(float));
-  
   /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
   if (non->Npsites==non->singles){
     zero_coupling(Hamiltonian_i,non);
@@ -63,18 +58,10 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
   }
 
 /*Here we diagonalize the square Hamiltonian, the H is replaced by the eigenvector in eigen basis, e is the eigenvalue */
-  //write_matrix_to_file("ham_site.dat",H,N);
   diagonalizeLPD(H,e,N);
-
-  //write_matrix_to_file("ham_eigen.dat",H,N);
   /* Exponentiate [U=exp(-H/kBT)] */
   for (a=0;a<N;a++){
       e_1[a]=exp(-e[a]/kBT);
-      /* Apply strict high temperature limit when T>100000 */
-      //if (non->temperature>100000){
-	      //e_1[a]=1;
-   
-     // }
   }
   
 
@@ -92,25 +79,8 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
     //for (seg_num=0;seg_num<pro_dim;seg_num++){
   for (site_num_1=0;site_num_1<non->singles;site_num_1++){
     seg_num=non->psites[site_num_1];
-
-
-    //for (site_num_2=0;site_num_2<non->singles;site_num_2++){
-      //if (seg_num==non->psites[site_num_2]){
-      e_1[site_num_1]=e_1[site_num_1]/diag_sum[seg_num];
-
-      //}
-    //}
+    e_1[site_num_1]=e_1[site_num_1]/diag_sum[seg_num];
   }
-    /*printf("this is e_1[0] ") ;
-    printf(" %f\n", e_1[0]);
-    printf("this is e_1[1] ") ;
-    printf(" %f\n", e_1[1]);
-    printf("this is e_1[2] ") ;
-    printf(" %f\n", e_1[2]);
-    printf("this is e_1[3] ") ;
-    printf(" %f\n", e_1[3]);*/
-  //exit(0);
-
   /* Transform back to site basis */ 
   for (a=0;a<N;a++){
       for (b=0;b<N;b++){
@@ -118,29 +88,18 @@ void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
           rho_l[b+a*N]=0;
       }
   }  
-
-
   for (a=0;a<N;a++){
       for (b=0;b<N;b++){
           for (c=0;c<N;c++){
             rho_l[a+c*N]+=H[b+a*N]*rho_r[b+c*N];
-            //rho_l[a+c*N]+=rho_r[b+a*N]*H[b+c*N];
           }
       }
   }
-
- //printf(" %f\n", rho_l[1]);
-/* The weights in the site basis were calculated, 
-Here we should not combine the two loop in one loop as it would results in the heary calcuation.*/
-
   free(H);
   free(e_1);
   free(e);
   free(rho_r);
-  //free(rho_l);
-   //
   return ;
-  
 }
 
 // Multiply a real matrix on a real vector (vr,vi)
@@ -149,19 +108,14 @@ void matrix_on_real_vector(float *mat,float *vr,int N){
     float *xi;
     int a,b;
     xr = (float *)calloc(N * N, sizeof(float));
-    //xi = (float *)calloc(N * N, sizeof(float));
-    // Multiply
     for (a=0;a<N;a++){
         for (b=0;b<N;b++){
-            xr[a]+=mat[a+b*N]*vr[b];
-	    //xi[a]+=c[a+b*N]*vi[b];
+          xr[a]+=mat[a+b*N]*vr[b];
 	}
     }
     // Copy back
     copyvec(xr,vr,N);
-    //copyvec(xi,vi,N);
     free(xr);
-    //free(xi);
 }
 
 
@@ -250,20 +204,6 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
             ivecR[i * N + j] = evecR[i * N + j];
         }
     }
-
-
-/*    printf("diag left one \n");
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-             printf("%f \n", evecL[i*N+j]);
-        }
-    }
-     printf("diag right one \n");
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-             printf("%f \n", evecR[i*N+j]);
-        }
-    }*/
     return;
 }
 
@@ -342,7 +282,6 @@ void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* 
                 for (int j = 0; j < N; j++) {
                     // u(j) = VL(:,j)
                     ivecR_com[i * N + j] = evecR[i * N + j]+0*_Complex_I;
-                    //printf("%.8f%+.8fj", evecL[i * N + j], 0);
                 }
             }
         }
@@ -381,7 +320,6 @@ void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* 
                 for (int j = 0; j < N; j++) {
                     // u(j) = VL(:,j)
                     ivecL_com[i * N + j] = evecL[i * N + j]+0*I;
-                    //printf("%.8f%+.8fj", evecL[i * N + j], 0);
                 }
             }
         }
@@ -428,12 +366,7 @@ void write_ham_to_file(char fname[],float *Hamiltonian_i,int N){
   FILE *file_handle;
   int i,j;
   int index;
-  //float *H;
-  //H=(float *)calloc(N*N,sizeof(float));
-
   // Build Hamiltonian, convert the triangular Hamiltonian to the  square Hamiltonian
-
-
   file_handle=fopen(fname,"w");
   for (i=0;i<N;i++){
     for (j=0;j<N;j++){
