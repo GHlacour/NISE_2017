@@ -62,6 +62,19 @@ void multi_projection_Coupling(float *Hamil_i_e, t_non *non){
     return;
 }
 
+/* This subroutine will nullify all the excitonic couplings between different segments */
+void zero_coupling(float *Hamil_i_e, t_non *non){
+   /* Defining a double loop because we are checking the couplings between the pairs of molecules */
+    int i,j;
+    for (i=0;i<non->singles;i++){
+        for (j=i+1;j<non->singles;j++){
+            if (non->psites[i]!=non->psites[j]){
+               Hamil_i_e[Sindex(i,j,non->singles)]=0;
+            }
+        }
+    }
+   return;
+}
 
 /* Analyse projection input */
 int project_dim(t_non* non){
@@ -85,7 +98,7 @@ int project_dim(t_non* non){
              max=non->psites[i];
       }
       }
-      printf("Identified %d projection segments\n",max+1);
+      //printf("Identified %d projection segments\n",max+1);
       return max+1;
    }
    printf(RED "Something went wrong in projection input analysis.\n");

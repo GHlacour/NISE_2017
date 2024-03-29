@@ -14,7 +14,7 @@
 
 
 
-/* Standard propagation of a single vector */
+/* Standard propagation of a single vector */ 
 /* display is t1*x for displaying info at first step, that is when t1 and x are both zero */
 /* and we have the first sample */
 void propagate_vector(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int sign,int samples,int display){
@@ -1242,8 +1242,7 @@ int time_evolution_mat(t_non* non, float* Hamiltonian_i, float* Ur, float* Ui, i
             H[a + N * b] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
             H[b + N * a] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
         }
-    }
-    diagonalizeLPD(H, e, N);
+    }    diagonalizeLPD(H, e, N);
     /* Exponentiate [U=exp(-i/h H dt)] */
     for (a = 0; a < N; a++) {
         re_U[a] = cos(e[a] * f);

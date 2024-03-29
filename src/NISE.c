@@ -16,6 +16,8 @@
 #include "calc_2DIR.h"
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
+#include "calc_CG_2DES.h"
+#include "eq_den.h"
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
@@ -27,6 +29,9 @@
 #include "correlate.h"
 #include <mpi.h>
 #include "omp.h"
+
+
+
 
 /* This is the 2017 version of the NISE program
    It allow calculating linear absorption and 2D(IR) spectra
@@ -232,13 +237,13 @@ int main(int argc, char* argv[]) {
             calc_CD(non);
     }
 
-    // Call the Raman Routine
+    /* Call the Raman Routine */
     if (!strcmp(non->technique, "Raman")) {
-        //Does not support MPI
+        /* Does not support MPI */
         if (parentRank == 0){
             if (cpus>1) not_parallel();
             raman(non);
-	}
+	      }
      }
 
     /* Call the Sum Frequency Generation Routine */
@@ -273,6 +278,16 @@ int main(int argc, char* argv[]) {
     if (string_in_array(non->technique,(char*[]){"2DUVvis","GBUVvis","SEUVvis","EAUVvis","noEAUVvis"},5)){
         // Does support MPI
         calc_2DES(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
+    }
+
+    /* Call the CG_2DES Routine */
+    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
+     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
+     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
+     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))) {
+        /* Does not support MPI */
+        if (parentRank == 0)
+            calc_CG_2DES(non);
     }
 
     // Call the 2DFD calculation routine
