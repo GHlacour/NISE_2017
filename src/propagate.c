@@ -20,6 +20,7 @@
 void propagate_vector(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int sign,int samples,int display){
    int elements;
    if (non->propagation==1) propagate_vec_coupling_S(non,Hamil_i_e,vecr,veci,non->ts,sign);
+   if (non->propagation==3) propagate_vec_RK4(non,Hamil_i_e,vecr,veci,non->ts,sign);
    if (non->propagation==0){
       if (non->thres==0 || non->thres>1){
          propagate_vec_DIA(non,Hamil_i_e,vecr,veci,sign);
@@ -45,7 +46,7 @@ void propagate_matrix(t_non *non,float * Hamil_i_e,float *vecr,float *veci,int s
    N=non->singles;
 #pragma omp parallel for
    for (j=0;j<non->singles;j++){
-        propagate_vector(non,Hamil_i_e,vecr+j*N,veci+j*N,1,samples,display*j);
+        propagate_vector(non,Hamil_i_e,vecr+j*N,veci+j*N,sign,samples,display*j);
    }
    return;
 }
@@ -256,7 +257,544 @@ int propagate_vec_DIA_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, 
     return elements;
 }
 
+/* Propagate singles using the Runge Kutta 4 algorithm */
+void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,int sign){
+    float f;
+    int index, N;
+    float *H0;
+    float *k1r,*k2r,*k3r,*k4r;
+    float *k1i,*k2i,*k3i,*k4i;
+    int *col, *row;
+    float *ocr, *oci;
+    int a, b, c;
+    float J;
+    float cr1, cr2, ci1, ci2;
+    int i, k, kmax;
+    int N2;
 
+    /* printf("Entered the RK4 routine.\n"); */
+    
+    N = non->singles;
+    N2=(N*(N+1))/2;
+    f = non->deltat * icm2ifs * twoPi * sign / m;
+    H0 = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    k1r = (float *)calloc(N,sizeof(float));
+    k1i = (float *)calloc(N,sizeof(float));
+    k2r = (float *)calloc(N,sizeof(float));
+    k2i = (float *)calloc(N,sizeof(float));
+    k3r = (float *)calloc(N,sizeof(float));
+    k3i = (float *)calloc(N,sizeof(float));
+    k4r = (float *)calloc(N,sizeof(float));
+    k4i = (float *)calloc(N,sizeof(float));
+
+    /* Build sparse Hamiltonians H0 */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        for (b = a; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut || a==b) {
+                index = Sindex(a, b, N);
+                H0[k] = f* Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+    /* We assume the Hamiltonian to be time independent! */
+
+    /* Multi-step loop */
+    for (i=0;i<m;i++){
+	if (i>0) {
+            clearvec(k1r,N);
+            clearvec(k1i,N);
+            clearvec(k2r,N);
+            clearvec(k2i,N);
+            clearvec(k3r,N);
+            clearvec(k3i,N); 
+            clearvec(k4r,N);
+            clearvec(k4i,N);	    
+	}
+        /* Find k1 */
+        for (k=0;k<kmax;k++){
+            k1r[col[k]]+=H0[k]*ci[row[k]];
+            k1i[col[k]]-=H0[k]*cr[row[k]];
+            if (row[k]!=col[k]){
+                k1r[row[k]]+=H0[k]*ci[col[k]];
+                k1i[row[k]]-=H0[k]*cr[col[k]];
+            }
+        }
+        /* Find k2 */
+        for (k=0;k<kmax;k++){
+            k2r[col[k]]+=H0[k]*(ci[row[k]]+k1i[row[k]]*0.5);
+            k2i[col[k]]-=H0[k]*(cr[row[k]]+k1r[row[k]]*0.5);
+            if (row[k]!=col[k]){
+                k2r[row[k]]+=H0[k]*(ci[col[k]]+k1i[col[k]]*0.5);
+                k2i[row[k]]-=H0[k]*(cr[col[k]]+k1r[col[k]]*0.5);
+            }
+        }
+        /* Find k3 */
+        for (k=0;k<kmax;k++){
+            k3r[col[k]]+=H0[k]*(ci[row[k]]+k2i[row[k]]*0.5);
+            k3i[col[k]]-=H0[k]*(cr[row[k]]+k2r[row[k]]*0.5);
+            if (row[k]!=col[k]){
+                k3r[row[k]]+=H0[k]*(ci[col[k]]+k2i[col[k]]*0.5);
+                k3i[row[k]]-=H0[k]*(cr[col[k]]+k2r[col[k]]*0.5);
+            }
+        }
+        /* Find k4 */
+        for (k=0;k<kmax;k++){
+            k4r[col[k]]+=H0[k]*(ci[row[k]]+k3i[row[k]]);
+            k4i[col[k]]-=H0[k]*(cr[row[k]]+k3r[row[k]]);
+            if (row[k]!=col[k]){
+                k4r[row[k]]+=H0[k]*(ci[col[k]]+k3i[col[k]]);
+                k4i[row[k]]-=H0[k]*(cr[col[k]]+k3r[col[k]]);
+            }
+        }
+
+        /* Update wavefunction */
+        for (k=0;k<N;k++){
+            cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
+        }
+    }
+
+    free(H0),free(col),free(row);
+    free(k1r),free(k2r),free(k3r),free(k4r);
+    free(k1i),free(k2i),free(k3i),free(k4i);
+    return;
+
+}
+
+/* Propagate singles using the Runge Kutta 4 algorithm */
+void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m,float *Anh){
+    float f,factor;
+    int index, N;
+    int indexa;
+    float *H0,*HD;
+    float *k1r,*k2r,*k3r,*k4r;
+    float *k1i,*k2i,*k3i,*k4i;
+    int *col, *row;
+    float *ocr, *oci;
+    int a, b, c;
+    int index1,index2;
+    float J;
+    float cr1, cr2, ci1, ci2;
+    int i,j, k, kmax;
+    int N2;
+
+    /* printf("Entered the RK4 routine.\n"); */
+
+    N = non->singles;
+    N2=(N*(N+1))/2;
+    f = non->deltat * icm2ifs * twoPi / m;
+    H0 = (float *)malloc(N2*sizeof(float));
+    HD = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    k1r = (float *)calloc(N2,sizeof(float));
+    k1i = (float *)calloc(N2,sizeof(float));
+    k2r = (float *)calloc(N2,sizeof(float));
+    k2i = (float *)calloc(N2,sizeof(float));
+    k3r = (float *)calloc(N2,sizeof(float));
+    k3i = (float *)calloc(N2,sizeof(float));
+    k4r = (float *)calloc(N2,sizeof(float));
+    k4i = (float *)calloc(N2,sizeof(float));
+
+    /* Build sparse Hamiltonians H0 (only couplings) */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        for (b = a+1; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut) {
+                index = Sindex(a, b, N);
+                H0[k] = f* Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+    /* Build Diagonal Hamiltonian */
+    for (a = 0; a < N; a++) {
+	indexa = Sindex(a, a, N);
+        for (b = a; b < N; b++) {
+	    index = Sindex(a, b, N);
+            HD[index]=f*(Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]);
+	    if (a == b) {
+                if (non->anharmonicity == 0) {
+                    HD[index] -= Anh[a]*f;
+                }
+                else {
+                    HD[index] -= non->anharmonicity*f;
+                }
+            }
+        }
+    }
+
+
+    /* Multi-step loop */
+    for (i=0;i<m;i++){
+        if (i>0) {
+            clearvec(k1r,N2);
+            clearvec(k1i,N2);
+            clearvec(k2r,N2);
+            clearvec(k2i,N2);
+            clearvec(k3r,N2);
+            clearvec(k3i,N2);
+            clearvec(k4r,N2);
+            clearvec(k4i,N2);
+	}
+
+    /* Find k1 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k1r[k]+=HD[k]*ci[k];
+            k1i[k]-=HD[k]*cr[k];
+        }
+    /* Loop over couplings */
+	for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+	    b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+		factor = 1.0;
+                    /* c < a,b */
+		    /* c == a */
+		if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+		if (b==a) factor=sqrt2;
+                    /* c > a,b */
+		k1r[index1]+=H0[k]*ci[index2]*factor;
+		k1i[index1]-=H0[k]*cr[index2]*factor;
+		k1r[index2]+=H0[k]*ci[index1]*factor;
+                k1i[index2]-=H0[k]*cr[index1]*factor;
+	    }
+	}
+	
+    /* Find k2 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k2r[k]+=HD[k]*(ci[k]+k1i[k]*0.5);
+            k2i[k]-=HD[k]*(cr[k]+k1r[k]*0.5);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
+                k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
+		k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
+                k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5)*factor;
+            }
+        }
+
+    /* Find k3 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k3r[k]+=HD[k]*(ci[k]+k2i[k]*0.5);
+            k3i[k]-=HD[k]*(cr[k]+k2r[k]*0.5);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5)*factor;
+                k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5)*factor;
+                k3r[index2]+=H0[k]*(ci[index1]+k2i[index1]*0.5)*factor;
+                k3i[index2]-=H0[k]*(cr[index1]+k2r[index1]*0.5)*factor;
+            }
+        }
+
+    /* Find k4 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k4r[k]+=HD[k]*(ci[k]+k3i[k]);
+            k4i[k]-=HD[k]*(cr[k]+k3r[k]);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+                index1 = Sindex(a,c,N);
+                index2 = Sindex(b,c,N);
+                factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                if (c==a) factor=sqrt2;
+                    /* a < c < b */
+                    /* c == b */
+                if (b==a) factor=sqrt2;
+                    /* c > a,b */
+                k4r[index1]+=H0[k]*(ci[index2]+k3i[index2])*factor;
+                k4i[index1]-=H0[k]*(cr[index2]+k3r[index2])*factor;
+                k4r[index2]+=H0[k]*(ci[index1]+k3i[index1])*factor;
+                k4i[index2]-=H0[k]*(cr[index1]+k3r[index1])*factor;
+            }
+        }
+
+    /* Update wavefunction */
+	for (k=0;k<N2;k++){
+            cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
+        }
+
+    }
+    free(HD),free(H0),free(col),free(row);
+    free(k1r),free(k2r),free(k3r),free(k4r);
+    free(k1i),free(k2i),free(k3i),free(k4i);
+    return;
+}
+
+/* Propagate doubless using the Runge Kutta 4 algorithm for 2DES */
+void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m){
+    float f,factor;
+    int index, N;
+    int indexa;
+    float *H0,*HD;
+    float *k1r,*k2r,*k3r,*k4r;
+    float *k1i,*k2i,*k3i,*k4i;
+    int *col, *row;
+    float *ocr, *oci;
+    int a, b, c;
+    int index1,index2;
+    float J;
+    float cr1, cr2, ci1, ci2;
+    int i,j, k, kmax;
+    int N2;
+
+    /* printf("Entered the RK4 routine.\n"); */
+
+    N = non->singles;
+    N2=(N*(N+1))/2;
+    f = non->deltat * icm2ifs * twoPi / m;
+    H0 = (float *)malloc(N2*sizeof(float));
+    HD = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    k1r = (float *)calloc(N2,sizeof(float));
+    k1i = (float *)calloc(N2,sizeof(float));
+    k2r = (float *)calloc(N2,sizeof(float));
+    k2i = (float *)calloc(N2,sizeof(float));
+    k3r = (float *)calloc(N2,sizeof(float));
+    k3i = (float *)calloc(N2,sizeof(float));
+    k4r = (float *)calloc(N2,sizeof(float));
+    k4i = (float *)calloc(N2,sizeof(float));
+
+    /* Build sparse Hamiltonians H0 (only couplings) */
+    k = 0;
+    for (a = 0; a < N; a++) {
+        for (b = a+1; b < N; b++) {
+            index = Sindex(a, b, N);
+            if (fabs(Hamiltonian_i[index]) > non->couplingcut) {
+                index = Sindex(a, b, N);
+                H0[k] = f* Hamiltonian_i[index];
+                col[k] = a, row[k] = b;
+                k++;
+            }
+        }
+    }
+    kmax = k;
+
+    /* Build Diagonal Hamiltonian */
+    for (a = 0; a < N; a++) {
+        indexa = Sindex(a, a, N);
+        for (b = a+1; b < N; b++) {
+            index = Sindex(a, b, N);
+            HD[index]=f*(Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]);
+        }
+    }
+
+    /* Multi-step loop */
+    for (i=0;i<m;i++){
+        if (i>0) {
+            clearvec(k1r,N2);
+            clearvec(k1i,N2);
+            clearvec(k2r,N2);
+            clearvec(k2i,N2);
+            clearvec(k3r,N2);
+            clearvec(k3i,N2);
+            clearvec(k4r,N2);
+            clearvec(k4i,N2);
+        }
+
+    /* Find k1 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k1r[k]+=HD[k]*ci[k];
+            k1i[k]-=HD[k]*cr[k];
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+		if (c!=b && c!=a){
+                    index1 = Sindex(a,c,N);
+                    index2 = Sindex(b,c,N);
+                    factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                    /* if (c==a) factor=0.0; */
+                    /* a < c < b */
+                    /* c == b */
+                    /* if (b==a) factor=0.0; */
+                    /* c > a,b */
+                    k1r[index1]+=H0[k]*ci[index2]*factor;
+                    k1i[index1]-=H0[k]*cr[index2]*factor;
+                    k1r[index2]+=H0[k]*ci[index1]*factor;
+                    k1i[index2]-=H0[k]*cr[index1]*factor;
+		}
+            }
+        }
+
+    /* Find k2 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k2r[k]+=HD[k]*(ci[k]+k1i[k]*0.5);
+            k2i[k]-=HD[k]*(cr[k]+k1r[k]*0.5);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+		if (c!=b && c!=a){
+                    index1 = Sindex(a,c,N);
+                    index2 = Sindex(b,c,N);
+                    factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                    /* if (c==a) factor=0.0; */
+                    /* a < c < b */
+                    /* c == b */
+                    /* if (b==a) factor=0.0; */
+                    /* c > a,b */
+                    k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
+                    k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
+                    k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
+                    k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5)*factor;
+		}
+            }
+        }
+
+    /* Find k3 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k3r[k]+=HD[k]*(ci[k]+k2i[k]*0.5);
+            k3i[k]-=HD[k]*(cr[k]+k2r[k]*0.5);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+		if (c!=b && c!=a){
+                    index1 = Sindex(a,c,N);
+                    index2 = Sindex(b,c,N);
+                    factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                    /* if (c==a) factor=sqrt2; */
+                    /* a < c < b */
+                    /* c == b */
+                    /* if (b==a) factor=sqrt2; */
+                    /* c > a,b */
+                    k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5)*factor;
+                    k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5)*factor;
+                    k3r[index2]+=H0[k]*(ci[index1]+k2i[index1]*0.5)*factor;
+                    k3i[index2]-=H0[k]*(cr[index1]+k2r[index1]*0.5)*factor;
+		}
+            }
+        }
+
+    /* Find k4 */
+    /* Diagonal part */
+        for (k=0;k<N2;k++){
+            k4r[k]+=HD[k]*(ci[k]+k3i[k]);
+            k4i[k]-=HD[k]*(cr[k]+k3r[k]);
+        }
+    /* Loop over couplings */
+        for (k=0;k<kmax;k++){
+    /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
+            a=col[k];
+            b=row[k];
+    /* c < a,b */
+            for (c=0; c < N; c++) {
+		if (c!=b && c!=a){
+                    index1 = Sindex(a,c,N);
+                    index2 = Sindex(b,c,N);
+                    factor = 1.0;
+                    /* c < a,b */
+                    /* c == a */
+                    /* if (c==a) factor=0.0; */
+                    /* a < c < b */
+                    /* c == b */
+                    /* if (b==a) factor=0.0; */
+                    /* c > a,b */
+                    k4r[index1]+=H0[k]*(ci[index2]+k3i[index2])*factor;
+                    k4i[index1]-=H0[k]*(cr[index2]+k3r[index2])*factor;
+                    k4r[index2]+=H0[k]*(ci[index1]+k3i[index1])*factor;
+                    k4i[index2]-=H0[k]*(cr[index1]+k3r[index1])*factor;
+		}
+            }
+        }
+
+    /* Update wavefunction */
+        for (k=0;k<N2;k++){
+            cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
+            ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
+        }
+
+    }
+    free(HD),free(H0),free(col),free(row);
+    free(k1r),free(k2r),free(k3r),free(k4r);
+    free(k1i),free(k2i),free(k3i),free(k4i);
+    return;
+}
 
 /* Propagate using diagonal vs. coupling sparce algorithm */
 void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float* ci, int m, int sign) {
@@ -270,17 +808,20 @@ void propagate_vec_coupling_S(t_non* non, float* Hamiltonian_i, float* cr, float
     float cr1, cr2, ci1, ci2;
     float co, si;
     int i, k, kmax;
+    int N2;
 
     N = non->singles;
+    N2=(N*(N-1))/2;
     f = non->deltat * icm2ifs * twoPi * sign / m;
-    H0 = (float *)calloc(N, sizeof(float));
-    H1 = (float *)calloc(N * N, sizeof(float));
-    col = (int *)calloc(N * N / 2, sizeof(int));
-    row = (int *)calloc(N * N / 2, sizeof(int));
-    re_U = (float *)calloc(N, sizeof(float));
-    im_U = (float *)calloc(N, sizeof(float));
-    ocr = (float *)calloc(N, sizeof(float));
-    oci = (float *)calloc(N, sizeof(float));
+    H0 = (float *)malloc(N*sizeof(float));
+    H1 = (float *)malloc(N2*sizeof(float));
+    col = (int *)malloc(N2*sizeof(int));
+    row = (int *)malloc(N2*sizeof(int));
+    re_U = (float *)malloc(N*sizeof(float));
+    im_U = (float *)malloc(N*sizeof(float));
+    ocr = (float *)malloc(N*sizeof(float));
+    oci = (float *)malloc(N*sizeof(float));
+
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
     k = 0;
@@ -343,14 +884,14 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
     const float f = non->deltat * icm2ifs * twoPi / m;
     float si, co;
     float si2, co2;
-    float* H0 = calloc(N2, sizeof(float));
-    float* H1 = calloc(N * N / 2, sizeof(float));
-    int* col = calloc(N * N / 2, sizeof(int));
-    int* row = calloc(N * N / 2, sizeof(int));
-    float* re_U = calloc(N2, sizeof(float));
-    float* im_U = calloc(N2, sizeof(float));
-    float* ocr = calloc(N2, sizeof(float));
-    float* oci = calloc(N2, sizeof(float));
+    float* H0 = malloc(N2* sizeof(float));
+    float* H1 = malloc(N * N / 2* sizeof(float));
+    int* col = malloc(N * N / 2* sizeof(int));
+    int* row = malloc(N * N / 2* sizeof(int));
+    float* re_U = malloc(N2* sizeof(float));
+    float* im_U = malloc(N2* sizeof(float));
+    float* ocr = malloc(N2* sizeof(float));
+    float* oci = malloc(N2* sizeof(float));
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
     for (int a = 0; a < N; a++) {

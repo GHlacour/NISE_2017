@@ -13,7 +13,7 @@ Hamiltonians for the NISE code can be created with the AIM program [22,23]. An e
 4. C. Liang and T. L. C. Jansen. J. Chem. Theory Comput., 8:1706–1713, (2012).
 5. C. Liang, M. Louhivuori, S. J. Marrink, T. L. C. Jansen and J. Knoester. J. Phys.
 Chem. Lett., 4:448–452, (2013).
-6. C. D. N. van Hengel, K. E. van Adrichem and T. L. C. Jansen, [in preparation](https://chemrxiv.org/engage/chemrxiv/article-details/639c306ea2da4b33a405e05a)
+6. C. D. N. van Hengel, K. E. van Adrichem and T. L. C. Jansen, J. Chem. Phys. 158, 064106 (2023)
 7. D. Cringus, T. L. C. Jansen, M. S. Pshenichnikov and D. A. Wiersma. J. Chem.
 Phys., 127:084507, (2007).
 8. T. L. C. Jansen and J. Knoester. Biophys. J., 94:1818–1825, (2008).

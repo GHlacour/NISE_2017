@@ -7,7 +7,7 @@ The Hamiltonian is analysed and different statistical properties are provided in
 \end{equation}
 In a file named Analyse.dat statistics is given for each site including. This include the average energy and the standard deviation. The average coupling strength (signed sum of all couplings of a given site with all other sites) and the standard deviation of this quantity.
 In a file named Av\_Hamiltonian.txt. The average Hamiltonian is stored as a single snapshot in the GROASC format.
-Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \textbf{MinFrequencies} and \textbf{MaxFrequencies}. This is done both with and without a weight determined by the contribution to the absorption spectrum as:
+Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \ilo{MinFrequencies} and \ilo{MaxFrequencies}. This is done both with and without a weight determined by the contribution to the absorption spectrum as:
 \begin{equation}
 \rho_{ij}=\sum_k \Big\langle c_{ik}^* c_{jk}  \Theta(\omega_{k}-\omega_{min})\Theta(\omega_{max}-\omega_k)\Big\rangle
 \end{equation}
@@ -16,13 +16,30 @@ Where $c_{jk}$ is the wavefunction coefficient of eigenstate $k$ on site $j$ and
 \rho^{\textrm{spectral}}_{ij}=\sum_k \Big\langle |\vec{\mu}_k|^2 c_{ik}^* c_{jk}  \Theta(\omega_{k}-\omega_{min})\Theta(\omega_{max}-\omega_k)\Big\rangle
 \end{equation}
 Here $\vec{\mu}_k$ is the transition-dipole vector of eigenstate $k$. This weighted density matrix, thus, emphasizes the states contributing to the absorption spectrum in the given spectral window. These density matrices are stored in the files named LocalDensityMatrix.dat, and SpectralDensityMatrix.dat. The former should be identical to the unit matrix if the full region of all eigenstates is included.
-
+\section{Correlation}
+This technique calculates the frequency correlation functions including cross correlations between all sites. The correlation functions are stored up to \ilo{t1max}$\times$\ilo{Timestep} femto seconds. The first colum in the file \ilc{CorrelationMatrix.dat} contains the time in femtoseconds, while the following colums contain the correlations functions ordered as in a tridiagonal matrix. The time-dependent skewness $\langle \omega(t)\omega^2(0) \rangle$, and the time-dependent kutosis $\langle \omega^2(t)\omega^2(0) \rangle$ are stored in the files \ilc{Skewness.dat} and \ilc{Kutosis.dat}, respectively. These files only contain these higher-order correlation functions for individual sites.
 \section{Pop (population transfer)}
 The population transfer is calculated between sites. In general, this is governed by the equation:
 \begin{equation}
 P_{fi}(t)=\langle |U_{fi}(t,0)|^2 \rangle
 \end{equation}
 Here $f$ and $i$ are the final and initial sites. Generally two files are generated. In Pop.dat average of the population remaining on the initial site ($P_{ii}$) is calculated resulting in a value starting at 1 (all popiulation is on the initial state) and decaying to the equilibrium value 1/N (equal population on all states). In the PopF.dat file a full matrix op all combinations of initial and final states is given. The columns start start with the first initial state and all possible final states continuing to the second possible initial state and all possible final states. This file may be very large for large system sizes!
+
+\section{MCFRET}
+The MCFRET part calculates the Excitation Energy Transfer (EET) rate with Multichromophoric Förster Resonance Energy Transfer (MC-FRET) method.\cite{Jang.2004.Phys.Rev.Lett..92.218301,Jang.2007.J.Phys.Chem.B..111.6807,Zhong.2023.J.Chem.Phys..158.064103}The rate is calculated based on the equation:
+\begin{equation}\label{eq:17} 
+    k=\frac{\rm 2Re}{\hbar^2}\int_{0}^{\infty}dt\ \textrm{Tr}[J^{\textrm {AD}}E^{\textrm D}(t)J^{\textrm {DA}}I^{\textrm A}(t)],
+\end{equation}
+with $I^{\textrm A}(t)$ and $E^{\textrm D}(t)$ are the absorption time domain matrix and emission time domain matrix. 
+
+The techniques MCFRET-Absorption and MCFRET-Emission can provide the time domain absorption matrix, and time domain emission matrix separately.
+For MCFRET-Emission the expectation value of the density matrix is required, which can be obtained with MCFRET-Density.
+The technique of MCFRET-Coupling determines the average coupling between segments over a trajectory. The intermediate results are stored in the files:
+ {\tt TD\_absorption\_matrix.dat} for the time domain absorption matrix, {\tt TD\_emission\_matrix.dat} for the time domain emission matrix, and  {\tt CouplingMCFRET.dat} for the average couplings. 
+The technique of MCFRET-Rate can be used to calculate the EET rate with the input of the time domain absorption matrix, time domain emission matrix, and the coupling to generate the results in steps and introduce possible changes in only some of these steps.  The calculated rate matrix is written in the file {\tt RateMatrix.dat} (in units of ps${-1}$). The MCFRET-Analyse technique calculates the expectation value of the segment energies and the quantum corrected rate matrix, which is stored in 'QC\_RateMatrix.dat' (this includes the Oxtoby correction to give a thermal distribution). The intermediate  rate response is stored in {\tt RateFile.dat}. It is recommended to validate that the response do decay to zero within the chosen simulation time. The coherence decay matrix is stored in {\tt CoherenceMatrix.dat}. The coherence decay should be faster than the transfer rate for MCFRET to be a suitable approximation for the energy transfer.
+The MCFRET technique will perform all steps sequentially to calculate the EET rate matrix, but they can be performed sequentially, which may be useful if one for example only change the couplings between segments. 
+The MCFRET keyword, thus, corresponds to running the following techniques sequentially: MCFRET-Density, MCFRET-Absorption, MCFRET-Emission, MCFRET-Coupling, MCFRET-Rate, and MCFRET-Analyse.
+
 \section{Dif (diffusion)$^{+}$}
 The mean square displacement of excitons are calculated using the positions provided in the Positions file. Periodic boundary conditions are applied assuming a cube box. The box size must be provided in the first column of the Positions file.
 Two diffusion properties are calculated. The diffusion of the exciton center is calculated by calculating the center of the excitation given it started on a specific site $j$: $x_{\textrm{ex},i}(t)=\langle \sum_j (x_j(t)-x_i(0)) |U_{ji}(t,0)|^2$ and then determining the mean square displacement as $MSD_{\textrm{ex}}(t)=\langle \sum_i  x_{\textrm{ex},i}(t)^2\rangle$. The other measure is based on the probability of starting on one site and being detected on another site $MSD_{\textrm{site}}(t)=\langle \sum_{ji} (x_j(t)-x_i(0))|U_{ji}(t,0)|^2\rangle$. $MSD_{\textrm{site}}(t)$ is stored in the second column of the Dif.dat output file and $MSD_{\textrm{ex}}(t)$ is stored in the third column. The first column contain the time in femtoseconds. The unit for the mean square displacements is the distance unit provided on the position file (\AA ngstr\"{o}m recommended) squared per femtosecond. 
@@ -31,19 +48,19 @@ Not implemented yet (check NISE\_2015)
 \section{DOS$^{+}$}
 The density of states is calculated using the response function:
 \begin{equation}
-	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/T_1).
+	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain density of states, which is stored in the file DOS.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
 \section{Absorption}
 The linear absorption is calculated using the first-order response function \cite{Duan_2015}
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. 
 \section{Luminescence}
 The luminescence is calculated using the first-order response function
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\langle\frac{1}{Z}\mu_{\alpha}(t)U(t,0)\exp(-H(0)/k_BT)\mu_{\alpha}(0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain luminescence, which is stored in the file Luminescence.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states. The spectrum is normalized with the partition function ($Z$). 
 \section{LD (linear dichroism)}
@@ -51,13 +68,13 @@ The linear dichroism is calculated identically to the linear absorption except t
 \section{CD (circular dichroism)$^{+}$}
 The circular dichroism is calculated using the first-order response function
 \begin{equation}
-	I(t)=\sum_{\alpha}^{x,y,z}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/T_1).
+	I(t)=\sum_{\alpha}^{x,y,z}\sum_{nm}\langle r_{nm}\mu_{\alpha,n}(t)\times[U(t,0)\mu_{\alpha,m}(0)]\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. Note that the positions of the chromophores must be provided in the Positions file. The calculation does \textit{not} account for periodic boundary positions and the positions must at all times along the position trajectory be specified accordingly.
 \section{Raman}
 The Raman response is calculated as \cite{Torii.2002.J.Phys.Chem.A.106.3281,Shi.2012.J.Phys.Chem.B.116.13821}
 \begin{equation}
-        I^{VV/VH}(t)=\sum_{a,b,c,d}^{x,y,z}A^{VV/VH}_{abcd}\langle\alpha_{ab}(t)U(t,0)\alpha_{cd}(0)\rangle\exp(-t/T_1),
+        I^{VV/VH}(t)=\sum_{a,b,c,d}^{x,y,z}A^{VV/VH}_{abcd}\langle\alpha_{ab}(t)U(t,0)\alpha_{cd}(0)\rangle\exp(-t/2T_1),
 \end{equation}
 where $A^{VV/VH}_{abcd}$ is the orientational weighting factor as defined in Ref. \citenum{Shi.2012.J.Phys.Chem.B.116.13821}. 
 Both the all parallel (VV) and perpendicular (VH) components are calculated. The calculation require that the transition-polarizability file is provided with all six independent components stored. The data are stored in the files Raman\_VV.dat and Raman\_VH.dat.

@@ -1,5 +1,6 @@
 \chapter{Information for developers\label{chap:developers}}
 Contributions from developers are welcome. The code is available on
-github:\\ (https://github.com/GHlacour/NISE\_2017). It is advisable to contact the main developer before planning contributions to avoid competing comtributions. All new techniques should be added in new separate files which are called from the main {\tt NISE.c} code. Implementations should as far as possible make use of existing modules for reading input and data. New propagation schemes or Hamiltonains should be added through the {NISE\_subs.c} modules.
+github:\\ (https://github.com/GHlacour/NISE\_2017). It is advisable to contact the main developer before planning contributions to avoid competing contributions. All new techniques should be added in new separate files which are called from the main {\tt NISE.c} code. 
+Implementations should as far as possible make use of existing modules for reading input and data. New propagation schemes should be added in {\tt propagate.c}, Hamiltonains should be added through {\tt read\_trajectory.c} generally useful additions should made in the {\tt NISE\_subs.c} module. Projection schemes should be added in {\tt project.c}.
 
-Bugs and other issues can be reported through the Issues option on github or by contacting the main developer directly.
+Bugs and other issues can be reported through the Issues option on GitHub or by contacting the main developer directly.

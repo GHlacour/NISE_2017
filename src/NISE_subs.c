@@ -30,6 +30,13 @@ void free2D(void** arr) {
     free(arr);
 }
 
+/* Inform user that they are trying to run code in parallel that is not parallelized */
+void not_parallel(){
+    printf(RED "This part of the code is not parallel!!!\n");
+    printf("You may waiste valuable computational resources.\n");
+    printf("Consider running in serial if possible.\n\n" RESET);
+}
+
 // Copy a vector
 void copyvec(float* a, float* b, int N) {
     int i;
@@ -38,6 +45,11 @@ void copyvec(float* a, float* b, int N) {
 
 // Set all elements of a vector to zero
 void clearvec(float* a, int N) {
+    int i;
+    for (i = 0; i < N; i++) a[i] = 0;
+}
+// Set all elements of a vector to zero
+void clearvec_double(double* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
 }
@@ -143,6 +155,16 @@ time_t log_time(time_t t0, FILE* log) {
     return t1;
 }
 
+/* Compare a string to an array of options */
+int string_in_array(char* string_to_compare, char* string_array[], int array_size) {
+    for (int i = 0; i < array_size; i++) {
+        if (!strcmp(string_to_compare, string_array[i])) {
+            return i+1; // return the index of the matched string
+	    }
+    }
+    return 0; // if no match is found, return -1
+}
+
 /* Determine number of samples to use and write to log file */
 int determine_samples (t_non *non){
   FILE *log;
@@ -172,6 +194,7 @@ int determine_samples (t_non *non){
 
 // Forms a string with the time difference between the given times
 char* time_diff(time_t t0, time_t t1) {
+    int control;
     int s = difftime(t1, t0);
     int h = s / 3600;
     s = s % 3600;
@@ -179,12 +202,13 @@ char* time_diff(time_t t0, time_t t1) {
     s = s % 60;
 
     char* text;
-    asprintf(&text, "Time spent: %dh %dmin %ds\n", h, m, s);
+    control=asprintf(&text, "Time spent: %dh %dmin %ds\n", h, m, s);
     return text;
 }
 
 // Forms a string with the times for MPI_Wtime
 char* MPI_time(double t0) {
+    int control;
     int ms =t0*1000; // Convert to milliseconds
     int h = ms / 3600000;
     ms = ms % 3600000;
@@ -194,7 +218,7 @@ char* MPI_time(double t0) {
     ms = ms % 1000;
 
     char* text;
-    asprintf(&text, " %dh %dmin %ds %dms\n", h, m, s, ms);
+    control=asprintf(&text, " %dh %dmin %ds %dms\n", h, m, s, ms);
     return text;
 }
 
@@ -344,8 +368,10 @@ int autodetect_singles(t_non* non){
     int samples;
     int n,nn2;
     int identified;
+    int identified2;
 
     identified=0;
+    identified2=0;
     nn2=non->singles*(non->singles+1)/2;
     Hamil_i_e = (float *)calloc(nn2, sizeof(float));
     /* Open Trajectory files */
@@ -354,20 +380,50 @@ int autodetect_singles(t_non* non){
         printf("Hamiltonian file not found!\n");
         return 1;
     }
-    for (n=1;n<non->singles*10;n++){
-      if (!strcmp(non->hamiltonian, "Coupling")) {
-         identified=-2;
-      }
-      if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
-         identified=-2;
-      }
-      if (!strcmp(non->hamiltonian, "Full")) {
-	 fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
-	 fread(&i,sizeof(int),1,H_traj);
+
+    /* Check if user provided Singles is correct */
+    n=non->singles;
+    if (!strcmp(non->hamiltonian, "Coupling")) {
+       identified2=-2;
+    }
+    if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+       identified2=-2;
+    }
+    if (!strcmp(non->hamiltonian, "Full")) {
+         fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+         fread(&i,sizeof(int),1,H_traj);
          fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
          fread(&f,sizeof(float),1,H_traj);
-	 //printf("%d %d %f\n",n,i,f);
+         //printf("%d %d %f\n",n,i,f);
          if (abs(i)<1000 || f==floorf(f)){
+            printf("Autodetected potential singles at %d\n",n);
+            if (n==non->singles){
+               identified2=-1;
+            }
+            if (n!=non->singles){
+               identified2=n;
+            }
+         }
+      }
+
+    /* Check alternative settings */
+    if (identified2==-1){
+      identified=-1;
+    } else {
+      for (n=1;n<non->singles*10;n++){
+        if (!strcmp(non->hamiltonian, "Coupling")) {
+           identified=-2;
+        }
+        if (!strcmp(non->hamiltonian, "TransitionDipole") || !strcmp(non->hamiltonian, "ExtendedDipole")){
+           identified=-2;
+        }
+        if (!strcmp(non->hamiltonian, "Full")) {
+	  fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+	  fread(&i,sizeof(int),1,H_traj);
+          fseek(H_traj, 1 * (sizeof(int) + sizeof(float) * (n*(n+1)/2)),SEEK_SET);
+          fread(&f,sizeof(float),1,H_traj);
+	  //printf("%d %d %f\n",n,i,f);
+          if (abs(i)<1000 || f==floorf(f)){
             printf("Autodetected potential singles at %d\n",n);
 	    if (n==non->singles){
 	       identified=-1;
@@ -377,11 +433,13 @@ int autodetect_singles(t_non* non){
 	       identified=n;
 	       break;
 	    }
-	 }
+	  }
+        }
       }
     }
+
     if (identified==0){
-       printf(RED "Warning: Autodetection of sites failed. You may need to increase Singles\n" RESET);
+       printf(RED "Warning: Autodetection of sites failed. Verify that your Singles setting is correct.\n" RESET);
     }
     if (identified==-1){
        printf("Singles confirmed by auto detection.\n");
@@ -559,4 +617,87 @@ float pbc1(float r, int x, float *box){
      if (r<-box[x]/2) r=r+box[x];
   }
   return r;
+}
+
+// Diagonalize real nonsymmetric matrix. Output complex eigenvalues, left and right eigenvectors.
+void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+    int INFO, lwork;
+    float *work, *Kcopy;
+    int i, j;
+    int *pivot;
+    int M;
+
+    /* Diagonalization*/
+    /* Find lwork for diagonalization */
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    Kcopy = (float *)calloc(N * N, sizeof(float));
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            Kcopy[i * N + j] = K[i * N + j];
+        }
+    }
+    /* Do diagonalization*/
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    if (INFO != 0) {
+        printf("Something went wrong trying to diagonalize a matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work);
+
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            ivecL[i * N + j] = evecL[i * N + j];
+            ivecR[i * N + j] = evecR[i * N + j];
+        }
+    }
+
+    /* Inverse right eigenvectors*/
+    pivot = (int *)calloc(N,sizeof(int));
+    sgetrf_(&N, &N, ivecR, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgetri_(&N, ivecR, &N, pivot, work, &lwork, &INFO); //Find lwork for diagonalization
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    sgetri_(&N, ivecR, &N, pivot, work, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work), free(pivot);
+
+    /* Inverse left eigenvectors*/
+    pivot = (int *)calloc(N,sizeof(int));
+    sgetrf_(&N, &N, ivecL, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize left eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgetri_(&N, ivecL, &N, pivot, work, &lwork, &INFO); // Find lwork for diagonalization
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    sgetri_(&N, ivecL, &N, pivot, work, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse left eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+
+    /* Free space */
+    free(Kcopy), free(work), free(pivot);
+    return;
 }
