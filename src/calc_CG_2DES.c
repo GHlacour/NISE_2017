@@ -347,7 +347,7 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
   printf("\nCompleted reading the Rate matrix.\n");
 
     // Diagonalize K matrix
-    diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
+    cg_diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
     //Here we sum of the absolute value of the imagine part to check the eigenvector is real or complex
     for (int a = 0; a<N; a++) {
         sum_eig_im += fabs(eigK_im[a]);
