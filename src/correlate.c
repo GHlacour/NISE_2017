@@ -12,16 +12,14 @@
 
 // Function to calculate the mean of a signal
 void subtractMean(float* signal, int N) {
-    float sum = 0.0;
-    for (int i = 0; i < N; i++) {
-        sum += signal[i];
-    }
-    sum=sum/N;
+    float sum;
+    /* First subtract a reasonable guess from all numbers */
+    sum=(signal[0]+signal[N-1])/2.0;
     for (int i = 0; i < N; i++) {
         signal[i]-=sum;
     }
 
-    /* Repeat to remove errors for very long trajectories */
+    /* Subtract the proper average */
     sum=0.0;
     for (int i = 0; i < N; i++) {
         sum += signal[i];
