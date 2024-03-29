@@ -596,7 +596,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
             }
             
 	         eq_den(Hamil_i_e,rho_l,N,non);
-           write_matrix_to_file("density.dat",rho_l,N);
+           write_ham_to_file("density.dat",rho_l,N);
           // Multiply the density operator to dipole operator,vecr, as it is only the real number.
           clearvec(mid_ver,non->singles);
           for (a=0;a<N;a++){
@@ -1166,7 +1166,6 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   return;  
 }
 
-
 /* Combine the doorway and window functions for the segments */
 void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                                       float *re_window_SE,float *im_window_SE,
@@ -1271,5 +1270,3 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     }
   free(re_2DES_NR_sum) ,free(re_2DES_R_sum),free(im_2DES_NR_sum) ,free(im_2DES_R_sum);
 }
-
-

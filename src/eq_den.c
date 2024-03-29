@@ -257,7 +257,6 @@ void inversie_real_matrix(float* eig_re, float* eig_im, float* evecL, float* eve
      free(work), free(pivot);    
 }
 
-
 // calculate the inverse real matrix for the left and right side
 void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* evecR,  float _Complex* ivecL_com,  float _Complex* ivecR_com, int N) {
     int INFO, lwork;
