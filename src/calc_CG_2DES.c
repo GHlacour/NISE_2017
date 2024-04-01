@@ -1027,7 +1027,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
         Ncl++;
       }
     }   
-      // Include snapshot if it is in the cluster or if no clusters are defined
+    // Include snapshot if it is in the cluster or if no clusters are defined
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
          /* Read mu(ti) */
@@ -1062,18 +1062,17 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
           /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
-	    //printf("tj %d\n",tj);
           
-          for (beta=0;beta<3;beta++){
-            /* Read mu(tj) */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
-            } else {
-              if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-                printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-                printf("JTIME %d %d\n",tj,beta);
-                exit(1);
-              }
+            for (beta=0;beta<3;beta++){
+                /* Read mu(tj) */
+                if (!strcmp(non->hamiltonian,"Coupling")){
+                   copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
+                } else {
+                   if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
+                       printf("Dipole trajectory file to short, could not fill buffer!!!\n");
+                       printf("JTIME %d %d\n",tj,beta);
+                       exit(1);
+                }
             }        
             /* Here calculate window function/
             /* Inner product for all sites*/
@@ -1101,18 +1100,12 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
                 }
               }
 
-              /* Zero coupling in hamiltonian */
-                zero_coupling(Hamil_i_ee,non);
+              /* Zero coupling in Hamiltonian (TLC check this!) */
+              zero_coupling(Hamil_i_ee,non);
               /* Propagate single excited states vecr and veci backwards with propagate */
               /* Propagate dipole moment */
-//	      propagate_matrix(non,Hamil_i_ee,vecr,veci,-1,samples,tk*alpha);
-//#pragma omp parallel for \
-//       shared(non,Hamil_i_e,vecr,veci) \
-//       schedule(static, 1)
-   		for (a=0;a<N;a++){
-               propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,-1,samples,tk*alpha);
-            } /* Old non-parallel code TLC */
-          }
+	      propagate_matrix(non,Hamil_i_ee,vecr,veci,-1,samples,tk*alpha);
+            }
             /* Calculate window function by taking trace of vecr and veci */
             for (site_num=0;site_num<non->singles;site_num++){
               seg_num=non->psites[site_num];
@@ -1124,23 +1117,23 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
           }  
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
 	       /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
+          if (!strcmp(non->hamiltonian,"Coupling")){
+             if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
                 printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
                 exit(1);
-              }
-            } else {
+             }
+           } else {
               if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
               printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
               exit(1);
              }
-            }
+           }
             /*Zero coupling between different segments*/
             zero_coupling(Hamil_i_e,non);
           /* Propagate dipole moment */
-//#pragma omp parallel for \
-//       shared(non,Hamil_i_e,fr,fi) \
-//       schedule(static, 1)
+#pragma omp parallel for \
+       shared(non,Hamil_i_e,fr,fi) \
+       schedule(static, 1)
           for (a=0;a<N;a++){
             propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
           }
