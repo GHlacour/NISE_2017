@@ -36,7 +36,7 @@ void calc_CG_2DES(t_non *non){
     float *P_DA;
     int pro_dim;
     pro_dim=project_dim(non);
-    printf("Dimension %d\n",non->tmax*9*pro_dim);
+    //printf("Dimension %d\n",non->tmax*9*pro_dim);
     re_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     re_window_SE = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
@@ -46,7 +46,7 @@ void calc_CG_2DES(t_non *non){
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));  
     P_DA=(float *)calloc(pro_dim*pro_dim,sizeof(float));
-    printf("Print %d\n",non->tmax2);
+    //printf("Print %d\n",non->tmax2);
     printf("Performing the CG_2DES calculation.\n"); 
 
     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway"))) {
@@ -64,8 +64,8 @@ void calc_CG_2DES(t_non *non){
       }
 
       if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_full_2DES_segments")))  {
-        printf(" full  part");
         CG_2DES_P_DA(non,P_DA,pro_dim);
+        printf("Collecting response functions!\n");
         CG_full_2DES_segments(non,re_doorway,im_doorway,
                                   re_window_SE,im_window_SE,
                                   re_window_GB, im_window_GB,
@@ -81,10 +81,16 @@ void calc_CG_2DES(t_non *non){
     return;
 }
 
+/* Frequently used indexing function */
+int CG_index(t_non *non,int seg_num,int alpha,int beta,int t1){
+    int index;
+    index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+    return index;
+}
 
-void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *non did?*/
+/* Calculate the doorway functions */
+void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){
   /* Initialize variables*/
-  //float *re_doorway,*im_doorway; /* The dorrway part*/
   float *Hamil_i_e;
   float *mu_eg;
   float *vecr,*veci;
@@ -102,12 +108,15 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
   int nn2;
   int itime,N_samples;
   int samples;
-  int alpha,beta,a_b,ti,tj,i,j; /*alpha and beta are corresponding the dipole for different segment,  a_b  = alpha*beta, which used in the writing file*/
+  int alpha,beta,a_b,ti,tj,i,j; 
+  /* alpha and beta are corresponding the dipole for different times */
   int t1,t2;
   int elements;
   int cl,Ncl;
   int pro_dim,ip;
-  int a,index,seg,site_num,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
+  int a,index,seg,site_num,seg_num;
+  /* site_num is the number of the site */ 
+  /* seg_num is used to number segments */
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -182,9 +191,12 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
   }
 
   log=fopen("NISE.log","a");
+  fprintf(log,"Calculating doorway functions.\n");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
+  /* Read coupling, this is done if the coupling and transition-dipoles are */
+  /* time-independent and only one snapshot is stored */
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
     /* Loop over samples */
@@ -198,69 +210,50 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
         exit(1);
       }
 
-        // Configuration belong to cluster
+      /* Configuration belong to cluster */
       if (non->cluster==cl){
         Ncl++;
       }
     }
 
-      // Include snapshot if it is in the cluster or if no clusters are defined
+    /* Include snapshot if it is in the cluster or if no clusters are defined */
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
          /* Read mu(ti) */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-          copyvec(mu_xyz+non->singles*alpha,vecr,non->singles);
-        } else {
-          if (read_mue(non,vecr,mu_traj,ti,alpha)!=1){
-             printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-             printf("ITIME %d %d\n",ti,alpha);
-             exit(1);
-            }
-          }       
-          clearvec(veci,non->singles);
-          /* Loop over coherence time */
+	 read_dipole(non,mu_traj,vecr,mu_xyz,alpha,ti);         
+	 clearvec(veci,non->singles);
+         
+	 /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
             /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-            }             
+	    read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+
             for (beta=0;beta<3;beta++){
               /* Read mu(tj) */
-              if (!strcmp(non->hamiltonian,"Coupling")){
-                copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
-              } else {
-                if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-                  printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-                  printf("JTIME %d %d\n",tj,beta);
-                  exit(1);
-                }
-              }
-            /* Here calculate doorway function/
-            /* Inner product for all sites*/
-            /*here we need to make clear the seg_num and the site_num the number of the position 
-            should be decided by the segment number, we should sum all the value in one segment*/
+              read_dipole(non,mu_traj,mu_eg,mu_xyz,beta,tj);
 
-             for (site_num=0;site_num<non->singles;site_num++){
-                seg_num=non->psites[site_num];
-                /*this equation is make sure the calculated data in the right position */
-                index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-                re_doorway[index]+=mu_eg[site_num]*vecr[site_num];
-                im_doorway[index]+=mu_eg[site_num]*veci[site_num]; 
-              }
-            }  
+              /* Here calculate doorway function */
+              /* Inner product for all sites */
+              /* Here we define the seg_num and the site_num the number
+	       * depending on the segment number,
+	       * we sum all contributions from one segment*/
 
-          /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
+              for (site_num=0;site_num<non->singles;site_num++){
+                  seg_num=non->psites[site_num];
+                  /* This equation is make sure the calculated data in the right
+	           * position */
+                  //index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+		  index=CG_index(non,seg_num,alpha,beta,t1);
+                  re_doorway[index]+=mu_eg[site_num]*vecr[site_num];
+                  im_doorway[index]+=mu_eg[site_num]*veci[site_num]; 
+              }
+          }  
+
+          /* Do projection and make sure the segment number equal to the
+	   * segment number in the projection file. */   
           if (non->Npsites==non->singles){
-            zero_coupling(Hamil_i_e,non);
+             zero_coupling(Hamil_i_e,non);
           } else {
             printf("Segment number and the projection number are different");
             exit(1);
@@ -273,21 +266,22 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
 
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished sample for the doorway function %d\n",samples);        
+    fprintf(log,"Finished sample (doorway function) %d\n",samples);        
     time_now=log_time(time_now,log);
     fclose(log);
   }
 
-  /* The calculation is finished we can close all auxillary arrays before writing */
-  /* output to file. */
+  /* The calculation is finished we can close all auxillary arrays before
+   * writing output to file. */
   free(vecr);
   free(veci);
   free(mu_eg);
   free(mu_xyz);
   free(Hamil_i_e);
 
-  /* Print information on number of realizations included belonging to the selected */
-  /* cluster and close the cluster file. (Only to be done if cluster option is active.) */
+  /* Print information on number of realizations included belonging to the
+   * selected cluster and close the cluster file. (Only to be done if cluster
+   * option is active.) */
   if (non->cluster!=-1){
     printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
     fclose(Cfile);
@@ -295,41 +289,44 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){  /* what *
   /* Close Trajectory Files */
   fclose(mu_traj),fclose(H_traj);
 
- printf("The doorway part run successfully!\n");  
+  printf("The doorway part successfully completed!\n");  
 }
 
+/* Determine the transfer propability matrix */
 void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
-    printf("Calculate population transfer!\n");
-    float *eigK_re, *eigK_im; // eigenvalues of K
-    float *evecL, *evecR; // eigenvectors of K
-    float *ivecR, *ivecL; //inverse eigenvectors of K
-    float *cnr;
-    float sum_eig_im;
-    int a, b, c,i,j;
-    float *K;
-    int nt2;
-    float _Complex *ivecL_com, *ivecR_com;
-    float _Complex *ivecL_com_inv, *ivecR_com_inv;
-    float _Complex *cnr_com;
-    float _Complex *P_DA_com;
-    FILE *outone;
-    FILE *Rate;
-    sum_eig_im=0;
-    
-    eigK_re = (float *)calloc(N,sizeof(float));
-    eigK_im = (float *)calloc(N,sizeof(float));
-    evecL = (float *)calloc(N*N,sizeof(float));
-    evecR = (float *)calloc(N*N,sizeof(float));
-    ivecL = (float *)calloc(N*N,sizeof(float));
-    ivecR = (float *)calloc(N*N,sizeof(float));
-    cnr = (float *)calloc(N * N, sizeof(float));
-    K=(float *)calloc(N*N,sizeof(float));
-    cnr_com =(float _Complex *)calloc(N * N, sizeof(float _Complex));
-    ivecL_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
-    ivecR_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
-    ivecL_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
-    ivecR_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
-    P_DA_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+  float *eigK_re, *eigK_im; // eigenvalues of K
+  float *evecL, *evecR; // eigenvectors of K
+  float *ivecR, *ivecL; //inverse eigenvectors of K
+  float *cnr;
+  float sum_eig_im;
+  int a, b, c,i,j;
+  float *K;
+  int nt2;
+  float _Complex *ivecL_com, *ivecR_com;
+  float _Complex *ivecL_com_inv, *ivecR_com_inv;
+  float _Complex *cnr_com;
+  float _Complex *P_DA_com;
+  FILE *outone;
+  FILE *Rate;
+  float factor;
+  nt2 =non->tmax2;
+  factor =  ( nt2 * non->deltat)/1000; /* The rate matrix is in ps-1 */
+  sum_eig_im=0;
+  printf("Calculating population transfer matrix for t2 %f fs!\n",factor);
+  eigK_re = (float *)calloc(N,sizeof(float));
+  eigK_im = (float *)calloc(N,sizeof(float));
+  evecL = (float *)calloc(N*N,sizeof(float));
+  evecR = (float *)calloc(N*N,sizeof(float));
+  ivecL = (float *)calloc(N*N,sizeof(float));
+  ivecR = (float *)calloc(N*N,sizeof(float));
+  cnr = (float *)calloc(N * N, sizeof(float));
+  K=(float *)calloc(N*N,sizeof(float));
+  cnr_com =(float _Complex *)calloc(N * N, sizeof(float _Complex));
+  ivecL_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+  ivecR_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+  ivecL_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+  ivecR_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+  P_DA_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
   /* Open the rate matrix file */
   Rate=fopen("RateMatrix.dat","r");
   if (Rate==NULL){
@@ -337,132 +334,125 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
     exit(1);
   }
   /* Read rate matrix */
+  printf("\nUsing the Rate matrix:\n");
   for (a=0;a<N*N;a++){
     if (fscanf(Rate,"%f",&K[a])!=1){
-      printf("Error in reading in ratematrix!\n");
+      printf("Error in reading in rate matrix!\n");
       exit(0);
     }
     printf("%f ",K[a]);
   }
-  printf("\nCompleted reading the Rate matrix.\n");
+  printf("\n\nCompleted reading the rate matrix.\n");
 
-    // Diagonalize K matrix
-    diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
-    //Here we sum of the absolute value of the imagine part to check the eigenvector is real or complex
-    for (int a = 0; a<N; a++) {
-        sum_eig_im += fabs(eigK_im[a]);
-    }
-    printf("Here is the sum of the absolute value of the imagine part:");
-    printf("%f\n", sum_eig_im);
+  /* Diagonalize K matrix */
+  cg_diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
+  /* Check if the eigenvalues contain imaginary parts */
+  for (int a = 0; a<N; a++) {
+      sum_eig_im += fabs(eigK_im[a]);
+  }
+  if (sum_eig_im > 0.0){
+      printf(YELLOW "The rate matrix has imaginary parts!\n" RESET);
+      printf("Sum of imaginary contributions: %f\n", sum_eig_im);
+  }
     
-    if (sum_eig_im = 0){
-        // calculate the inverse part
-        inversie_real_matrix(eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
-       // Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0)
-        nt2 =non->tmax2;
-	      clearvec(cnr,N*N); /* Empty auxillary vector */ 
-        for (a = 0; a < N; a++) {
-            for (b = 0; b < N; b++) {
-                cnr[a + b * N] += exp(eigK_re[a]/1000 * nt2 * non->deltat) * ivecL[a + b*N];
-            }
-        }   // exp(Eig*t2)*iP0
-
-        for (a = 0; a < N; a++) {
-            for (b = 0; b < N; b++) {
-                for (c = 0; c < N; c++) {
-		                P_DA[c+N*a] += evecL[a + b * N] * cnr[b + c * N];
-                }
-            }
-        }   // evecR*cnr
-    /* Write to file */
-    outone=fopen("KPop.dat","w");
-        fprintf(outone,"%f ",nt2*non->deltat);
-        for (int a=0;a<N;a++){
-            for (int b=0;b<N;b++){
-                fprintf(outone,"%f ",P_DA[b*N+a]);
-            }
-        }
-        fprintf(outone,"\n"); 
-    } else{
-    //this is deal with the complex eigenvalue and vector
-    inversie_complex_matrix(eigK_re, eigK_im, evecL, evecR, ivecL_com_inv, ivecR_com_inv, N);
-    //here we reconstruct the matrix in a cpmplex number way
-    //Actually we only need the left one
-    for (int i = 0; i < N; i++)
-        {// If the current and next eigenvalues form a complex conjugate pair
-            if (i < N - 1 && eigK_im[i] != 0.0 && eigK_im[i + 1] == -eigK_im[i]) {
-                for (int j = 0; j < N; j++) {
-                    // u(j) = VL(:,j) + i*VL(:,j+1)
-                    ivecL_com[i * N + j] = evecL[i * N + j]-evecL[(1 + i) * N + j]*_Complex_I;
-                    ivecL_com[(1+i) * N + j] = evecL[i * N + j]+evecL[(1 + i) * N + j]*_Complex_I;         
-                }
-                // Skip the next eigenvector (since it's part of the complex conjugate pair)
-                i++;
-            } else {
-                for (int j = 0; j < N; j++) {
-                    ivecL_com[i * N + j] = evecL[i * N + j]+0*_Complex_I;
-                }
-            }
-        }
-    // Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0)
-    nt2 =non->tmax2;
-    float factor;
-    factor =  ( nt2 * non->deltat)/1000;
-	  clearvec(cnr,N*N); /* Empty auxillary vector */ 
-        for (a = 0; a < N; a++) {
-            for (b = 0; b < N; b++) {
-                cnr_com[a + b * N] += exp((eigK_re[a])*factor) *((creal(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)-sin((eigK_im[a])*factor)*cimag(ivecL_com_inv[a + b*N]))+(cimag(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)+sin((eigK_im[a])*factor)*creal(ivecL_com_inv[a + b*N]))*_Complex_I);     
-            }
-        }  
-        for (a = 0; a < N; a++) {
+  /* Calculate the transfer matrix */
+  if (sum_eig_im = 0){
+      /* Calculate the inverse part */
+      inversie_real_matrix(eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
+      /* Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0) */
+      clearvec(cnr,N*N); /* Empty auxillary vector */ 
+      for (a = 0; a < N; a++) {
           for (b = 0; b < N; b++) {
-            for (c = 0; c < N; c++) { 
-              P_DA_com[c+a*N] += (creal(ivecL_com[a + b * N])*creal(cnr_com[b + c * N])-cimag(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N]))+(creal(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N])+creal(cnr_com[b + c * N])*cimag(ivecL_com[a + b * N])) *_Complex_I;
-            }
+              cnr[a + b * N] += exp(eigK_re[a]/1000 * nt2 * non->deltat) * ivecL[a + b*N];
           }
-        }   // evecL*cnr
-        for (i = 0; i < N; i++) {
-            for (j = 0; j < N; j++) {
-                if (fabs(cimag(P_DA_com[i*N+j])) < 0.00001) {
-                    P_DA[i*N+j]=creal(P_DA_com[i*N+j]);
-                }else  {
-                printf("\nThe imagine part is none zero\n");
-              }     
-            }
-        } 
-    /* Write to file */
-    outone=fopen("KPop.dat","w");
-        fprintf(outone,"%f ",nt2*non->deltat);
-        for (int a=0;a<N;a++){
-            for (int b=0;b<N;b++){
-                fprintf(outone,"%f ",P_DA[a*N+b]);                               
-            }
-        }
-        fprintf(outone,"\n"); 
-    }
-    fclose(outone);
-    free(eigK_im);
-    free(eigK_re);
-    free(evecL);
-    free(evecR);
-    free(ivecL);
-    free(ivecR);
-    free(P_DA_com);
-    free(ivecL_com);
-    free(ivecR_com);
-    free(ivecL_com_inv);
-    free(ivecR_com_inv);
-    free(cnr_com);
+      }   // exp(Eig*t2)*iP0
 
+      for (a = 0; a < N; a++) {
+          for (b = 0; b < N; b++) {
+              for (c = 0; c < N; c++) {
+                  P_DA[c+N*a] += evecL[a + b * N] * cnr[b + c * N];
+              }
+          }
+      }   // evecR*cnr
+  } else {
+      /* This is for complex eigenvalues and vectors */
+      inversie_complex_matrix(eigK_re, eigK_im, evecL, evecR, ivecL_com_inv, ivecR_com_inv, N);
+      /* Here we reconstruct the matrix when complex */
+      /* Actually we only need the left one */
+      for (int i = 0; i < N; i++){
+          // If the current and next eigenvalues form a complex conjugate pair
+          if (i < N - 1 && eigK_im[i] != 0.0 && eigK_im[i + 1] == -eigK_im[i]) {
+              for (int j = 0; j < N; j++) {
+                  // u(j) = VL(:,j) + i*VL(:,j+1)
+                  ivecL_com[i * N + j] = evecL[i * N + j]-evecL[(1 + i) * N + j]*_Complex_I;
+                  ivecL_com[(1+i) * N + j] = evecL[i * N + j]+evecL[(1 + i) * N + j]*_Complex_I;         
+              }
+              // Skip the next eigenvector (since it's part of the complex conjugate pair)
+              i++;
+         } else {
+             for (int j = 0; j < N; j++) {
+                 ivecL_com[i * N + j] = evecL[i * N + j]+0*_Complex_I;
+             }
+         }
+      }
 
-    printf("The waiting time propagation part run successfully!\n");  
-    return;
+      /* Calculate P(t2) = expm(-K*t2)*P(0) = evecR*exp(Eig*t2)*ivecR*P(0) */
+      clearvec(cnr,N*N); /* Empty auxillary vector */ 
+      for (a = 0; a < N; a++) {
+          for (b = 0; b < N; b++) {
+              cnr_com[a + b * N] += exp((eigK_re[a])*factor) *((creal(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)-sin((eigK_im[a])*factor)*cimag(ivecL_com_inv[a + b*N]))+(cimag(ivecL_com_inv[a + b*N])*cos((eigK_im[a])*factor)+sin((eigK_im[a])*factor)*creal(ivecL_com_inv[a + b*N]))*_Complex_I);     
+          }
+      }  
+      for (a = 0; a < N; a++) {
+          for (b = 0; b < N; b++) {
+              for (c = 0; c < N; c++) { 
+                  P_DA_com[c+a*N] += (creal(ivecL_com[a + b * N])*creal(cnr_com[b + c * N])-cimag(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N]))+(creal(ivecL_com[a + b * N])*cimag(cnr_com[b + c * N])+creal(cnr_com[b + c * N])*cimag(ivecL_com[a + b * N])) *_Complex_I;
+              }
+          }
+      }   // evecL*cnr
+      for (i = 0; i < N; i++) {
+          for (j = 0; j < N; j++) {
+              if (fabs(cimag(P_DA_com[i*N+j])) < 0.00001) {
+                  P_DA[i*N+j]=creal(P_DA_com[i*N+j]);
+              } else {
+                  printf("\nThe imaginary part is none zero\n");
+              }      
+          }
+      }
+  }
+
+  /* Write to file */
+  outone=fopen("KPop.dat","w");
+  fprintf(outone,"%f ",nt2*non->deltat);
+  for (int a=0;a<N;a++){
+      for (int b=0;b<N;b++){
+          fprintf(outone,"%f ",P_DA[a*N+b]);                               
+      }
+  }
+  fprintf(outone,"\n"); 
+  fclose(outone);
+
+  free(eigK_im);
+  free(eigK_re);
+  free(evecL);
+  free(evecR);
+  free(ivecL);
+  free(ivecR);
+  free(P_DA_com);
+  free(ivecL_com);
+  free(ivecR_com);
+  free(ivecL_com_inv);
+  free(ivecR_com_inv);
+  free(cnr_com);
+
+  printf("The waiting time propagation successfully completed!\n");  
+  return;
 };
 
 /* Calcualte doorway function for stimulated emission */
 void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
-   /* Initialize variables*/
- /* The window part for SE*/
+  /* Initialize variables*/
+  /* The window part for SE*/
   float *Hamil_i_e;
   float *mu_eg;
   float *vecr,*veci;
@@ -481,20 +471,20 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   int nn2;
   int itime,N_samples;
   int samples;
-  int alpha,beta,a_b,ti,tj,i,j; /*alpha and beta are corresponding the dipole for different segment,  a_b  = alpha*beta, which used in the writing file*/
+  int alpha,beta,a_b,ti,tj,i,j; /* alpha and beta are corresponding the dipole for different segment,  a_b  = alpha*beta, which used in the writing file */
   int t1,t2;
   int elements;
   int cl,Ncl;
   int pro_dim,ip;
-  int a,b,index,seg,site_num,seg_num;/*site num is the number of the site, which used to make sure the index number later*/
+  int a,b,index,seg,site_num,seg_num; /* site num is the number of the site, which used to make sure the index number later */
   int N;
 
   N = non->singles;
-// reserve memory for the density operator
+  // reserve memory for the density operator
   rho_l=(float *)calloc(N*N,sizeof(float));
-  //here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
+  // here the mid_vcr is just used  as the mid part for multiply the dipole with density operator
   mid_ver = (float *)calloc(N,sizeof(float));
-// reserve memory for transition dipole
+  // reserve memory for transition dipole
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
   mu_eg=(float *)calloc(non->singles,sizeof(float));
@@ -544,6 +534,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   }
 
   log=fopen("NISE.log","a");
+  fprintf(log,"Calculating SE window functions.\n");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
   /* Read coupling, this is done if the coupling and transition-dipoles are */
@@ -551,9 +542,9 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
     /* Loop over samples */
- for (samples=non->begin;samples<non->end;samples++){
+  for (samples=non->begin;samples<non->end;samples++){
       /* Calculate linear response */   
-    ti=samples*non->sample;
+      ti=samples*non->sample;
     if (non->cluster!=-1){
       if (read_cluster(non,ti,&cl,Cfile)!=1){
         printf("Cluster trajectory file to short, could not fill buffer!!!\n");
@@ -571,85 +562,53 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
          /* Read mu(ti) */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-          copyvec(mu_xyz+non->singles*alpha,vecr,non->singles);
-        } else {
-          if (read_mue(non,vecr,mu_traj,ti,alpha)!=1){
-             printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-             printf("ITIME %d %d\n",ti,alpha);
-             exit(1);
-            }
-        }      
-          /* this is for time t1 to generate the vector for the dipole with 0 as the imagine part*/ 
-          clearvec(veci,non->singles);
-	       /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-            }
+	 read_dipole(non,mu_traj,vecr,mu_xyz,alpha,ti);
+         clearvec(veci,non->singles);
+
+	 /* Read Hamiltonian */
+         read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
             
-	         eq_den(Hamil_i_e,rho_l,N,non);
-           write_matrix_to_file("density.dat",rho_l,N);
-          // Multiply the density operator to dipole operator,vecr, as it is only the real number.
-          clearvec(mid_ver,non->singles);
-          for (a=0;a<N;a++){
+	 eq_den(Hamil_i_e,rho_l,N,non);
+         //  write_ham_to_file("Density.dat",rho_l,N);
+         // Multiply the density operator to dipole operator,vecr, as it is only the real number.
+         clearvec(mid_ver,non->singles);
+         for (a=0;a<N;a++){
             for (b=0;b<N;b++){
               mid_ver[a]+=rho_l[a+b*N]*vecr[b];
             }
-          }
-          // Update dipole operator
+         }
+         // Update dipole operator
           for (a=0;a<N;a++){
             vecr[a]=mid_ver[a];
           } 
           /* Loop over coherence time */
-         for (t1=0;t1<non->tmax;t1++){
+          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
             /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);  
-             }
-            } 
+	    read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
 
-          for (beta=0;beta<3;beta++){
-            /* Read mu(tj) */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
-            } else {
-              if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-                printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-                printf("JTIME %d %d\n",tj,beta);
-                exit(1);
-              }
-            }             
+            for (beta=0;beta<3;beta++){
+               /* Read mu(tj) */
+               read_dipole(non,mu_traj,mu_eg,mu_xyz,beta,tj);
+                         
+          
+               /* Here calculate window function/
+               /* Inner product for all sites*/
+               /* here we need to make clear the seg_num and the site_num the
+		* number of the position should be decided by the segment
+		* number, we should sum all the value in one segment */
 
-            /* Here calculate window function/
-            /* Inner product for all sites*/
-            /*here we need to make clear the seg_num and the site_num the number of the 
-            position should be decided by the segment number, we should sum all the value in one segment*/
-
-          for (site_num=0;site_num<non->singles;site_num++){
-              seg_num=non->psites[site_num];
+               for (site_num=0;site_num<non->singles;site_num++){
+                   seg_num=non->psites[site_num];
  
-              /*this equation is make sure the calculated data in the right position */
-              index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-              re_window_SE[index]+=mu_eg[site_num]*vecr[site_num];
-              im_window_SE[index]+=mu_eg[site_num]*veci[site_num];          
-          }
-        }  
+                   /* this equation is make sure the calculated data in
+		    * the right position */
+                   //index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+		   index=CG_index(non,seg_num,alpha,beta,t1);
+                   re_window_SE[index]+=mu_eg[site_num]*vecr[site_num];
+                   im_window_SE[index]+=mu_eg[site_num]*veci[site_num];          
+               }
+          }  
 
           /* Zero the coupling between different segments.*/   
           if (non->Npsites==non->singles){
@@ -660,17 +619,17 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
           } 
           /* Propagate dipole moment */
           propagate_vector(non,Hamil_i_e,vecr,veci,-1,samples,t1*alpha);   
-      }
+       }
+     }
     }
-  }
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished sample %d\n",samples);        
+    fprintf(log,"Finished sample (window SE) %d\n",samples);        
     time_now=log_time(time_now,log);
     fclose(log);
   }
  
-  /* The calculation is finished we can close all auxillary arrays before writing */
+  /* Close all auxillary arrays before writing */
   /* output to file. */
   free(vecr);
   free(veci);
@@ -682,7 +641,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
 
   /* The calculation is finished, lets write output */
   log=fopen("NISE.log","a");
-  fprintf(log,"Finished Calculating Response!\n");
+  fprintf(log,"Finished Calculating SE window functions!\n");
   fprintf(log,"Writing to file!\n");  
   fclose(log);
 
@@ -695,7 +654,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
 
   /* Close Trajectory Files */
   fclose(mu_traj),fclose(H_traj);
-  printf("the SE part run successfully \n ");  
+  printf("The window function SE part successfully completed!\n");  
 }
 
 /* Calculate the window function for ground state bleach */
@@ -782,6 +741,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   }
 
   log=fopen("NISE.log","a");
+  fprintf(log,"Calculating GB window functions.\n");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
@@ -808,55 +768,31 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
          /* Read mu(ti) */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-          copyvec(mu_xyz+non->singles*alpha,vecr,non->singles);
-        } else {
-          if (read_mue(non,vecr,mu_traj,ti,alpha)!=1){
-             printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-             printf("ITIME %d %d\n",ti,alpha);
-             exit(1);
-            }
-        }       
-          clearvec(veci,non->singles);
-          /* Loop over coherence time */
+	 read_dipole(non,mu_traj,vecr,mu_xyz,alpha,ti);
+         clearvec(veci,non->singles);
+         /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
             /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-            }
-          for (beta=0;beta<3;beta++){
-            /* Read mu(tj) */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
-            } else {
-              if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-                printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-                printf("JTIME %d %d\n",tj,beta);
-                exit(1);
-              }
-            }
+	    read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+            for (beta=0;beta<3;beta++){
+               /* Read mu(tj) */
+	       read_dipole(non,mu_traj,mu_eg,mu_xyz,beta,tj);
             
-            /* Here calculate window function/
-            /* Inner product for all sites*/
-            /*here we need to make clear the seg_num and the site_num the number of the position should
-             be decided by the segment number, we should sum all the value in one segment*/
+               /* Here calculate window function/
+               /* Inner product for all sites */
+               /* here we need to make clear the seg_num and the site_num
+		* the number of the position should be decided by the segment
+		* number, we should sum all the value in one segment */
 
-            for (site_num=0;site_num<non->singles;site_num++){
-              seg_num=non->psites[site_num];
-              /*this equation is make sure the calculated data in the right position */
-              index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-              re_window_GB[index]+=mu_eg[site_num]*vecr[site_num];
-              im_window_GB[index]+=mu_eg[site_num]*veci[site_num]; 
-             }
+               for (site_num=0;site_num<non->singles;site_num++){
+                   seg_num=non->psites[site_num];
+                   /* this equation is make sure the calculated data in the right position */
+                   //index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+		   index=CG_index(non,seg_num,alpha,beta,t1);
+                   re_window_GB[index]+=mu_eg[site_num]*vecr[site_num];
+                   im_window_GB[index]+=mu_eg[site_num]*veci[site_num]; 
+               }
           }   
           /* Zero coupling between different coulpmings.*/   
           if (non->Npsites==non->singles){
@@ -867,17 +803,17 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
           }
           /* Propagate dipole moment */
           propagate_vector(non,Hamil_i_e,vecr,veci,-1,samples,t1*alpha);  
+        }
       }
     }
-  }
     /* Update Log file with time and sample numner */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished sample %d\n",samples);        
+    fprintf(log,"Finished sample (window GB) %d\n",samples);        
     time_now=log_time(time_now,log);
     fclose(log);
   }
  
-  /* The calculation is finished we can close all auxillary arrays before writing */
+  /* Close all auxillary arrays before writing */
   /* output to file. */
   free(vecr);
   free(veci);
@@ -898,7 +834,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
     printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
     fclose(Cfile);
   }
- printf("the GB part run successfully \n ");  
+ printf("The GB window function part successfully completed!\n");  
 }
 
 /* Calculate the window function for the excited state absorption */
@@ -990,6 +926,7 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   }
 
   log=fopen("NISE.log","a");
+  fprintf(log,"Calculating EA window functions.\n");
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
@@ -1013,129 +950,89 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
         Ncl++;
       }
     }   
-      // Include snapshot if it is in the cluster or if no clusters are defined
+    // Include snapshot if it is in the cluster or if no clusters are defined
     if (non->cluster==-1 || non->cluster==cl){   
       for (alpha=0;alpha<3;alpha++){
          /* Read mu(ti) */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-          copyvec(mu_xyz+non->singles*alpha,vecr1,non->singles);
-        } else {
-          if (read_mue(non,vecr1,mu_traj,ti,alpha)!=1){
-             printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-             printf("ITIME %d %d\n",ti,alpha);
-             exit(1);
-            }
-        }
-        clearvec(rho_i,non->singles*non->singles); 
-          //Here we generate the equilibrium density operator
-	/* Read Hamiltonian */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-        }
-        eq_den(Hamil_i_e,rho_l,N,non);       
+	 read_dipole(non,mu_traj,vecr1,mu_xyz,alpha,ti);
+         clearvec(rho_i,non->singles*non->singles); 
+
+         // Here we generate the equilibrium density operator
+	 /* Read Hamiltonian */
+	 read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+         eq_den(Hamil_i_e,rho_l,N,non);       
         
-        for (a=0;a<N;a++){
-          dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
-        }
-          /* Loop over coherence time */
+         for (a=0;a<N;a++){
+            dipole_double_CG2DES(non, vecr1, rho_l+a*N, rho_i+a*N, fr+a*nn2, fi+a*nn2); 
+         }
+         /* Loop over coherence time */
          for (t1=0;t1<non->tmax;t1++){
             tj=ti+t1;
-	    //printf("tj %d\n",tj);
           
-          for (beta=0;beta<3;beta++){
-            /* Read mu(tj) */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              copyvec(mu_xyz+non->singles*beta,mu_eg,non->singles);
-            } else {
-              if (read_mue(non,mu_eg,mu_traj,tj,beta)!=1){
-                printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-                printf("JTIME %d %d\n",tj,beta);
-                exit(1);
-              }
-            }        
-            /* Here calculate window function/
-            /* Inner product for all sites*/
-            /*here we need to make clear the seg_num and the site_num the number of the position should
-             be decided by the segment number, we should sum all the value in one segment*/
-            /* Multiply with mu_ef Take fr and fi back to vecr and veci */
-            clearvec(vecr,non->singles*non->singles);
-            clearvec(veci,non->singles*non->singles);
-            for (a=0;a<N;a++){
-              //The dimention of vecr is only   vecr=(float *)calloc(N,sizeof(float));
-                dipole_double_inverse_CG2DES(non, mu_eg, fr+a*nn2, fi+a*nn2, vecr+a*N, veci+a*N);
-            }
-            /* Propagate back to time ti； tj=ti+t1; */
-            for (tk=tj;tk>ti;tk--){
-              /* Read hamiltonian at tk */
-              if (!strcmp(non->hamiltonian,"Coupling")){
-                if (read_Dia(non,Hamil_i_ee,H_traj,tk)!=1){
-                  printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                  exit(1);
+            for (beta=0;beta<3;beta++){
+                /* Read mu(tj) */
+		read_dipole(non,mu_traj,mu_eg,mu_xyz,beta,tj);
+            
+		/* Here calculate window function/
+                /* Inner product for all sites*/
+                /* here we need to make clear the seg_num and the site_num
+		 * the number of the position should be decided by the segment
+		 * number, we should sum all the value in one segment */
+                /* Multiply with mu_ef Take fr and fi back to vecr and veci */
+                clearvec(vecr,non->singles*non->singles);
+                clearvec(veci,non->singles*non->singles);
+                for (a=0;a<N;a++){
+                // The dimention of vecr is only   vecr=(float *)calloc(N,sizeof(float));
+                    dipole_double_inverse_CG2DES(non, mu_eg, fr+a*nn2, fi+a*nn2, vecr+a*N, veci+a*N);
                 }
-              } else {
-                if (read_He(non,Hamil_i_ee,H_traj,tk)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-                }
-              }
+                /* Propagate back to time ti； tj=ti+t1; */
+                for (tk=tj;tk>ti;tk--){
+                    /* Read hamiltonian at tk */
+	            read_Hamiltonian(non,Hamil_i_ee,H_traj,tk);
 
-              /* Zero coupling in hamiltonian */
-                zero_coupling(Hamil_i_ee,non);
-              /* Propagate single excited states vecr and veci backwards with propagate */
-              /* Propagate dipole moment */
-            for (a=0;a<N;a++){
-               propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,-1,samples,tk*alpha);
-            }
-          }
-            /* Calculate window function by taking trace of vecr and veci */
-            for (site_num=0;site_num<non->singles;site_num++){
-              seg_num=non->psites[site_num];
-              /*this equation is make sure the calculated data in the right position */
-              index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-              re_window_EA[index]+=vecr[site_num*N+site_num];
-              im_window_EA[index]+=veci[site_num*N+site_num]; 
-             }
-          }  
+                    /* Zero coupling in Hamiltonian (TLC check this!) */
+                    zero_coupling(Hamil_i_ee,non);
+                    /* Propagate single excited states vecr and veci backwards with propagate */
+                    /* Propagate dipole moment */
+#pragma omp parallel for
+for (a=0;a<N;a++){
+    propagate_vector(non,Hamil_i_ee,vecr+a*N,veci+a*N,-1,samples,tk*alpha);
+}
+//		    propagate_matrix(non,Hamil_i_ee,vecr,veci,-1,samples,tk*alpha);
+                }
+                /* Calculate window function by taking trace of vecr and veci */
+                for (site_num=0;site_num<non->singles;site_num++){
+                    seg_num=non->psites[site_num];
+                    /* this equation is make sure the calculated data in the right position */
+                    //index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
+		    index=CG_index(non,seg_num,alpha,beta,t1);
+                    re_window_EA[index]+=vecr[site_num*N+site_num];
+                    im_window_EA[index]+=veci[site_num*N+site_num]; 
+                }
+            }  
           /* Do projection and make sure the segment number equal to the segment number in the projection file.*/   
-	       /* Read Hamiltonian */
-            if (!strcmp(non->hamiltonian,"Coupling")){
-              if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-                printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-                exit(1);
-              }
-            } else {
-              if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-             }
-            }
-            /*Zero coupling between different segments*/
+	    /* Read Hamiltonian */
+	    read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+            
+	    /* Zero coupling between different segments */
             zero_coupling(Hamil_i_e,non);
-          /* Propagate dipole moment */
-          for (a=0;a<N;a++){
-            propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
-          }
-	      }
+            /* Propagate dipole moment */
+	    /* Currently only coupling propagation done! TLC */
+#pragma omp parallel for
+for (a=0;a<N;a++){
+    propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
+}
+        }
      }
    }
-    /* Update Log file with time and sample numner */
+    /* Update Log file with time and sample number */
     log=fopen("NISE.log","a");
-    fprintf(log,"Finished sample %d\n",samples);        
+    fprintf(log,"Finished sample (window EA) %d\n",samples);        
     time_now=log_time(time_now,log);
     fclose(log);
   }
 
-  /* The calculation is finished we can close all auxillary arrays before writing */
-  /* output to file. */
-
+  /* Free all auxillary arrays */
   free(mu_xyz);
   free(Hamil_i_e);
   free(Hamil_i_ee);
@@ -1162,10 +1059,9 @@ void CG_2DES_window_EA(t_non *non,float *re_window_EA,float *im_window_EA){
   }
   /* Close Trajectory Files */
   fclose(mu_traj),fclose(H_traj);
-  printf("The EA part run successfully!\n");
+  printf("The EA window function part successfully completed!\n");
   return;  
 }
-
 
 /* Combine the doorway and window functions for the segments */
 void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
@@ -1199,15 +1095,17 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
 	  polar(px,molPol);	  
 	  /* Loop over times */
 	  for (t1=0;t1<non->tmax1;t1++){
-      for (t3=0;t3<non->tmax3;t3++){
+              for (t3=0;t3<non->tmax3;t3++){
 	      /* Loop over segments */
-	      for (S=0;S<N;S++){
-		for (R=0;R<N;R++){
-	      /* First do GB */
-        indext1=S*9*non->tmax1+px[0]*3*non->tmax1+px[1]*non->tmax1+t1;
-		    indext2=R*N+S;
-	      indext3=R*9*non->tmax3+px[2]*3*non->tmax3+px[3]*non->tmax3+t3;
-		    /* Ground state bleach */
+	          for (S=0;S<N;S++){
+		      for (R=0;R<N;R++){
+	              /* First do GB */
+                      //indext1=S*9*non->tmax1+px[0]*3*non->tmax1+px[1]*non->tmax1+t1;
+		      indext1=CG_index(non,S,px[0],px[1],t1);
+		      indext2=R*N+S;
+	              //indext3=R*9*non->tmax3+px[2]*3*non->tmax3+px[3]*non->tmax3+t3;
+		      indext3=CG_index(non,R,px[2],px[3],t3);
+		      /* Ground state bleach */
         if (1==1){
           re_2DES_R_sum[t3][t1]-=polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
           re_2DES_R_sum[t3][t1]+=polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
@@ -1220,7 +1118,6 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
 		     }
 
 		  /* Stimulated Emission */
-
 		  if (1==1){
         re_2DES_R_sum[t3][t1]-=polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_SE[indext3];
         re_2DES_R_sum[t3][t1]+=polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_SE[indext3];
@@ -1241,35 +1138,34 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
         re_2DES_NR_sum[t3][t1]-=polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
         im_2DES_NR_sum[t3][t1]+=polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
         im_2DES_NR_sum[t3][t1]+=polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-		    }
+		        }
 		   }
-     }
+              }
 	  }
+      }
   }
- }
-	//printf("this is a test for last part \n"); 
-	/* Write response functions to file, not we want name to depend on t2 */
+
+	/* Write response functions to file */
   if (pol==0){
           print2D("RparI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
           print2D("RparII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
 	} else if (pol==1) {
-	print2D("RperI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+	  print2D("RperI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
           print2D("RperII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
 	} else {
-	print2D("RcroI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+	  print2D("RcroI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
           print2D("RcroII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
 	}
 	/* Loop over times to clean response functions */
-    for (t1=0;t1<non->tmax1;t1++){
-      for (t3=0;t3<non->tmax3;t3++){
-          re_2DES_R_sum[t3][t1]=0;
-          im_2DES_R_sum[t3][t1]=0;
-          re_2DES_NR_sum[t3][t1]=0;
-          im_2DES_NR_sum[t3][t1]=0;
+        for (t1=0;t1<non->tmax1;t1++){
+           for (t3=0;t3<non->tmax3;t3++){
+               re_2DES_R_sum[t3][t1]=0;
+               im_2DES_R_sum[t3][t1]=0;
+               re_2DES_NR_sum[t3][t1]=0;
+               im_2DES_NR_sum[t3][t1]=0;
         }
       }
     }
   free(re_2DES_NR_sum) ,free(re_2DES_R_sum),free(im_2DES_NR_sum) ,free(im_2DES_R_sum);
 }
-
 

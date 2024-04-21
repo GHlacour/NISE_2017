@@ -167,7 +167,7 @@ void dipole_double_inverse_CG2DES(t_non* non, float* dipole, float* cr, float* c
 
 
 // Diagonalize real nonsymmetric matrix. Output complex eigenvalues, left and right eigenvectors.
-void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+void cg_diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
     int INFO, lwork;
     float *work, *Kcopy;
     int i, j;
@@ -256,7 +256,6 @@ void inversie_real_matrix(float* eig_re, float* eig_im, float* evecL, float* eve
     /* Free space */
      free(work), free(pivot);    
 }
-
 
 // calculate the inverse real matrix for the left and right side
 void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* evecR,  float _Complex* ivecL_com,  float _Complex* ivecR_com, int N) {
@@ -348,7 +347,7 @@ void inversie_complex_matrix(float* eig_re, float* eig_im, float* evecL, float* 
 }
 
 /* Write a square matrix to a text file */
-void write_matrix_to_file(char fname[],float *matrix,int N){
+/* void write_matrix_to_file(char fname[],float *matrix,int N){
   FILE *file_handle;
   int i,j;
   file_handle=fopen(fname,"w");
@@ -359,7 +358,7 @@ void write_matrix_to_file(char fname[],float *matrix,int N){
     fprintf(file_handle,"\n");
   }
   fclose(file_handle);
-}
+} */
 
 /* Write a Hamiltonian to a text file */
 void write_ham_to_file(char fname[],float *Hamiltonian_i,int N){
