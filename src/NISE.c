@@ -156,8 +156,12 @@ int main(int argc, char* argv[]) {
             analyse(non);
     }
 
-    // Call the Hamiltonian Correlate routine
-    if (!strcmp(non->technique, "Correlation")) {
+    /* Call the Hamiltonian Correlate routine */
+    /* Correlation will calculate both frequency correlation functions and
+     * cross correlation functions, while Autocorrelation will only
+     * result in the calculation of autocorrelation functions, which
+     * may be much faster for large systems. */
+    if (string_in_array(non->technique,(char*[]){"Correlation","Autocorrelation"},2)){
         // Does not support MPI
         if (parentRank == 0){
 	    if (cpus>1) not_parallel();
