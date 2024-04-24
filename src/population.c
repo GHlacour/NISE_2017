@@ -130,9 +130,6 @@ void population(t_non *non){
       for (a=0;a<nn2;a++){
         Hamil_av[a]+=Hamil_i_e[a];
       }
-      for (a=0;a<nn2;a++){
-        Hamil_av[a]+=Hamil_i_e[a];
-      }
     }
     for (a=0;a<nn2;a++){
       Hamil_av[a]=Hamil_av[a]/(samples-non->begin);
@@ -227,7 +224,6 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
-              for (b=0;b<non->singles;b++){
                 pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
                 pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
               }
@@ -238,7 +234,7 @@ void population(t_non *non){
 
 
       }
-      } // TLC 24/4      
+      
       /*Propagate matrix (but skip propagation after last calculation) */
       if (t1<non->tmax-1){
          propagate_matrix(non, Hamil_i_e, vecr, veci, 1, samples, t1);
