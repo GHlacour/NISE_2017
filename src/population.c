@@ -9,6 +9,7 @@
 #include "NISE_subs.h"
 #include "propagate.h"
 #include "population.h"
+#include "read_trajectory.h"
 
 void population(t_non *non){
   // Initialize variables
@@ -18,6 +19,7 @@ void population(t_non *non){
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
   float *Pop,*PopF;
+  float *mu_xyz;
 
   /* Floats */
   float shift1;
@@ -26,7 +28,9 @@ void population(t_non *non){
 
   /* File handles */
   FILE *H_traj;
+  FILE *C_traj;
   FILE *outone,*log;
+  FILE *mu_traj,*Cfile;
 
   /* Integers */
   int nn2,N;
@@ -57,13 +61,18 @@ void population(t_non *non){
   e=(float *)calloc(N,sizeof(float));
   Pop=(float *)calloc(non->tmax,sizeof(float));
   PopF=(float *)calloc(non->tmax*non->singles*non->singles,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
+
+  /* Here we want to call the routine for checking the trajectory files */
+  /* before we start the calculation */   
+  control(non);
+
+  /* Read coupling, this is done if the coupling and transition-dipoles are */
+  /* time-independent and only one snapshot is stored */
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
   itime=0;
   // Do calculation
@@ -115,9 +124,11 @@ void population(t_non *non){
     for (samples=non->begin;samples<non->end;samples++){
       ti=samples*non->sample;
       /* Read Hamiltonian */
-      if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+
+      /* Find average */
+      for (a=0;a<nn2;a++){
+        Hamil_av[a]+=Hamil_i_e[a];
       }
       for (a=0;a<nn2;a++){
         Hamil_av[a]+=Hamil_i_e[a];
@@ -135,16 +146,14 @@ void population(t_non *non){
     vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
     veci=(float *)calloc(non->singles*non->singles,sizeof(float));
     /* Initialize */
-      for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
+    for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
 
     ti=samples*non->sample;      
     for (t1=0;t1<non->tmax;t1++){
       tj=ti+t1;
       /* Read Hamiltonian */
-      if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+
       /* Calculate population evolution */
       if (!strcmp(non->basis,"Local")){ /* Local basis */
         for (a=0;a<non->singles;a++){
@@ -160,11 +169,9 @@ void population(t_non *non){
         }
       } else if (!strcmp(non->basis,"Adiabatic")) { /* Adiabatic eigen basis */
         /* Read Hamiltonian */
-        if (read_He(non,Hamil_i_e,H_traj,ti+t1)!=1){
-          printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-          exit(1);
-        }
-        build_diag_H(Hamil_i_e,H,e,non->singles);
+	read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+        
+	build_diag_H(Hamil_i_e,H,e,non->singles);
         /* Loop over final/initial adabatic states */
         for (a=0;a<non->singles;a++){
           pr=0;
@@ -220,6 +227,7 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
+              for (b=0;b<non->singles;b++){
                 pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
                 pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
               }
@@ -230,7 +238,7 @@ void population(t_non *non){
 
 
       }
-      
+      } // TLC 24/4      
       /*Propagate matrix (but skip propagation after last calculation) */
       if (t1<non->tmax-1){
          propagate_matrix(non, Hamil_i_e, vecr, veci, 1, samples, t1);
@@ -295,6 +303,7 @@ void population(t_non *non){
   free(e);
   free(Pop);
   free(PopF);
+  free(mu_xyz);
   // The calculation is finished, lets write output
   log=fopen("NISE.log","a");
   fprintf(log,"Finished Calculating Population Transfer!\n");
@@ -302,7 +311,7 @@ void population(t_non *non){
   fclose(log);
 
   fclose(H_traj);
- 
+  fclose(mu_traj); 
 
   printf("----------------------------------------------\n");
   printf(" Population calculation succesfully completed\n");
