@@ -6,6 +6,7 @@
 #include <fftw3.h>
 #include "types.h"
 #include "nrutil.h"
+#include <unistd.h>
 
 #define round(x) ((x)>0?(long)(x+0.5):(long)(x-0.5))
 
@@ -25,6 +26,7 @@ int main(int argc,char *argv[]){
   FILE *input;
   FILE *output;
   FILE *axisFH;
+  FILE *WTime;
   float ti[4],rr,ir;
   char inputFName[256],timeFName[256],frequencyFName[256];
   char format[256];
@@ -39,6 +41,8 @@ int main(int argc,char *argv[]){
   t_rwa w;
   int index;
   float fixedtime;
+  char waittime[16];
+  int wfile;
   float static c_v=2.99792458e-5;/* Speed of light in cm/fs */
   float shift1,shift3;
   int form;
@@ -242,6 +246,29 @@ int main(int argc,char *argv[]){
     printf("FFT keyword not specified!\n");
     exit(0);
   }
+
+  /* Check for waiting time file */
+  sprintf(waittime,"");
+  wfile=0;
+  if (access("Waitingtime.dat",F_OK) !=-1){
+     printf("Waitingtime file found.\n");
+     WTime=fopen("Waitingtime.dat","r");
+     wfile=1;
+  }
+  /* Loop over waiting times */
+  while (wfile>-1){
+  /* Read new waiting time */	  
+  if (wfile==1){
+     if (fscanf(WTime,"%s",&waittime)==1){
+     printf("Doing 2DFFT for %s fs\n",waittime);
+     } else {
+	fclose(WTime);
+        exit(0);
+     }	
+  } else {
+     wfile=-1;
+  }
+
   // Prepare 2DFFT
   fftIn = fftw_malloc(sizeof(fftw_complex) * (fft*fft));
   fftOut = fftw_malloc(sizeof(fftw_complex) * (fft*fft));
@@ -256,6 +283,10 @@ int main(int argc,char *argv[]){
       if (pol==0) sprintf(timeFName,"RparI.IRraman.dat"),sprintf(frequencyFName,"RwparIRraman.I.dat");
       if (pol==1) sprintf(timeFName,"RperI.IRraman.dat"),sprintf(frequencyFName,"RwperIRraman.I.dat");
       if (pol==2) sprintf(timeFName,"RcroI.IRraman.dat"),sprintf(frequencyFName,"RwcroIRraman.I.dat");
+    } else if (wfile==1) {
+      if (pol==0) sprintf(timeFName,"RparI_%sfs.dat",waittime),sprintf(frequencyFName,"Rwpar.I.dat");
+      if (pol==1) sprintf(timeFName,"RperI_%sfs.dat",waittime),sprintf(frequencyFName,"Rwper.I.dat");
+      if (pol==2) sprintf(timeFName,"RcroI_%sfs.dat",waittime),sprintf(frequencyFName,"Rwcro.I.dat");
     } else {
       if (pol==0) sprintf(timeFName,"RparI.dat"),sprintf(frequencyFName,"Rwpar.I.dat");
       if (pol==1) sprintf(timeFName,"RperI.dat"),sprintf(frequencyFName,"Rwper.I.dat");
@@ -394,6 +425,10 @@ int main(int argc,char *argv[]){
       if (pol==0) sprintf(timeFName,"RparII.IRraman.dat"),sprintf(frequencyFName,"RwparIRraman.II.dat");
       if (pol==1) sprintf(timeFName,"RperII.IRraman.dat"),sprintf(frequencyFName,"RwperIRraman.II.dat");
       if (pol==2) sprintf(timeFName,"RcroII.IRraman.dat"),sprintf(frequencyFName,"RwcroIRraman.II.dat");
+    } else if (wfile==1) {
+      if (pol==0) sprintf(timeFName,"RparII_%sfs.dat",waittime),sprintf(frequencyFName,"Rwpar.II.dat");
+      if (pol==1) sprintf(timeFName,"RperII_%sfs.dat",waittime),sprintf(frequencyFName,"Rwper.II.dat");
+      if (pol==2) sprintf(timeFName,"RcroII_%sfs.dat",waittime),sprintf(frequencyFName,"Rwcro.II.dat");
     } else {
       if (pol==0) sprintf(timeFName,"RparII.dat"),sprintf(frequencyFName,"Rwpar.II.dat");
       if (pol==1) sprintf(timeFName,"RperII.dat"),sprintf(frequencyFName,"Rwper.II.dat");
@@ -603,6 +638,10 @@ int main(int argc,char *argv[]){
       if (pol==2) sprintf(kIFName,"RwcroIRraman.I.dat"),sprintf(kIIFName,"RwcroIRraman.II.dat"),
           sprintf(twoDFName,"2DIRraman.I.cro.dat"),sprintf(pPFName,"PPIRraman.I.cro.dat"),
           sprintf(twoDFName2,"2DIRraman.II.cro.dat"),sprintf(pPFName2,"PPIRraman.II.cro.dat"); 
+     } else if (wfile==1) {
+      if (pol==0) sprintf(kIFName,"Rwpar.I.dat"),sprintf(kIIFName,"Rwpar.II.dat"),sprintf(twoDFName,"2D.par_%sfs.dat",waittime),sprintf(pPFName,"PP.par_%sfs.dat",waittime);
+      if (pol==1) sprintf(kIFName,"Rwper.I.dat"),sprintf(kIIFName,"Rwper.II.dat"),sprintf(twoDFName,"2D.per_%sfs.dat",waittime),sprintf(pPFName,"PP.per_%sfs.dat",waittime);
+      if (pol==2) sprintf(kIFName,"Rwcro.I.dat"),sprintf(kIIFName,"Rwcro.II.dat"),sprintf(twoDFName,"2D.cro_%sfs.dat",waittime),sprintf(pPFName,"PP.cro_%sfs.dat",waittime);
      } else {
       if (pol==0) sprintf(kIFName,"Rwpar.I.dat"),sprintf(kIIFName,"Rwpar.II.dat"),sprintf(twoDFName,"2D.par.dat"),sprintf(pPFName,"PP.par.dat");
       if (pol==1) sprintf(kIFName,"Rwper.I.dat"),sprintf(kIIFName,"Rwper.II.dat"),sprintf(twoDFName,"2D.per.dat"),sprintf(pPFName,"PP.per.dat");
@@ -757,5 +796,6 @@ int main(int argc,char *argv[]){
         fclose(output);
       }
     }
+  }
   }
 }
