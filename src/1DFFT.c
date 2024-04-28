@@ -7,6 +7,136 @@
 #include "types.h"
 #include "nrutil.h"
 #include "project.h"
+#include "1DFFT.h"
+#include "NISE_subs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "propagate.h"
+#include "read_trajectory.h"
+#include "omp.h"
+
+
+void Lineshape_FFT(t_non *non){
+  FILE *outone,*outone1;
+  int samples,i;
+  int pro_dim,a,ip;
+  int loop_num = 0;
+  /* Floats */
+  float shift1;
+  float *re_S_1,*im_S_1; /* The first-order response function */
+  float *re_S_2,*im_S_2; /* The first-order response function */
+  float *re_S_fin,*im_S_fin; /* The first-order response function */
+  float dummyf;
+    /* Check if projection keyword is defined and select number of subsets in */
+  /* projection */
+  samples =1;
+  /* Allocate memory */
+  pro_dim=project_dim(non);
+  re_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  re_S_2=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_2=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  re_S_fin=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_fin=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  shift1=(non->max1+non->min1)/2;
+  printf("Frequency shift %f.\n",shift1);
+  non->shifte=shift1;
+  /* Open Trajectory files */
+  outone=fopen("TD_Absorption.dat","r");
+  if (outone==NULL){
+    printf("TD_Absorption.dat file not found!\n");
+    exit(1);
+  }
+  for (i=0;i<non->tmax;i++){
+    fscanf(outone,"%f",&dummyf);
+      ip=0;
+      fscanf(outone,"%f %f",&re_S_1[i+non->tmax*ip],&im_S_1[i+non->tmax*ip]);
+  }    
+  printf("\n\nCompleted reading the TD_Absorption.dat file.\n");
+  
+  outone1=fopen("lineshape.dat","r");
+  if (outone1==NULL){
+    printf("lineshape.dat file not found!\n");
+    exit(1);
+  }
+      // Read data from the file
+  for (i=0;i<non->tmax;i++){
+    fscanf(outone1,"%f",&dummyf);
+    fscanf(outone1,"%f %f",&re_S_2[i],&im_S_2[i]);
+  }  
+  printf("\n\nCompleted reading the lineshape.dat file.\n");
+
+  for (a = 0; a < non->tmax; a++) {
+    re_S_fin[a]=re_S_1[a]*re_S_2[a]-im_S_1[a]*im_S_2[a];
+    im_S_fin[a]=re_S_1[a]*im_S_2[a]+im_S_1[a]*re_S_2[a];
+  }
+  printf("Performing the 1 D Forier transform and save.\n"); 
+
+  do_1DFFT(non,"Absorption_vibronic.dat",re_S_fin,im_S_fin,samples);
+    // Close the file
+    fclose(outone);
+    fclose(outone1);
+
+  /* Free response function arrary */
+  free(re_S_1),free(im_S_1);
+  free(re_S_2),free(im_S_2);
+  free(re_S_fin),free(im_S_fin); 
+
+  printf("----------------------------------------------\n");
+  printf(" Absorption calculation succesfully completed\n");
+  printf("----------------------------------------------\n\n");
+  return;
+}
+
+void ONE_DFFT(t_non *non){
+  FILE *outone;
+  /* Floats */
+  float shift1;
+  int samples;
+  int pro_dim,a,i,ip;
+  int loop_num = 0;
+  float *re_S_1,*im_S_1; /* The first-order response function */
+  float dummyf;
+    /* Check if projection keyword is defined and select number of subsets in */
+  /* projection */
+  samples=1;
+  pro_dim=project_dim(non);
+  /* Find average frequency for shifting the frequencies and remove */ 
+  /* high-frequency oscillations in the response function */
+  shift1=(non->max1+non->min1)/2;
+  printf("Frequency shift %f.\n",shift1);
+  non->shifte=shift1;
+
+  /* Allocate memory */
+  re_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+  im_S_1=(float *)calloc(non->tmax*pro_dim,sizeof(float));
+
+  /* Open Trajectory files */
+  outone=fopen("TD_Absorption.dat","r");
+  if (outone==NULL){
+    printf("TD_Absorption.dat file not found!\n");
+    exit(1);
+  }
+  for (i=0;i<non->tmax;i++){
+    fscanf(outone,"%f",&dummyf);
+      ip=0;
+      fscanf(outone,"%f %f",&re_S_1[i+non->tmax*ip],&im_S_1[i+non->tmax*ip]);
+  }
+  printf("\n\nCompleted reading the TD_Absorption.dat file.\n");
+  printf("Performing the 1 D Forier transform and save.\n"); 
+  do_1DFFT(non,"Absorption.dat",re_S_1,im_S_1,samples);
+
+  // Close the file
+  fclose(outone);
+  /* Free response function arrary */
+  free(re_S_1),free(im_S_1);
+
+  printf("----------------------------------------------\n");
+  printf(" Absorption calculation succesfully completed\n");
+  printf("----------------------------------------------\n\n");
+  return;
+}
+
 
 /* Do 1D Fourier transform */
 void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
