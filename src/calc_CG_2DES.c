@@ -44,7 +44,7 @@ void calc_CG_2DES(t_non *non){
     re_window_GB = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_GB = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
-    im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));  
+    im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
     P_DA=(float *)calloc(pro_dim*pro_dim,sizeof(float));
     //printf("Print %d\n",non->tmax2);
     printf("Performing the CG_2DES calculation.\n"); 
@@ -69,14 +69,10 @@ void calc_CG_2DES(t_non *non){
         if ((!strcmp(non->technique, "CG_2DES_waitingtime"))){
             /* Read in absorption, emission and coupling from file if needed */
 	    printf("Calculating spectroscopy from precalculated doorway function, window function\n");
-	    read_doorway_window_from_file(non,"CG_2DES_doorway_im.dat",im_doorway,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_doorway_re.dat",re_doorway,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_EA_im.dat",im_window_EA,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_EA_re.dat",re_window_EA,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_GB_im.dat",im_window_GB,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_GB_re.dat",re_window_GB,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_SE_im.dat",im_window_SE,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_SE_re.dat",re_window_SE,non->tmax1);;
+	    read_doorway_window_from_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
+      read_doorway_window_from_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
+      read_doorway_window_from_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
+      read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
       printf("Completed reading pre-calculated data.\n");
         }
         CG_full_2DES_segments(non,re_doorway,im_doorway,
@@ -99,16 +95,27 @@ int CG_index(t_non *non,int seg_num,int alpha,int beta,int t1){
     index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
     return index;
 }
-
+void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax){
+  FILE *file_handle;
+  int MAX_NUMBERS,number;
+  int pro_dim;
+  file_handle=fopen(fname,"w");
+  pro_dim=project_dim(non);
+  MAX_NUMBERS = pro_dim*9*non->tmax;
+  for (number=0;number<MAX_NUMBERS;number++){
+    fprintf(file_handle,"%e %e ",im[number],re[number]);
+  }
+  fclose(file_handle);
+  }
 /* Read the absorption/emission function from file */
-void read_doorway_window_from_file(t_non *non,char fname[],float *doorway_window_fun,int tmax){
+void read_doorway_window_from_file(t_non *non,char fname[],float *doorway_window_fun_im,float *doorway_window_fun_re,int tmax){
     FILE *file_handle;
     int pro_dim,i;
     int num_count = 0;
     float number;
     int MAX_NUMBERS;
     pro_dim=project_dim(non);
-    MAX_NUMBERS = pro_dim*9*non->tmax+1;
+    MAX_NUMBERS = pro_dim*9*non->tmax;
     file_handle=fopen(fname,"r");
     if (file_handle == NULL) {
         printf("Error opening the file %s.\n",fname);
@@ -117,7 +124,7 @@ void read_doorway_window_from_file(t_non *non,char fname[],float *doorway_window
     // Read numbers line by line
       // Read data from the file
   for (i=0;i<MAX_NUMBERS;i++){
-    fscanf(file_handle,"%f",&doorway_window_fun[i]);
+    fscanf(file_handle,"%f %f",&doorway_window_fun_im[i],&doorway_window_fun_re[i]);
   }
     fclose(file_handle);
 }
@@ -306,20 +313,7 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){
   }
 
   /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_doorway_im.dat","w");
-  int MAX_NUMBERS,number;
-  MAX_NUMBERS = pro_dim*9*non->tmax+1;
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",im_doorway[number]);
-  }
-  fprintf(outone,"\n"); 
-  
-  /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_doorway_re.dat","w");
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",re_doorway[number]);
-  }
-  fprintf(outone,"\n");   
+  write_response_to_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
   /* The calculation is finished we can close all auxillary arrays before
    * writing output to file. */
   free(vecr);
@@ -679,21 +673,7 @@ void CG_2DES_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
   }
 
   /* Save  the imaginary part for time domain response */
-
-  outone=fopen("CG_2DES_windows_SE_im.dat","w");
-  int MAX_NUMBERS,number;
-  MAX_NUMBERS = pro_dim*9*non->tmax+1;
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",im_window_SE[number]);
-  }
-  fprintf(outone,"\n"); 
-  
-  /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_SE_re.dat","w");
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",re_window_SE[number]);
-  }
-  fprintf(outone,"\n");  
+  write_response_to_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1); 
   /* Close all auxillary arrays before writing */
   /* output to file. */
   free(vecr);
@@ -879,22 +859,7 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   }
  
 /* Save  the imaginary part for time domain response */
-  outone=fopen("CG_2DES_windows_GB_im.dat","w");
-  int MAX_NUMBERS,number;
-  MAX_NUMBERS = pro_dim*9*non->tmax+1;
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",im_window_GB[number]);
-  }
-  fprintf(outone,"\n"); 
-  
-
-
-  /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_GB_re.dat","w");
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",re_window_GB[number]);
-  }
-  fprintf(outone,"\n");  
+  write_response_to_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1); 
   /* Close all auxillary arrays before writing */
   /* output to file. */
   free(vecr);
@@ -903,7 +868,6 @@ void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB){
   free(mu_xyz);
   free(Hamil_i_e);
   free(rho_l);
-
   /* The calculation is finished, lets write output */
   log=fopen("NISE.log","a");
   fprintf(log,"Finished Calculating Response!\n");
@@ -1114,20 +1078,7 @@ for (a=0;a<N;a++){
     fclose(log);
   }
 /* Save  the imaginary part for time domain response */
-outone=fopen("CG_2DES_windows_EA_im.dat","w");
-  int MAX_NUMBERS,number;
-  MAX_NUMBERS = pro_dim*9*non->tmax+1;
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",im_window_EA[number]);
-  }
-  fprintf(outone,"\n"); 
-  
-  /* Save the real part for time domain response */
-  outone=fopen("CG_2DES_windows_EA_re.dat","w");
-  for (number=0;number<MAX_NUMBERS;number++){
-    fprintf(outone,"%e ",re_window_EA[number]);
-  }
-  fprintf(outone,"\n");
+  write_response_to_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
   /* Free all auxillary arrays */
   free(mu_xyz);
   free(Hamil_i_e);

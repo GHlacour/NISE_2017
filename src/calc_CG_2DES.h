@@ -3,7 +3,8 @@
 
 void calc_CG_2DES(t_non *non);
 int CG_index(t_non *non,int seg_num,int alpha,int beta,int t1);
-void read_doorway_window_from_file(t_non *non,char fname[],float *doorway_window_fun,int tmax);
+void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax);
+void read_doorway_window_from_file(t_non *non,char fname[],float *doorway_window_fun_im,float *doorway_window_fun_re,int tmax);
 void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway);
 void CG_2DES_P_DA(t_non *non,float *P_DA, int N);
 void CG_2DES_window_GB(t_non *non,float *re_window_GB,float *im_window_GB);
