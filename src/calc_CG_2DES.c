@@ -27,6 +27,51 @@
 coarse grained 2DES calculation. It takes the general NISE input as input.
  */
 
+void call_final_CG_2DES(t_non *non,float *P_DA,int pro_dim,
+                        float *re_doorway,float *im_doorway,
+                        float *re_window_SE, float *im_window_SE,
+                        float *re_window_GB, float *im_window_GB,
+                        float *re_window_EA, float *im_window_EA,
+                        float *re_2DES , float *im_2DES){
+                          FILE *WTime;
+                          char waittime[16];
+                          int wfile;
+                          
+                          /* Check if Waitingtime.dat is defined */
+                          sprintf(waittime,"");
+                          wfile=0;
+                          if (access("Waitingtime.dat", F_OK) !=-1){
+                            printf("Waitingtime file found by calc_CG_2DES. \n");
+                            WTime=fopen("Waitingtime.dat","r");
+                            wfile=1;
+                          }
+                          /* While loop over waiting times */
+                          while (wfile>-1){
+                            /* Read new waiting time */
+                            if (wfile==1){
+                              if (fscanf(WTime,"%s",&waittime)==1){
+                                printf("Doing 2DFFT for %s fs/n",waittime);
+                              } else {
+                                fclose(WTime);
+                                break;
+                              }
+                            } else {
+                              wfile=-1;
+                            }
+                          
+                          /* While loop over waiting times */
+                          /* Change the value of non->tmax2 to the wanted waiting time */
+                          CG_2DES_P_DA(non,P_DA,pro_dim);
+
+                          CG_full_2DES_segments(non,re_doorway,im_doorway,
+                                                    re_window_SE,im_window_SE,
+                                                    re_window_GB,im_window_GB,
+                                                    re_window_EA,im_window_EA,
+                                                    P_DA,pro_dim,waittime);
+                          }
+                        }
+    
+
 void calc_CG_2DES(t_non *non){
     float *re_doorway, *im_doorway; 
     float *re_window_SE, * im_window_SE;
@@ -75,11 +120,16 @@ void calc_CG_2DES(t_non *non){
       read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
       printf("Completed reading pre-calculated data.\n");
         }
-        CG_full_2DES_segments(non,re_doorway,im_doorway,
+        call_final_CG_2DES(non,P_DA,pro_dim,re_doorway,im_doorway,
+                              re_window_SE,im_window_SE,
+                              re_window_GB,im_window_GB,
+                              re_window_EA,im_window_EA,
+                              re_2DES, im_2DES);
+        /*CG_full_2DES_segments(non,re_doorway,im_doorway,
                               re_window_SE,im_window_SE,
                               re_window_GB, im_window_GB,
                               re_window_EA,im_window_EA,
-				  P_DA,pro_dim);
+				                      P_DA,pro_dim);*/
     }
     free(re_doorway),      free(im_doorway);
     free(re_window_SE),    free(im_window_SE);
@@ -88,6 +138,7 @@ void calc_CG_2DES(t_non *non){
     free(P_DA);
     return;
 }
+
 
 /* Frequently used indexing function */
 int CG_index(t_non *non,int seg_num,int alpha,int beta,int t1){
@@ -142,6 +193,7 @@ void CG_2DES_doorway(t_non *non,float *re_doorway,float *im_doorway){
   FILE *C_traj;
   FILE *outone,*log;
   FILE *Cfile;
+  FILE *WTime;
   /* Floats */
   float shift1;
 
@@ -351,6 +403,7 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
   float _Complex *P_DA_com;
   FILE *outone;
   FILE *Rate;
+  FILE *WTime;
   float factor;
   nt2 =non->tmax2;
   factor =  ( nt2 * non->deltat)/1000; /* The rate matrix is in ps-1 */
@@ -1113,9 +1166,9 @@ for (a=0;a<N;a++){
 /* Combine the doorway and window functions for the segments */
 void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                                       float *re_window_SE,float *im_window_SE,
-                                      float *re_window_GB, float *im_window_GB,
+                                      float *re_window_GB,float *im_window_GB,
                                       float *re_window_EA,float *im_window_EA,
-				                              float *P_DA,int N){
+				                              float *P_DA,int N,char *waittime){
 
   int t1,t2,t3;
   int S,R; // Segment indices
