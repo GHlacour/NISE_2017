@@ -42,6 +42,7 @@ void population(t_non *non){
   int Nsam;
   int counts;
   int a,b,c,d;
+  int cl,Ncl;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -62,6 +63,8 @@ void population(t_non *non){
   Pop=(float *)calloc(non->tmax,sizeof(float));
   PopF=(float *)calloc(non->tmax*non->singles*non->singles,sizeof(float));
   mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+  vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
+  veci=(float *)calloc(non->singles*non->singles,sizeof(float));
 
   /* Open Trajectory files */
   open_files(non,&H_traj,&mu_traj,&Cfile);
@@ -77,6 +80,8 @@ void population(t_non *non){
   itime=0;
   // Do calculation
   N_samples=(non->length-non->tmax1-1)/non->sample+1;
+  Ncl=0;
+
   if (N_samples>0) {
     printf("Making %d samples!\n",N_samples);
   } else {
@@ -140,10 +145,26 @@ void population(t_non *non){
 
   /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
-    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
-    veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+        /* If clusters are selectred open cluster information file */
+    if (non->cluster!=-1){
+      if (read_cluster(non,ti,&cl,Cfile)!=1){
+        printf("Cluster trajectory file to short, could not fill buffer!!!\n");
+        printf("ITIME %d\n",ti);
+        exit(1);
+      }
+      /* Configuration belong to cluster */
+      if (non->cluster==cl){
+        Ncl++;
+      }
+    }
+
+    /* Include snapshot if it is in the cluster or if no clusters are defined */
+    if (non->cluster==-1 || non->cluster==cl){
+
     /* Initialize */
-    for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
+    unitmat(vecr,non->singles);
+    clearvec(veci,non->singles*non->singles);
+    // for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
 
     ti=samples*non->sample;      
     for (t1=0;t1<non->tmax;t1++){
@@ -261,8 +282,21 @@ void population(t_non *non){
         }
       } */
     }
-
+    } /* Loop over possible Clusters */
+    /* Update Log file with time and sample numner */
+    log=fopen("NISE.log","a");
+    fprintf(log,"Finished sample %d\n",samples);
+    time_now=log_time(time_now,log);
+    fclose(log);
   }
+
+    /* Print information on number of realizations included belonging to the selected */
+  /* cluster and close the cluster file. (Only to be done if cluster option is active.) */
+  if (non->cluster!=-1){
+    printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
+    fclose(Cfile);
+  }
+
   /* Correct for when not starting at sample zero */
   samples=samples-non->begin;
   /* Write populations */
@@ -300,6 +334,7 @@ void population(t_non *non){
   free(Pop);
   free(PopF);
   free(mu_xyz);
+  free(vecr),free(veci);
   // The calculation is finished, lets write output
   log=fopen("NISE.log","a");
   fprintf(log,"Finished Calculating Population Transfer!\n");
