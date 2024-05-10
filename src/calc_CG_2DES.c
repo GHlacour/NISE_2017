@@ -67,7 +67,7 @@ void call_final_CG_2DES(t_non *non,float *P_DA,int pro_dim,
                                                     re_window_SE,im_window_SE,
                                                     re_window_GB,im_window_GB,
                                                     re_window_EA,im_window_EA,
-                                                    P_DA,pro_dim,waittime);
+                                                    P_DA,pro_dim,waittime,wfile);
                           }
                         }
     
@@ -1168,7 +1168,7 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                                       float *re_window_SE,float *im_window_SE,
                                       float *re_window_GB,float *im_window_GB,
                                       float *re_window_EA,float *im_window_EA,
-				                              float *P_DA,int N,char *waittime){
+				                              float *P_DA,int N,char *waittime, int wfile){
 
   int t1,t2,t3;
   int S,R; // Segment indices
@@ -1245,17 +1245,36 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
       }
   }
 
+  char WFileName[256];
 	/* Write response functions to file */
-  if (pol==0){
-          print2D("RparI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-          print2D("RparII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
-	} else if (pol==1) {
-	  print2D("RperI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-          print2D("RperII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
-	} else {
-	  print2D("RcroI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-          print2D("RcroII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
-	}
+  if (wfile==1){
+    if (pol==0){
+      sprintf(WFileName,"RparI_%sfs.dat",waittime);
+      print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RparII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    } else if (pol==1){
+      sprintf(WFileName,"RperI_%sfs.dat",waittime);
+      print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RperII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    } else{
+      sprintf(WFileName,"RcroI_%sfs.dat",waittime);
+      print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RcroII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    }
+  } else{
+    if (pol==0){
+      print2D("RparI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RparII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    } else if (pol==1){
+      print2D("RperI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RperII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    } else{
+      print2D("RcroI.dat", im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
+      print2D("RcroII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+    }
+  }
+
+
 	/* Loop over times to clean response functions */
         for (t1=0;t1<non->tmax1;t1++){
            for (t3=0;t3<non->tmax3;t3++){
