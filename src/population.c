@@ -15,7 +15,7 @@ void population(t_non *non){
   // Initialize variables
   float avall,flucall;
   float *Hamil_i_e,*H,*e,*Hamil_av;
-
+  float *Hamil_0;
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
   float *Pop,*PopF;
@@ -58,6 +58,7 @@ void population(t_non *non){
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
   Hamil_av=(float *)calloc(nn2,sizeof(float));
+  Hamil_0=(float *)calloc(nn2,sizeof(float));
   H=(float *)calloc(N*N,sizeof(float));
   e=(float *)calloc(N,sizeof(float));
   Pop=(float *)calloc(non->tmax,sizeof(float));
@@ -65,6 +66,12 @@ void population(t_non *non){
   mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
   vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
   veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+
+  if (string_in_array(non->basis,(char*[]){"Local","Average","Adiabatic"},3)){
+  } else {
+      printf("The chosen basis %s is not avaialble.\n",non->basis);
+      exit(0);
+  }  
 
   /* Open Trajectory files */
   open_files(non,&H_traj,&mu_traj,&Cfile);
@@ -124,23 +131,32 @@ void population(t_non *non){
     exit(0);
   }
 
-  // Find average basis
+  /* Find basis for average Hamiltonian if needed */
   if (!strcmp(non->basis,"Average")){
     for (samples=non->begin;samples<non->end;samples++){
       ti=samples*non->sample;
       /* Read Hamiltonian */
       read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
-
+    
       /* Find average */
       for (a=0;a<nn2;a++){
-        Hamil_av[a]+=Hamil_i_e[a];
+	if (samples==non->begin){
+            Hamil_0[a]=Hamil_i_e[a];
+	}
+        Hamil_av[a]+=Hamil_i_e[a]-Hamil_0[a];
       }
     }
     for (a=0;a<nn2;a++){
-      Hamil_av[a]=Hamil_av[a]/(samples-non->begin);
+      Hamil_av[a]=Hamil_0[a]+Hamil_av[a]/(samples-non->begin);
     }
     /* Diagonalize average Hamiltonian */
     build_diag_H(Hamil_av,H,e,non->singles);
+    /* Print eigenvalues to user */
+    printf("The eigenvalues of the average Hamiltonian are:\n");
+    for (a=0;a<non->singles;a++){
+       printf("%f ",e[a]+non->shifte);
+    }
+    printf("\n\n");
   }
 
   /* Loop over samples */
@@ -198,8 +214,8 @@ void population(t_non *non){
           for (b=0;b<non->singles;b++){
             /* Loop over sites */
             for (c=0;c<non->singles;c++){
-              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
-              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+              pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[a+c*non->singles];
+              pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[a+c*non->singles];
             }
           }
           Pop[t1]+=pr*pr+pi*pi;
@@ -214,8 +230,8 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
-                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
-                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+                pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[d+c*non->singles];
+                pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[d+c*non->singles];
               }
             }
             PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
@@ -230,8 +246,10 @@ void population(t_non *non){
           for (b=0;b<non->singles;b++){
             /* Loop over sites */
             for (c=0;c<non->singles;c++){
-              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
-              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+//              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
+ //             pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+	      pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[a+c*non->singles];
+              pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[a+c*non->singles];
             }
           }
           Pop[t1]+=pr*pr+pi*pi;
@@ -245,8 +263,10 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
-                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
-                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+//                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
+//                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+		pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[d+c*non->singles];
+                pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[d+c*non->singles];
               }
             }
             PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
@@ -329,6 +349,7 @@ void population(t_non *non){
 
   free(Hamil_i_e);
   free(Hamil_av);
+  free(Hamil_0);
   free(H);
   free(e);
   free(Pop);
