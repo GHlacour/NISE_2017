@@ -50,8 +50,8 @@ void call_final_CG_2DES(t_non *non,float *P_DA,int pro_dim,
                             /* Read new waiting time */
                             if (wfile==1){
                               if (fscanf(WTime,"%s",&waittime)==1){
-                                printf("Doing 2DFFT for %s fs/n",waittime);
-                                non->tmax2 = ceil(atof(waittime)/(non->deltat));
+                                printf("Calculating CG2DES for %s fs \n",waittime);
+                                non->tmax2 = floor(atof(waittime)/(non->deltat));
                               } else {
                                 fclose(WTime);
                                 break;
@@ -409,7 +409,7 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
   nt2 =non->tmax2;
   factor =  ( nt2 * non->deltat)/1000; /* The rate matrix is in ps-1 */
   sum_eig_im=0;
-  printf("Calculating population transfer matrix for t2 %f fs!\n",factor);
+  printf("Calculating population transfer matrix for t2 %f fs!\n",factor*1000);
   eigK_re = (float *)calloc(N,sizeof(float));
   eigK_im = (float *)calloc(N,sizeof(float));
   evecL = (float *)calloc(N*N,sizeof(float));
