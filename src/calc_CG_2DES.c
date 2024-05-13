@@ -51,6 +51,7 @@ void call_final_CG_2DES(t_non *non,float *P_DA,int pro_dim,
                             if (wfile==1){
                               if (fscanf(WTime,"%s",&waittime)==1){
                                 printf("Doing 2DFFT for %s fs/n",waittime);
+                                non->tmax2 = ceil(atof(waittime)/(non->deltat));
                               } else {
                                 fclose(WTime);
                                 break;
