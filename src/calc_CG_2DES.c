@@ -1252,15 +1252,18 @@ void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     if (pol==0){
       sprintf(WFileName,"RparI_%sfs.dat",waittime);
       print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-      print2D("RparII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+      sprintf(WFileName,"RparII_%sfs.dat",waittime);
+      print2D(WFileName,  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
     } else if (pol==1){
       sprintf(WFileName,"RperI_%sfs.dat",waittime);
       print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-      print2D("RperII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+      sprintf(WFileName,"RperII_%sfs.dat",waittime);
+      print2D(WFileName,  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
     } else{
       sprintf(WFileName,"RcroI_%sfs.dat",waittime);
       print2D(WFileName, im_2DES_R_sum,  re_2DES_R_sum,  non, sampleCount);
-      print2D("RcroII.dat",  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
+      sprintf(WFileName,"RcroII_%sfs.dat",waittime);
+      print2D(WFileName,  im_2DES_NR_sum, re_2DES_NR_sum, non, sampleCount);
     }
   } else{
     if (pol==0){
