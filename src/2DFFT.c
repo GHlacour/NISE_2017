@@ -257,7 +257,7 @@ int main(int argc,char *argv[]){
   }
   /* Loop over waiting times */
   while (wfile>-1){
-  /* Read new waiting time */	  
+	  /* Read new waiting time */	  
   if (wfile==1){
      if (fscanf(WTime,"%s",&waittime)==1){
      printf("Doing 2DFFT for %s fs\n",waittime);
@@ -268,6 +268,8 @@ int main(int argc,char *argv[]){
   } else {
      wfile=-1;
   }
+
+  shift1=0.5*(w.min1+w.max1),shift3=-0.5*(w.min3+w.max3);
 
   // Prepare 2DFFT
   fftIn = fftw_malloc(sizeof(fftw_complex) * (fft*fft));
