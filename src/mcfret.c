@@ -679,8 +679,10 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
           }
       }
   
+      /* Write the quantum corrected rate matrix. */
       write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
-      write_matrix_to_file("QC.dat",qc,segments);                              
+      // What is QC.dat?
+      // write_matrix_to_file("QC.dat",qc,segments);                              
       return;                                                                  
   }
 
@@ -1065,7 +1067,7 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
     /* Check for difference between initial and final value */
     if (fabs(rate_response[T-1])*50>rate_response[0]){
 	    printf("\n");
-            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100);
+            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100/fabs(rate_response[0]));
 	    printf("of the initial value. You may avearge over too\n");
 	    printf("few samples (decrease the value of Samplerate) or\n");
 	    printf("your chosen coherence time of %d steps, may\n",T);
