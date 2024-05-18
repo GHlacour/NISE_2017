@@ -681,8 +681,8 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
   
       /* Write the quantum corrected rate matrix. */
       write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
-      // What is QC.dat?
-      // write_matrix_to_file("QC.dat",qc,segments);                              
+      /* Write the applied quantum correction factors. */
+      write_matrix_to_file("QC.dat",qc,segments);                              
       return;                                                                  
   }
 
