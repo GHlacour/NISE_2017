@@ -560,10 +560,10 @@ void mcfret_validate(t_non *non);
 
 /* Find Eigenvalues and eigenvectors of rate matrix */
 void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *vl,float *vr,int segments,float *energy_cor){
-    char jobvl = 'V';  // Compute left eigenvectors
-    char jobvr = 'V';  // Compute right eigenvectors
-    int lwork = segments * segments;  // Work array size
-    float work[lwork];
+    //char jobvl = 'V';  // Compute left eigenvectors
+    //char jobvr = 'V';  // Compute right eigenvectors
+    //int lwork = segments * segments;  // Work array size
+    //float work[lwork];
     float *rate; /* Rate Matrix to be destroyed */
     int *degen; /* Degeneracies of segments */
     int info;
@@ -572,15 +572,20 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     float fmax;
     float popnorm;
     FILE *Efile;
+    float *ivr,*ivl;
 
     rate=(float *)calloc(segments*segments,sizeof(float));
     degen=(int *)calloc(segments,sizeof(int));
+    ivr=(float *)calloc(segments*segments,sizeof(float));
+    ivl=(float *)calloc(segments*segments,sizeof(float));
 
     copyvec(rate_matrix,rate,segments*segments);
 
+    diagonalize_real_nonsym(rate_matrix,re_e,im_e,vl,ivl,vr,ivr,segments);
+
     /* Call LAPACK function sgeev to compute eigenvalues and eigenvectors */
-    sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
-    free(rate);
+    //sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
+    //free(rate);
 
     /* Check for errors */
     if (info != 0) {
@@ -633,40 +638,53 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     fprintf(Efile,"# - Equilibrium Population\n");
     for (i=0;i<segments;i++){
         fprintf(Efile,"%d %f\n",i,vl[i+segments*imax]/popnorm);
-	energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
+	/* Skip adjusting quantum correction in the high-temperature limit */
+	if (non->temperature<100000){
+	    energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
+	}
     }
     fclose(Efile);
 
     write_matrix_to_file("LeftVectorRateMatrix.dat",vl,segments);
     write_matrix_to_file("RightVectorRateMatrix.dat",vr,segments);
     free(degen);
+    free(ivr);
+    free(ivl);
     return;
 }
 
 /* Analyse rate matrix */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
-    float *qc_rate_matrix;
-    float C;
-    int i,j;
-    float kBT=non->temperature*k_B; /* Kelvin to cm-1 */
-
-    qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-    /* Find quantum correction factors */
-    for (i=0;i<segments;i++){
-        for (j=0;j<segments;j++){
-            if (i!=j){
-	            /* Quantum correction factor from D.W. Oxtoby. */
-	            /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/
-	            C=2/(1+exp((E[i]-E[j])/kBT));
-	            qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
-	            qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
-            }
-        }
-    }
-
-    write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
-    return;
-}
+      float *qc_rate_matrix,*qc;
+      float C;
+      int i,j;
+      float kBT=non->temperature*k_B; /* Kelvin to cm-1 */                     
+  
+      qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+      qc=(float *)calloc(segments*segments,sizeof(float));                     
+      /* Find quantum correction factors */                                    
+      for (i=0;i<segments;i++){
+          for (j=0;j<segments;j++){                                            
+              if (i!=j){
+                      /* Quantum correction factor from D.W. Oxtoby. */
+                      /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
+                      C=2/(1+exp((E[i]-E[j])/kBT));                            
+                      qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
+                      qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
+                  qc[i*segments+j]=C;
+              }       
+              else{   
+                  qc[i*segments+j]=0;
+              }       
+          }
+      }
+  
+      /* Write the quantum corrected rate matrix. */
+      write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+      /* Write the applied quantum correction factors. */
+      write_matrix_to_file("QC.dat",qc,segments);                              
+      return;                                                                  
+  }
 
 /* Find the energy of each segment */
 void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *energy_cor){
@@ -1049,7 +1067,7 @@ void integrate_rate_response(float *rate_response,int T,float *is13,float *isimp
     /* Check for difference between initial and final value */
     if (fabs(rate_response[T-1])*50>rate_response[0]){
 	    printf("\n");
-            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100);
+            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100/fabs(rate_response[0]));
 	    printf("of the initial value. You may avearge over too\n");
 	    printf("few samples (decrease the value of Samplerate) or\n");
 	    printf("your chosen coherence time of %d steps, may\n",T);
