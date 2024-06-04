@@ -15,8 +15,6 @@
 #include "eq_den.h"
 #include <complex.h>
 
-
-
 /*Here we defined the equilibrium density operator*/
 void eq_den(float *Hamiltonian_i, float *rho_l, int N, t_non *non){
  

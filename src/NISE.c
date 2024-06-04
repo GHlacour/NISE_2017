@@ -29,6 +29,7 @@
 #include "correlate.h"
 #include <mpi.h>
 #include "omp.h"
+#include "1DFFT.h"
 
 
 
@@ -288,7 +289,8 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
      (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
      ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
-     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))) {
+     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))
+     ||  (!strcmp(non->technique, "CG_2DES_waitingtime")) ) {
         /* Does not support MPI */
         if (parentRank == 0)
             calc_CG_2DES(non);
@@ -296,6 +298,26 @@ int main(int argc, char* argv[]) {
 
     // Call the 2DFD calculation routine
     if (!strcmp(non->technique, "2DFD")) { }
+
+    // Call the 1DFT calculation routine
+    if (!strcmp(non->technique, "1DFFT")) {
+        // Does not support MPI
+        if (parentRank == 0) {
+		if (cpus>1) not_parallel();
+                ONE_DFFT(non);
+        }
+    }
+    // Call the lineshape funnction for absorption
+    if (!strcmp(non->technique, "Lineshape_FFT")) {
+        // Does not support MPI
+        if (parentRank == 0) {
+		if (cpus>1) not_parallel();
+                Lineshape_FFT(non);
+        }
+    }
+
+
+
 
     // Do Master wrap-up work
     if (parentRank == 0) {
