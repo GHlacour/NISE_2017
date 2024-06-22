@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "readinput.h"
+#include "NISE_subs.h"
 
 /* Read the input file */
 void readInput(int argc, char* argv[], t_non* non) {
@@ -197,11 +198,25 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->dt1 = 1, non->dt2 = 1, non->dt3 = 1;
     // Set length of linear response function
     non->tmax = non->tmax1;
-    /* Is the length large enough? */
-    if (non->length < non->tmax1 + non->tmax2 + non->tmax3) {
-        printf(RED "The trajectory length is too small!\n");
-        printf("It must be longer than %d snapshots.\n" RESET, non->tmax1 + non->tmax2 + non->tmax3);
-        exit(0);
+    /* Is the length large enough? First for waitingtime depending methods */
+    if (string_in_array(non->technique,(char*[]){"2DIR","GBIR","SEIR","EAIR",
+	"noEAIR","2DIRraman","2DIRraman1","2DIRraman2","2DIRraman3",
+	"2DIRramanI","2DIRramanII","2DSFG","GBSFG","SESFG","EASFG","noEASFG",
+	"2DUVvis","GBUVvis","SEUVvis","EAUVvis","noEAUVvis"},21)){
+	non->tmax3=non->tmax1; // Force coherence times to be identical
+        if (non->length < non->tmax1 + non->tmax2 + non->tmax3) {
+            printf(RED "The trajectory length is too small!\n");
+            printf("It must be longer than %d snapshots.\n" RESET,
+			    non->tmax1 + non->tmax2 + non->tmax3);
+            exit(0);
+	}
+    } else { // Now for methods only depending on one time
+	if (non->length < non->tmax1) {
+            printf(RED "The trajectory length is too small!\n");
+            printf("It must be considerably longer than %d snapshots.\n" RESET,
+                            non->tmax1);
+            exit(0);
+	}
     }
 
     // Check RunTimes keyword setting
@@ -216,7 +231,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     if (!strcmp(prop, "Coupling")) {
         non->propagation = 1;
         printf("\nUsing propagation scheme 'Coupling'!\n");
-        printf("Coupling cutoff %f effective during t1 and t3.\n\n",
+        printf("Coupling cutoff %f effective during t1, t2, and t3.\n\n",
                non->couplingcut);
     }
     if (!strcmp(prop, "Diagonal")) {
@@ -224,6 +239,12 @@ void readInput(int argc, char* argv[], t_non* non) {
         printf("\nUsing propagation with full diagonalization!\n\n");
         printf(RED "Presently NOT implemented. Use sparse with no cutoff!\n" RESET);
         exit(0);
+    }
+    if (!strcmp(prop, "RK4")) {
+        non->propagation = 3;
+        printf("\nUsing propagation scheme 'RK4' with coupling cut!\n");
+        printf("Coupling cutoff %f effective during t1, t2, and t3.\n\n",
+               non->couplingcut);
     }
 
     if (non->propagation == 0) {

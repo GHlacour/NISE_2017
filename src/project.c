@@ -32,7 +32,51 @@ void multi_projection(float *phi_in,float *phi_out,t_non *non,int ip){
     }
 }
 
-// Analyse projection input
+/*This subroutine will nullify all the excitonic couplings between different segments*/
+void multi_projection_Hamiltonian(float *Hamil_i_e, t_non *non){
+   /*Double loop: checking the couplings between the pairs of molecules */
+    int i;
+    int j;
+    for (i=0;i<non->singles;i++){
+        for (j=i+1;j<non->singles;j++){
+            if (non->psites[i] != non->psites[j]){
+               Hamil_i_e[Sindex(i,j,non->singles)]=0.0;
+            } 
+    	  }
+    }
+    return;
+}
+
+/*This subroutine will nullify all the excitonic couplings in the same segment */
+void multi_projection_Coupling(float *Hamil_i_e, t_non *non){
+   /*Double loop: checking the couplings between the pairs of molecules */
+    int i;
+    int j;
+    for (i=0;i<non->singles;i++){
+        for (j=i+1;j<non->singles;j++){
+            if (non->psites[i] == non->psites[j]){
+               Hamil_i_e[Sindex(i,j,non->singles)]=0.0;
+            } 
+    	  }
+    }
+    return;
+}
+
+/* This subroutine will nullify all the excitonic couplings between different segments */
+void zero_coupling(float *Hamil_i_e, t_non *non){
+   /* Defining a double loop because we are checking the couplings between the pairs of molecules */
+    int i,j;
+    for (i=0;i<non->singles;i++){
+        for (j=i+1;j<non->singles;j++){
+            if (non->psites[i]!=non->psites[j]){
+               Hamil_i_e[Sindex(i,j,non->singles)]=0;
+            }
+        }
+    }
+   return;
+}
+
+/* Analyse projection input */
 int project_dim(t_non* non){
    int N,i;
    int max;
@@ -54,11 +98,24 @@ int project_dim(t_non* non){
              max=non->psites[i];
       }
       }
-      printf("Identified %d projection segments\n",max+1);
+      //printf("Identified %d projection segments\n",max+1);
       return max+1;
    }
-printf(RED "Something went wrong in projection input analysis.\n");
+   printf(RED "Something went wrong in projection input analysis.\n");
    printf("You should not be able to end up here! Contact developers!\n" RESET);
    exit(0);
 }
 
+/* Find degeneracies of segments */
+void project_degeneracies(t_non* non,int *degen,int segments){
+    int i;
+    /* Clear array */
+    for (i=0;i<segments;i++){
+        degen[i]=0;
+    }
+    /* Count members of each segment */
+    for (i=0;i<non->singles;i++){
+	degen[non->psites[i]]++;
+    }
+    return;    
+}

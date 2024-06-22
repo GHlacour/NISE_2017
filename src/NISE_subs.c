@@ -30,6 +30,13 @@ void free2D(void** arr) {
     free(arr);
 }
 
+/* Inform user that they are trying to run code in parallel that is not parallelized */
+void not_parallel(){
+    printf(RED "This part of the code is not parallel!!!\n");
+    printf("You may waiste valuable computational resources.\n");
+    printf("Consider running in serial if possible.\n\n" RESET);
+}
+
 // Copy a vector
 void copyvec(float* a, float* b, int N) {
     int i;
@@ -38,6 +45,11 @@ void copyvec(float* a, float* b, int N) {
 
 // Set all elements of a vector to zero
 void clearvec(float* a, int N) {
+    int i;
+    for (i = 0; i < N; i++) a[i] = 0;
+}
+// Set all elements of a vector to zero
+void clearvec_double(double* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
 }
@@ -144,11 +156,11 @@ time_t log_time(time_t t0, FILE* log) {
 }
 
 /* Compare a string to an array of options */
-int compare_string(char* string_to_compare, char* string_array[], int array_size) {
+int string_in_array(char* string_to_compare, char* string_array[], int array_size) {
     for (int i = 0; i < array_size; i++) {
         if (!strcmp(string_to_compare, string_array[i])) {
             return i+1; // return the index of the matched string
-        }
+	    }
     }
     return 0; // if no match is found, return -1
 }
@@ -605,4 +617,87 @@ float pbc1(float r, int x, float *box){
      if (r<-box[x]/2) r=r+box[x];
   }
   return r;
+}
+
+// Diagonalize real nonsymmetric matrix. Output complex eigenvalues, left and right eigenvectors.
+void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+    int INFO, lwork;
+    float *work, *Kcopy;
+    int i, j;
+    int *pivot;
+    int M;
+
+    /* Diagonalization*/
+    /* Find lwork for diagonalization */
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    Kcopy = (float *)calloc(N * N, sizeof(float));
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            Kcopy[i * N + j] = K[i * N + j];
+        }
+    }
+    /* Do diagonalization*/
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    if (INFO != 0) {
+        printf("Something went wrong trying to diagonalize a matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work);
+
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            ivecL[i * N + j] = evecL[i * N + j];
+            ivecR[i * N + j] = evecR[i * N + j];
+        }
+    }
+
+    /* Inverse right eigenvectors*/
+    pivot = (int *)calloc(N,sizeof(int));
+    sgetrf_(&N, &N, ivecR, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgetri_(&N, ivecR, &N, pivot, work, &lwork, &INFO); //Find lwork for diagonalization
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    sgetri_(&N, ivecR, &N, pivot, work, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse right eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work), free(pivot);
+
+    /* Inverse left eigenvectors*/
+    pivot = (int *)calloc(N,sizeof(int));
+    sgetrf_(&N, &N, ivecL, &N, pivot, &INFO); //LU factorization
+    if (INFO != 0) {
+        printf("Something went wrong trying to factorize left eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgetri_(&N, ivecL, &N, pivot, work, &lwork, &INFO); // Find lwork for diagonalization
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    sgetri_(&N, ivecL, &N, pivot, work, &lwork, &INFO); //Do inversion
+    if (INFO != 0) {
+        printf("Something went wrong trying to inverse left eigenvector matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+
+    /* Free space */
+    free(Kcopy), free(work), free(pivot);
+    return;
 }

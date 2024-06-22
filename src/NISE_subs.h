@@ -4,8 +4,10 @@
 #include "lapack.h"
 void** calloc2D(size_t nRows, size_t nCols, size_t size, size_t sizeP);
 void free2D(void** arr);
+void not_parallel();
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
+void clearvec_double(double* a, int N);
 void unitmat(float *a,int N);
 void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N);
 void matrix_on_vector(float *c,float *vr,float *vi,int N);
@@ -13,7 +15,7 @@ void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
-int compare_string(char* string_to_compare, char* string_array[], int array_size);
+int string_in_array(char* string_to_compare, char* string_array[], int array_size);
 int determine_samples (t_non *non);
 char* time_diff(time_t t0, time_t t1);
 char* MPI_time(double t0);
@@ -42,6 +44,8 @@ float distance_x(float *rf,float *ri,int a,int b,int N,float box,int x);
 float distance3(float *rf,float *ri,int a,int b,int N,float *box);
 float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x);
 float pbc1(float r, int x, float *box);
+void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N);
+
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing

@@ -9,15 +9,17 @@
 #include "NISE_subs.h"
 #include "propagate.h"
 #include "population.h"
+#include "read_trajectory.h"
 
 void population(t_non *non){
   // Initialize variables
   float avall,flucall;
   float *Hamil_i_e,*H,*e,*Hamil_av;
-
+  float *Hamil_0;
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
   float *Pop,*PopF;
+  float *mu_xyz;
 
   /* Floats */
   float shift1;
@@ -26,7 +28,9 @@ void population(t_non *non){
 
   /* File handles */
   FILE *H_traj;
+  FILE *C_traj;
   FILE *outone,*log;
+  FILE *mu_traj,*Cfile;
 
   /* Integers */
   int nn2,N;
@@ -38,6 +42,7 @@ void population(t_non *non){
   int Nsam;
   int counts;
   int a,b,c,d;
+  int cl,Ncl;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -53,21 +58,37 @@ void population(t_non *non){
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
   Hamil_av=(float *)calloc(nn2,sizeof(float));
+  Hamil_0=(float *)calloc(nn2,sizeof(float));
   H=(float *)calloc(N*N,sizeof(float));
   e=(float *)calloc(N,sizeof(float));
   Pop=(float *)calloc(non->tmax,sizeof(float));
   PopF=(float *)calloc(non->tmax*non->singles*non->singles,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+  vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
+  veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+
+  if (string_in_array(non->basis,(char*[]){"Local","Average","Adiabatic"},3)){
+  } else {
+      printf("The chosen basis %s is not avaialble.\n",non->basis);
+      exit(0);
+  }  
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
+
+  /* Here we want to call the routine for checking the trajectory files */
+  /* before we start the calculation */   
+  control(non);
+
+  /* Read coupling, this is done if the coupling and transition-dipoles are */
+  /* time-independent and only one snapshot is stored */
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
   itime=0;
   // Do calculation
   N_samples=(non->length-non->tmax1-1)/non->sample+1;
+  Ncl=0;
+
   if (N_samples>0) {
     printf("Making %d samples!\n",N_samples);
   } else {
@@ -110,41 +131,63 @@ void population(t_non *non){
     exit(0);
   }
 
-  // Find average basis
+  /* Find basis for average Hamiltonian if needed */
   if (!strcmp(non->basis,"Average")){
     for (samples=non->begin;samples<non->end;samples++){
       ti=samples*non->sample;
       /* Read Hamiltonian */
-      if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+    
+      /* Find average */
       for (a=0;a<nn2;a++){
-        Hamil_av[a]+=Hamil_i_e[a];
+	if (samples==non->begin){
+            Hamil_0[a]=Hamil_i_e[a];
+	}
+        Hamil_av[a]+=Hamil_i_e[a]-Hamil_0[a];
       }
     }
     for (a=0;a<nn2;a++){
-      Hamil_av[a]=Hamil_av[a]/(samples-non->begin);
+      Hamil_av[a]=Hamil_0[a]+Hamil_av[a]/(samples-non->begin);
     }
     /* Diagonalize average Hamiltonian */
     build_diag_H(Hamil_av,H,e,non->singles);
+    /* Print eigenvalues to user */
+    printf("The eigenvalues of the average Hamiltonian are:\n");
+    for (a=0;a<non->singles;a++){
+       printf("%f ",e[a]+non->shifte);
+    }
+    printf("\n\n");
   }
 
   /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
-    vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
-    veci=(float *)calloc(non->singles*non->singles,sizeof(float));
+        /* If clusters are selectred open cluster information file */
+    if (non->cluster!=-1){
+      if (read_cluster(non,ti,&cl,Cfile)!=1){
+        printf("Cluster trajectory file to short, could not fill buffer!!!\n");
+        printf("ITIME %d\n",ti);
+        exit(1);
+      }
+      /* Configuration belong to cluster */
+      if (non->cluster==cl){
+        Ncl++;
+      }
+    }
+
+    /* Include snapshot if it is in the cluster or if no clusters are defined */
+    if (non->cluster==-1 || non->cluster==cl){
+
     /* Initialize */
-      for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
+    unitmat(vecr,non->singles);
+    clearvec(veci,non->singles*non->singles);
+    // for (a=0;a<non->singles;a++) vecr[a+a*non->singles]=1.0;
 
     ti=samples*non->sample;      
     for (t1=0;t1<non->tmax;t1++){
       tj=ti+t1;
       /* Read Hamiltonian */
-      if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+
       /* Calculate population evolution */
       if (!strcmp(non->basis,"Local")){ /* Local basis */
         for (a=0;a<non->singles;a++){
@@ -160,11 +203,9 @@ void population(t_non *non){
         }
       } else if (!strcmp(non->basis,"Adiabatic")) { /* Adiabatic eigen basis */
         /* Read Hamiltonian */
-        if (read_He(non,Hamil_i_e,H_traj,ti+t1)!=1){
-          printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-          exit(1);
-        }
-        build_diag_H(Hamil_i_e,H,e,non->singles);
+	read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+        
+	build_diag_H(Hamil_i_e,H,e,non->singles);
         /* Loop over final/initial adabatic states */
         for (a=0;a<non->singles;a++){
           pr=0;
@@ -173,8 +214,8 @@ void population(t_non *non){
           for (b=0;b<non->singles;b++){
             /* Loop over sites */
             for (c=0;c<non->singles;c++){
-              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
-              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+              pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[a+c*non->singles];
+              pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[a+c*non->singles];
             }
           }
           Pop[t1]+=pr*pr+pi*pi;
@@ -189,8 +230,8 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
-                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
-                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+                pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[d+c*non->singles];
+                pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[d+c*non->singles];
               }
             }
             PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
@@ -205,8 +246,10 @@ void population(t_non *non){
           for (b=0;b<non->singles;b++){
             /* Loop over sites */
             for (c=0;c<non->singles;c++){
-              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
-              pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+//              pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+a*non->singles];
+ //             pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+a*non->singles];
+	      pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[a+c*non->singles];
+              pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[a+c*non->singles];
             }
           }
           Pop[t1]+=pr*pr+pi*pi;
@@ -220,8 +263,10 @@ void population(t_non *non){
             for (c=0;c<non->singles;c++){
             /* Loop over sites */
               for (b=0;b<non->singles;b++){
-                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
-                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+//                pr+=H[b+a*non->singles]*vecr[b+c*non->singles]*H[c+d*non->singles];
+//                pi+=H[b+a*non->singles]*veci[b+c*non->singles]*H[c+d*non->singles];
+		pr+=H[a+b*non->singles]*vecr[b+c*non->singles]*H[d+c*non->singles];
+                pi+=H[a+b*non->singles]*veci[b+c*non->singles]*H[d+c*non->singles];
               }
             }
             PopF[t1+(non->singles*d+a)*non->tmax]+=pr*pr+pi*pi;
@@ -257,8 +302,21 @@ void population(t_non *non){
         }
       } */
     }
-
+    } /* Loop over possible Clusters */
+    /* Update Log file with time and sample numner */
+    log=fopen("NISE.log","a");
+    fprintf(log,"Finished sample %d\n",samples);
+    time_now=log_time(time_now,log);
+    fclose(log);
   }
+
+    /* Print information on number of realizations included belonging to the selected */
+  /* cluster and close the cluster file. (Only to be done if cluster option is active.) */
+  if (non->cluster!=-1){
+    printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
+    fclose(Cfile);
+  }
+
   /* Correct for when not starting at sample zero */
   samples=samples-non->begin;
   /* Write populations */
@@ -291,10 +349,13 @@ void population(t_non *non){
 
   free(Hamil_i_e);
   free(Hamil_av);
+  free(Hamil_0);
   free(H);
   free(e);
   free(Pop);
   free(PopF);
+  free(mu_xyz);
+  free(vecr),free(veci);
   // The calculation is finished, lets write output
   log=fopen("NISE.log","a");
   fprintf(log,"Finished Calculating Population Transfer!\n");
@@ -302,7 +363,7 @@ void population(t_non *non){
   fclose(log);
 
   fclose(H_traj);
- 
+  fclose(mu_traj); 
 
   printf("----------------------------------------------\n");
   printf(" Population calculation succesfully completed\n");

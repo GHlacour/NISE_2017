@@ -12,16 +12,14 @@
 
 // Function to calculate the mean of a signal
 void subtractMean(float* signal, int N) {
-    float sum = 0.0;
-    for (int i = 0; i < N; i++) {
-        sum += signal[i];
-    }
-    sum=sum/N;
+    float sum;
+    /* First subtract a reasonable guess from all numbers */
+    sum=(signal[0]+signal[N-1])/2.0;
     for (int i = 0; i < N; i++) {
         signal[i]-=sum;
     }
 
-    /* Repeat to remove errors for very long trajectories */
+    /* Subtract the proper average */
     sum=0.0;
     for (int i = 0; i < N; i++) {
         sum += signal[i];
@@ -154,6 +152,11 @@ void calc_Correlation(t_non *non){
                     c4_matrix[a*T+ti]=corr[ti]/TT;
                 }
             }
+	    /* Skip cross correlations if in autocorrelate mode */
+	    if (string_in_array(non->technique,
+                                    (char*[]){"Autocorrelation"},1)){
+                break;
+	    }
 	}
     }
 
@@ -162,8 +165,15 @@ void calc_Correlation(t_non *non){
     for (ti=0;ti<T;ti++){
         fprintf(outone,"%f ",ti*non->deltat);
 	/* Loop through pairs */
-        for (a=0;a<nn2;a++){
-            fprintf(outone,"%e ",corr_matrix[a*T+ti]);
+	for (a=0;a<N;a++){
+            for (b=a;b<N;b++){
+                fprintf(outone,"%e ",corr_matrix[Sindex(a,b,N)*T+ti]);
+		/* Skip cross correlations if in autocorrelate mode */
+                if (string_in_array(non->technique,
+                                    (char*[]){"Autocorrelation"},1)){
+                    break;
+                }
+	    }
 	}
         fprintf(outone,"\n");
     }

@@ -12,18 +12,27 @@
 #include "calc_DOS.h"
 #include "luminescence.h"
 #include "raman.h"
+#include "sfg.h"
 #include "calc_2DIR.h"
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
+#include "calc_CG_2DES.h"
+#include "eq_den.h"
 #include "analyse.h"
 #include "calc_CD.h"
 #include "calc_LD.h"
 #include "calc_Diffusion.h"
 #include "population.h"
 #include "anisotropy.h"
+#include "mcfret.h"
 #include "propagate.h"
 #include "correlate.h"
 #include <mpi.h>
+#include "omp.h"
+#include "1DFFT.h"
+
+
+
 
 /* This is the 2017 version of the NISE program
    It allow calculating linear absorption and 2D(IR) spectra
@@ -37,6 +46,7 @@
 int main(int argc, char* argv[]) {
     // Initialize MPI
     int parentRank, subRank, parentSize, subSize;
+    int thread_id,cpus;
     MPI_Comm subComm, rootComm;
 
     int threadingProvided = 0;
@@ -124,38 +134,58 @@ int main(int argc, char* argv[]) {
         MPI_Bcast(non->psites, non->singles, MPI_INT, 0, MPI_COMM_WORLD);
     }
 
+    /* Inform user of parallel info */
+    if (parentRank==0){
+       #pragma omp parallel private(thread_id) 
+       {
+           thread_id=omp_get_thread_num();
+           if (thread_id==0){
+	       printf("\n=== Parallel computing information ===");	   
+               printf("\nDetected %d openMP threads ",omp_get_num_threads());
+               printf("and %d MPI instances.\n\n",parentSize);
+	       cpus=omp_get_num_threads()*parentSize;
+           }
+       }
+    }
+
     // Delegate to different subroutines depending on the technique
 
     // Call the Hamiltonian Analysis routine
-    if (!strcmp(non->technique, "Analyse")) {
+    if (string_in_array(non->technique,(char*[]){"Analyse","Analyze"},2)){
         // Does not support MPI
         if (parentRank == 0)
             analyse(non);
     }
 
-    // Call the Hamiltonian Correlate routine
-    if (!strcmp(non->technique, "Correlation")) {
+    /* Call the Hamiltonian Correlate routine */
+    /* Correlation will calculate both frequency correlation functions and
+     * cross correlation functions, while Autocorrelation will only
+     * result in the calculation of autocorrelation functions, which
+     * may be much faster for large systems. */
+    if (string_in_array(non->technique,(char*[]){"Correlation","Autocorrelation"},2)){
         // Does not support MPI
-        if (parentRank == 0)
+        if (parentRank == 0){
+	    if (cpus>1) not_parallel();
             calc_Correlation(non);
+	}
     }
 
     // Call the Population Transfer routine
-    if (!strcmp(non->technique, "Pop")) {
+    if (string_in_array(non->technique,(char*[]){"Pop","Population"},2)){
         // Does not support MPI
         if (parentRank == 0)
             population(non);
     }
 
     // Call the Exciton Diffusion routine
-    if (!strcmp(non->technique, "Dif")) {
+    if (string_in_array(non->technique,(char*[]){"Dif","Diffusion"},2)){
         // Does not support MPI
         if (parentRank == 0)
             calc_Diffusion(non);
     }
 
     // Call the Anisotropy and Rotational Correlation routine
-    if (!strcmp(non->technique, "Ani")) {
+    if (string_in_array(non->technique,(char*[]){"Ani","Anisotropy"},2)){
         // Does not support MPI
         if (parentRank == 0)
             anisotropy(non);
@@ -165,21 +195,33 @@ int main(int argc, char* argv[]) {
     if (!strcmp(non->technique, "Absorption")) {
         // Does not support MPI
         if (parentRank == 0) {
+		if (cpus>1) not_parallel();
                 absorption(non);
         }
     }
 
-    // Call the Linear DOS Routine
+    /* Call the Linear DOS Routine */
     if (!strcmp(non->technique, "DOS")) {
-        // Does not support MPI
+        /* Does not support MPI */
         if (parentRank == 0) {
                 calc_DOS(non);
         }
     }
 
+    /* Call the MCFRET Routine */
+        if (string_in_array(non->technique,(char*[]){"MCFRET",
+	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
+	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
+	   "MCFRET-Density"},8)){
+        /* Does not support MPI */
+        if (parentRank == 0) {
+                mcfret(non);
+        }
+    }
+
     // Call the Luminescence Routine
-    if (compare_string(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
-    	    // Does not support MPI
+    if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
+        // Does not support MPI
         if (parentRank == 0)
             luminescence(non);
     }
@@ -187,8 +229,10 @@ int main(int argc, char* argv[]) {
     // Call the Linear Dichroism Routine
     if (!strcmp(non->technique, "LD")) {
         // Does not support MPI
-        if (parentRank == 0)
+        if (parentRank == 0){
+            if (cpus>1) not_parallel();
             LD(non);
+	}
     }
 
     // Call the Circular Dichroism Routine
@@ -198,45 +242,82 @@ int main(int argc, char* argv[]) {
             calc_CD(non);
     }
 
-    // Call the Raman Routine
+    /* Call the Raman Routine */
     if (!strcmp(non->technique, "Raman")) {
-        //Does not support MPI
-        if (parentRank == 0)
+        /* Does not support MPI */
+        if (parentRank == 0){
+            if (cpus>1) not_parallel();
             raman(non);
+	      }
      }
 
-    // Call the Sum Frequency Generation Routine
-    if (!strcmp(non->technique, "SFG")) { }
+    /* Call the Sum Frequency Generation Routine */
+    if (!strcmp(non->technique, "SFG")) {
+        //Does not support MPI
+        if (parentRank == 0){
+            if (cpus>1) not_parallel();
+            sfg(non);
+        }
+    }
 
     // Call the 2DIR calculation routine
-    if (!strcmp(non->technique, "2DIR") || (!strcmp(non->technique, "GBIR")) || (!strcmp(non->technique, "SEIR")) || (!
-        strcmp(non->technique, "EAIR")) || (!strcmp(non->technique, "noEAIR"))) {
-        // Does support MPI
+
+    if (string_in_array(non->technique,(char*[]){"2DIR","GBIR","SEIR","EAIR","noEAIR"},5)){
+	    // Does support MPI
         calc_2DIR(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
     // Call the 2DIRraman calculation routine
-    if (!strcmp(non->technique, "2DIRraman") || (!strcmp(non->technique, "2DIRraman1")) ||
-    (!strcmp(non->technique, "2DIRraman2"))||(!strcmp(non->technique, "2DIRraman3")) ||
-    (!strcmp(non->technique, "2DIRramanI"))||(!strcmp(non->technique, "2DIRramanII"))) {
+    if (string_in_array(non->technique,(char*[]){"2DIRraman","2DIRraman1","2DIRraman2","2DIRraman3","2DIRramanI","2DIRramanII"},6)){
         // Does support MPI
         calc_2DIRraman(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
     // Call the 2DSFG calculation routine
-    if (!strcmp(non->technique, "2DSFG") || (!strcmp(non->technique, "GBSFG")) || (!strcmp(non->technique, "SESFG")) ||
-        (!strcmp(non->technique, "EASFG")) || (!strcmp(non->technique, "noEASFG"))) { }
+    if (string_in_array(non->technique,(char*[]){"2DSFG","GBSFG","SESFG","EASFG","noEASFG"},5)){
+	printf("2DSFG is not yet implemented in NISE2017!");
+	exit(0);
+    }
 
     // Call the 2DUVvis calculation routine
-    if (!strcmp(non->technique, "2DUVvis") || (!strcmp(non->technique, "GBUVvis")) || (!
-        strcmp(non->technique, "SEUVvis")) || (!strcmp(non->technique, "EAUVvis")) || (!strcmp(
-        non->technique, "noEAUVvis"))) {
+    if (string_in_array(non->technique,(char*[]){"2DUVvis","GBUVvis","SEUVvis","EAUVvis","noEAUVvis"},5)){
         // Does support MPI
         calc_2DES(non,parentRank, parentSize, subRank, subSize, subComm, rootComm);
     }
 
+    /* Call the CG_2DES Routine */
+    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
+     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
+     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
+     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))
+     ||  (!strcmp(non->technique, "CG_2DES_waitingtime")) ) {
+        /* Does not support MPI */
+        if (parentRank == 0)
+            calc_CG_2DES(non);
+    }
+
     // Call the 2DFD calculation routine
     if (!strcmp(non->technique, "2DFD")) { }
+
+    // Call the 1DFT calculation routine
+    if (!strcmp(non->technique, "1DFFT")) {
+        // Does not support MPI
+        if (parentRank == 0) {
+		if (cpus>1) not_parallel();
+                ONE_DFFT(non);
+        }
+    }
+    // Call the lineshape funnction for absorption
+    if (!strcmp(non->technique, "Lineshape_FFT")) {
+        // Does not support MPI
+        if (parentRank == 0) {
+		if (cpus>1) not_parallel();
+                Lineshape_FFT(non);
+        }
+    }
+
+
+
 
     // Do Master wrap-up work
     if (parentRank == 0) {

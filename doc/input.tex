@@ -1,7 +1,7 @@
 \chapter{Program descriptions}
 This chapter contains the description of the various input parameters, file formats, and output files for the NISE code.
-%\section{Units}
-%The code use wavenumbers (cm$^{-1}$) for frequencies and times are in femtoseconds (fs). Users are discouraged from trying to use other units at this may lead to numerical instabilities or unit conversion errors. The transition dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly. However, for using the on-the-fly coupling calculations the transition dipoles should be provided in Debye and positions should be provided in \AA ngstr\"{o}m. 
+\section{Units}
+The code use wavenumbers (cm$^{-1}$) for frequencies and times are in femtoseconds (fs). Users are discouraged from trying to use other units at this may lead to numerical instabilities or unit conversion errors. The transition dipoles and transition polarizabilities may be given in any desired units. The final results will scale accordingly. However, for using the on-the-fly coupling calculations the transition dipoles should be provided in Debye and positions should be provided in \AA ngstr\"{o}m. 
 
 \section{Programs}
 The NISE package contains three major programs. These are:
@@ -65,7 +65,7 @@ format the double excited Hamiltonian might be provided afterwards again in a tr
 The dipole file has the following format.
 For each snapshot in the trajectory they contain first an integer typically containing the number of the snapshot. This integer is not used in the calculation, but can be used for control purposes.
 Then the x components of the transition dipole matrix are given in floats, followed by the y and z components. For the GROBIN format the transition dipole matrix for the single to double transitions may then be given, again with the x components given first. In Figure \ref{fig:filestructure} the format of the file is also illustrated.
-\begin{figure}[h!]
+\begin{figure}[!ht]
 \begin{center}
 \includegraphics[width=10cm]{file_structure.pdf}
 \end{center}
@@ -133,21 +133,22 @@ The NISE program use the following input:\\
 \item [Threshold][The threshold for the sparse matrix approximation, typical value 0.001]
 \item [Anharmonicity] [0 = anharmonicities from file used, all other values result in the use of a fixed anharmonicity with that value]
 \item [Singles] [Number of singly excited states]
-\item [Propagation] [Sparse/Coupling default is Sparse] (Coupling recommended for fast calculations)
-\item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme. From the 16/8-2022 version couplings below the cutoff are neglected when reading in the Hamiltonian or when it is constructed on the fly. NOTE that before this the approximation was NOT applied during t$_2$ for two-dimensional spectroscopic calculations and it was not used for the Analysis of the Hamiltonian.]
+\item [Propagation] [Sparse/Coupling/RK4 default is Sparse] (Coupling recommended for fast calculations)
+\item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme. \footnote{From the 16/8-2022 version couplings below the cutoff are neglected when reading in the Hamiltonian or when it is constructed on the fly. NOTE that before this the approximation was NOT applied during t$_2$ for two-dimensional spectroscopic calculations and it was not used for the Analysis of the Hamiltonian.}]
 \item [Trotter] [The number of trotter steps in the Paarmann approximation for double excited 
 states, 5 recommended for the Sparse propagation scheme, for the Coupling propagation scheme this is the general number of trotter steps the recommended value is then 1 ]
 \item [ImaginaryTimesteps] [The number of trotter steps in the imaginary time propagation for calculating the effect of the equilibrium density matrix, typically a value of 5 is sufficient. If the value is set to 0 exact matrix diagonalization is used. ]
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
 %\item [Static] [Minimum frequency] [Maximum frequency] [Bin size for 1D static spectrum]
-\item [Technique] [Absorption / DOS / Luminescence / CD / Raman / 2DIR / GBIR / SEIR / EAIR / noEAIR / 2DUVvis / GBUVvis / SEUVvis / EAUVvis / noEAUVvis / 2DIRraman / 2DIRramanI / 2DIRramanII / 2DIRraman1 / 2DIRraman2 / 2DIRraman3 / Pop / MCFRET / Dif / Ani / Analyse, these techniques are explained in Section \ref{chap:techniques}]
+\item [Technique] [Options include: Absorption / DOS / Luminescence / CD / Raman / 2DIR / 2DUVvis / 2DIRraman / Pop / MCFRET / Dif / Ani / Analyse, these techniques and additional options are explained in Section \ref{chap:techniques}]
 \item [FFT] [Number of points on each axis in 2DFFT, if bigger than max times zero padding is used. If left out no zeropadding is used (recommended).]
 %\item [Timevariables] [1/2/3 First time to Fourier transform, should be 1] [1/2/3 Second time to Fourier transform, should be 3]
 \item [Format] [Matlab/Dislin/Python/Gnuplot Different output formats for the 2D spectral files. For Matlab format rephasing and non-rephasing spectra are not added. The Matlab format refer to a format used by the Tokmakoff group. Dislin and Python are the same and the format used in the tutorials within the package. Gnuplot is suited for gnuplot and an example is given in the tutorial. Details are given in the section on Fourier transforms.] 
 \item [BeginPoint] [The number of the first sample calculated in this run]
 \item [EndPoint] [The number of the last sample calculated in this run, if this keyword is left out all samples will be included]
-\item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read Projectfile [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers. For MCFRET the project file is instead used to specify to which segment each site belongs. In this case the number of sites must be equal to the number of singles.)
+\item [Project] (Should be followed by either two new lines specifying the sites to project on directly in the file or one line specifying the filename of a file to read the site numbers from. In the first case the first line should read Sites [Number] identifying how many sites are included in the projection and the second line with a list of integer numbers identifying the sites included counting from zero. In the other case the following line should read \textbf{Projectfile} [Name], where the file named [Name] contain the number of sites on the first line and then a list of the site numbers. For MCFRET the project file is instead used to specify to which segment each site belongs. In this case the number of sites must be equal to the number of singles.)
+\item[Basis] [Site / Adiabatic / Average] The options for the basis to use in population transfer calculations. The standard option is the site basis.
 \item [PrintLevel] [0 / 1 / 2 ] (Default is 0, the higher number the more detailed (timing) info is given.)
 \end{description}
 
@@ -164,12 +165,12 @@ R'(t)=R(t)\exp\left(-t/2 t_{\textrm{homo}}-t^2/2 t_{\textrm{inhomo}}^2\right)
 \end{equation}
 for the linear techniques,
 \begin{equation}
-R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)\exp\left(-(t_1+t+3)/2 t_{\textrm{homo}}-(t_1-t_3)^2/2 t_{\textrm{inhomo}}^2\right)
+R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)\exp\left(-(t_1+t_3)/2 t_{\textrm{homo}}-(t_1-t_3)^2/2 t_{\textrm{inhomo}}^2\right)
 \end{equation}
 for rephasing signals and
 \begin{equation}
 R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)
-\exp\left(-(t_1+t+3)/2 t_{\textrm{homo}}-(t_1+t_3)^2/2 t_{\textrm{inhomo}}^2\right)
+\exp\left(-(t_1+t_3)/2 t_{\textrm{homo}}-(t_1+t_3)^2/2 t_{\textrm{inhomo}}^2\right)
 \end{equation}
 for non-rephasing signals. As default no apodization is performed. The apodizations are inactive when set to zero.  
 
@@ -247,6 +248,8 @@ of the manual is generated with this python script.
  For Matlab format only the Rw files are created. These
 then contain a matrix with the response. An additional file waxis.dat is created with the values of the
 frequencies.
+
+If a file called Waitingtimes.dat is present all the waiting times given in the file (in fs) will be calculated simultaneously arruming that the response function files are named RparI\_0fs.dat etc. The resulting frequency domain files will be named 2Dpar\_0fs.dat etc.
 
 For 2DIRraman the Fourier transformed response is written in files named\\ Rw(par/per/cro)IRraman.(I/II).dat, where par, per, and cro denote parallel, perpendicular and cross polarized signals. I and II denote the $k_I$ and $k_{II}$ contributions. When Dislin format is used the 2D correlation spectrum is saved in the files 2DIRraman.(par/per/cro).(I/II).dat and signal integrated over $\omega_1$ is stored in PPIRraman.(I/II).(par/per/cro).dat.                  
 The first column is $\omega_1$, the second is $\omega_3$, the third is the dispersive signal, and the last column is the absorptive signal. Note that 2DIRraman rephaing and non-rephasing signals cannot be added directly and are therefore stored separately. The non-rephasing $\omega_1$ frequencies are about twice that of the single excitation transition frequency as first coherence coresponds to a coherence between a double excited state and the ground state.
