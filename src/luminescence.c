@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "read_trajectory.h"
 #include "propagate.h"
 #include "absorption.h"
 #include "luminescence.h"
@@ -114,27 +115,7 @@ void luminescence(t_non *non){
 
 /* Read coupling, this is done if the coupling and transition-dipoles are *
  *    * time-independent and only one snapshot is stored */
-  if (!strcmp(non->hamiltonian,"Coupling")){
-    C_traj=fopen(non->couplingFName,"rb");
-    if (C_traj==NULL){
-      printf("Coupling file not found!\n");
-      exit(1);
-    }
-    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
-    }
-    fclose(C_traj);
-    /* Reading in single fixed transition dipole vector matrix */
-    for (x=0;x<3;x++){
-      if (read_mue(non,mu_xyz+non->singles*x,mu_traj,0,x)!=1){
-         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-         printf("ITIME %d %d\n",0,x);
-         exit(1);
-      }
-    }
-  }
-
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
   // Loop over samples
   for (samples=non->begin;samples<non->end;samples++){
@@ -168,28 +149,10 @@ void luminescence(t_non *non){
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
 	/* Read Hamiltonian */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-            if (read_Dia(non,Hamil_i_e,H_traj,tj)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-            }
-        } else {
-	    if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-	        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	        exit(1);
-           }
-	}
+        read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 	
         /* Read mu(tj) */
-        if (!strcmp(non->hamiltonian,"Coupling")){
-          copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
-        } else {
-	    if (read_mue(non,mu_eg,mu_traj,tj,x)!=1){
-	      printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	      printf("JTIME %d %d\n",tj,x);
-	      exit(1);
-	    }
-        }
+        read_dipole(non,mu_traj,mu_eg,mu_xyz,x,tj);
 
 	// Do projection on selected sites if asked
 	if (non->Npsites>0){
