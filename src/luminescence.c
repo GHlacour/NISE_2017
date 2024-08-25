@@ -149,7 +149,7 @@ void luminescence(t_non *non){
       for (t1=0;t1<non->tmax;t1++){
 	tj=ti+t1;
 	/* Read Hamiltonian */
-        read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+        read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
 	
         /* Read mu(tj) */
         read_dipole(non,mu_traj,mu_eg,mu_xyz,x,tj);

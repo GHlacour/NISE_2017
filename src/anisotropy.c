@@ -136,9 +136,9 @@ void anisotropy(t_non *non){
     for (t1=0;t1<non->tmax;t1++){
       tj=ti+t1;
       /* Read Hamiltonian */
-      read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
       
-      /* Read mu(ti) */      
+      /* Read mu(tj) */      
       for (x=0;x<3;x++){
           read_dipole(non,mu_traj,pos_f+x*non->singles,mu_xyz,x,tj);
       }
