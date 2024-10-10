@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
     // Delegate to different subroutines depending on the technique
 
     // Call the Hamiltonian Analysis routine
-    if (string_in_array(non->technique,(char*[]){"Analyse","Analyze"},2)){
+    if (string_in_array(non->technique,(char*[]){"Analyse","Analyze","AnalyseFull","AnalyzeFull"},4)){
         // Does not support MPI
         if (parentRank == 0)
             analyse(non);

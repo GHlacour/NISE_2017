@@ -30,7 +30,8 @@ void analyse(t_non *non){
   float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
   float *rho,*local_rho,*spec_rho,*rho2,*rho4;
-
+  float *mu_x, *mu_y,*mu_z;
+  float *dipeb;
   /* Aid arrays */
   float *vecr,*veci,*vecr_old,*veci_old;
 
@@ -207,7 +208,7 @@ void analyse(t_non *non){
       spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
       local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
       /* Call subroutines for finding varius density matrices */
-      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
+      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz, e, dipeb);
       calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
       counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
       /* Find Averages */
@@ -287,6 +288,19 @@ void analyse(t_non *non){
   }
   flucall/=(Nsam*non->singles);   
   flucall=sqrt(flucall);
+
+/* Write Exciton Energy & mu_x & mu_y & mu_z & mu^2 (dipeb) */
+  outone=fopen("AnalyseFull.dat","w");
+  if (outone==NULL){
+    printf("Problem encountered opening AnalyseFull.dat for writing.\n");
+    printf("Disk full or write protected?\n");
+    exit(1);
+  }
+  for (i=0;i<non->singles;i++){
+    fprintf(outone,"%f %f %f %f %f\n",e[i],mu_x[i],mu_y[i],mu_z[i],dipeb[i]);
+  }  
+  fprintf(outone,"\n");
+  fclose(outone);
 
   /* Write Average Hamiltonian in GROASC format */
   outone=fopen("Av_Hamiltonian.txt","w");
@@ -560,7 +574,7 @@ int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float 
 }  
 
 /* Find dipole magnitude for the eigenstates (mu squared) */
-void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz){
+void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz, float *e, float*dipeb){
   float *dip,*dipeb;
   int i,j,x,N;
 
