@@ -30,7 +30,7 @@ void analyse(t_non *non){
   float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
   float *rho,*local_rho,*spec_rho,*rho2,*rho4;
-  float *mu_x, *mu_y,*mu_z;
+  // float *mu_x, *mu_y,*mu_z;
   float *dipeb;
   /* Aid arrays */
   float *vecr,*veci,*vecr_old,*veci_old;
