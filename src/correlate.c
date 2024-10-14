@@ -141,7 +141,7 @@ void calc_Correlation(t_non *non){
         }
         if (a==b) {
           for (ti=0;ti<TT;ti++){
-            SD_matrix[a*TT+ti]=SD[ti];
+            SD_matrix[a*TT+ti]=SD[ti]/TT;
 	      }
         }
 	    /* Higher order correlations */
