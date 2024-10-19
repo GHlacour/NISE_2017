@@ -123,7 +123,6 @@ void calc_Correlation(t_non *non){
     c4_matrix=(float *)calloc(N*T,sizeof(float));
     Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
-    domega=1.0/non->deltat/icm2ifs/twoPi/TT;
     domega=1.0/non->deltat/icm2ifs/TT;
 
     /* Open Trajectory files */
