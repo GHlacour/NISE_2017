@@ -9,6 +9,7 @@
 #include "types.h"
 #include "NISE_subs.h"
 #include "read_trajectory.h"
+#include "correlate.h"
 
 // Function to calculate the mean of a signal
 void subtractMean(float* signal, int N) {
@@ -29,7 +30,6 @@ void subtractMean(float* signal, int N) {
         signal[i]-=sum;
     }
 }
-
 
 // Function to calculate correlation function using FFTW
 void calculateCorrelation(float *input1, float *input2, float *output, float *SD, int N) {
@@ -92,9 +92,12 @@ void calc_Correlation(t_non *non){
     float *corr;
     float *Hamil_i_e;
     float *SD,*SD_matrix;
+    float *lineshape_matrix_re,*lineshape_matrix_im;
     int TT,T,N,nn2;
     int a,b; /* Indices for chromophores */
     int ti;
+    float domega;
+    float re,im,tmp;
 
     /* File handles */
     FILE *H_traj,*mu_traj;
@@ -114,9 +117,14 @@ void calc_Correlation(t_non *non){
     SD=(float *)calloc(TT,sizeof(float));
     corr_matrix=(float *)calloc(nn2*T,sizeof(float));
     SD_matrix=(float *)calloc(N*TT,sizeof(float));
+    lineshape_matrix_re=(float *)calloc(N*T,sizeof(float));
+    lineshape_matrix_im=(float *)calloc(N*T,sizeof(float));
     c3_matrix=(float *)calloc(N*T,sizeof(float));
     c4_matrix=(float *)calloc(N*T,sizeof(float));
     Hamil_i_e=(float *)calloc(nn2,sizeof(float));
+
+    domega=1.0/non->deltat/icm2ifs/twoPi/TT;
+    domega=1.0/non->deltat/icm2ifs/TT;
 
     /* Open Trajectory files */
     open_files(non,&H_traj,&mu_traj,&Cfile);
@@ -137,13 +145,15 @@ void calc_Correlation(t_non *non){
 	    /* Store in matrix */
 	    for (ti=0;ti<T;ti++){
 		//printf("%f ",traj1[ti]);
-		  corr_matrix[Sindex(a,b,N)*T+ti]=corr[ti]/TT;
-        }
-        if (a==b) {
-          for (ti=0;ti<TT;ti++){
-            SD_matrix[a*TT+ti]=SD[ti]/TT;
+		    corr_matrix[Sindex(a,b,N)*T+ti]=corr[ti]/TT;
+      }
+      if (a==b) {
+        for (ti=0;ti<TT;ti++){
+          SD_matrix[a*TT+ti]=SD[ti]/TT;
 	      }
-        }
+        /* Generate lineshape function */
+        calc_Lineshape(non,SD,lineshape_matrix_re+T*a,lineshape_matrix_im+T*a,T,TT,domega);
+      }
 	    /* Higher order correlations */
 	    if (a==b){
           for (ti=0;ti<TT;ti++){
@@ -171,7 +181,7 @@ void calc_Correlation(t_non *non){
 	  }
     }
 
-    /* Save to file */
+    /* Save correlation function to file */
     outone=fopen("CorrelationMatrix.dat","w");
     for (ti=0;ti<T;ti++){
       fprintf(outone,"%f ",ti*non->deltat);
@@ -193,11 +203,45 @@ void calc_Correlation(t_non *non){
     /* Save Spectral Density to file */
     outone=fopen("SpectralDensity.dat","w");
     for (ti=0;ti<TT;ti++){
-      fprintf(outone,"%f ",ti/non->deltat/icm2ifs/twoPi/TT);
+      fprintf(outone,"%f ",ti*domega);
 	  /* Loop through pairs */
 	  for (a=0;a<N;a++){
         fprintf(outone,"%e ",SD_matrix[a*TT+ti]);
       }
+      fprintf(outone,"\n");
+    }
+    fclose(outone);
+
+    /* Save lineshape function to file */
+    outone=fopen("LineshapeMatrix.dat","w");
+    for (ti=0;ti<T;ti++){
+      fprintf(outone,"%f ",ti*non->deltat);
+	    /* Loop through sites */
+	    for (a=0;a<N;a++){
+        fprintf(outone,"%e ",lineshape_matrix_re[a*T+ti]);
+        fprintf(outone,"%e ",lineshape_matrix_im[a*T+ti]);
+	    }
+      fprintf(outone,"\n");
+    }
+    fclose(outone);
+
+    /* Save average exp -lineshape function to file */
+    outone=fopen("Av_ExpLineshape.dat","w");
+    for (ti=0;ti<T;ti++){
+      fprintf(outone,"%f ",ti*non->deltat);
+	    /* Loop through sites */
+      re=0,im=0;
+	    for (a=0;a<N;a++){
+        re=re+lineshape_matrix_re[a*T+ti];
+        im=im+lineshape_matrix_im[a*T+ti];
+      }
+      /* Find average and determine exp(-g(t)) */
+      tmp=exp(-re/N);
+      re=tmp*cos(im/N);
+      im=tmp*sin(im/N);
+      fprintf(outone,"%e ",re);
+      fprintf(outone,"%e ",im);
+	    
       fprintf(outone,"\n");
     }
     fclose(outone);
@@ -229,6 +273,45 @@ void calc_Correlation(t_non *non){
     free(traj1),free(traj2),free(traj3),free(corr),free(corr_matrix);
     free(SD_matrix);
     free(SD);
+    free(lineshape_matrix_re);
+    free(lineshape_matrix_im);
     free(c3_matrix),free(c4_matrix);
     free(Hamil_i_e);
+}
+
+/* Find lineshape function */
+/* by using the spectral density */
+/* J=beta*omega*C/pi */
+/* g=int_omega hbar J/omega**2[(1-cos(omega*t) coth(hbar omega beta/2)+i(sin(omega*t)-omega*t)]*/
+/* g=int_omega hbar beta C/(omega pi) [(1-cos(omega*t) coth(hbar omega beta/2)+i(sin(omega*t)-omega*t)] */
+
+/* Mukamel 8.25 */
+void calc_Lineshape(t_non *non,float *C,float *g_re,float *g_im,int T,int TT,float domega){
+  int i,j;
+  float fac_re;
+  float fac_im;
+  float dt;
+  float omega,x,beta;
+  
+  dt=non->deltat*icm2ifs * twoPi; /* Tinestep converted into units of cm-1 */
+  
+  beta=1.0/(k_B*non->temperature);
+  /* Do integral */
+  clearvec(g_re,T);
+  clearvec(g_im,T);
+  for (i=0;i<T;i++){
+    for (j=1;j<TT;j++){ /* Skip first point where omega is zero */
+      omega=j*domega;
+      x=beta*omega/2;
+      fac_re=beta*(1-cosf(omega*dt*i))*coshf(x)/sinhf(x)/omega;
+      fac_im=1.0/omega*(sinf(omega*dt*i)-omega*dt*i);
+      //fac_re=(1-cosf(omega*dt*i))*coshf(x)/sinhf(x)/omega/omega;
+      fac_re=(1-cosf(omega*dt*i))*coshf(x)/sinhf(x)/omega/omega;
+      fac_im=1.0/(omega*omega)*(sinf(omega*dt*i)-omega*dt*i);
+      g_re[i]=g_re[i]+C[j]*fac_re*domega*icm2ifs*beta*omega*twoPi*twoPi/4;
+      g_im[i]=g_im[i]+C[j]*fac_im*domega*icm2ifs*beta*omega*twoPi*twoPi/4;
+    }
+  }
+
+  return;
 }
