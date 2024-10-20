@@ -276,6 +276,10 @@ void calc_Correlation(t_non *non){
     free(lineshape_matrix_im);
     free(c3_matrix),free(c4_matrix);
     free(Hamil_i_e);
+
+    printf("-----------------------------------------------\n");
+    printf(" Correlation calculation succesfully completed\n");
+    printf("-----------------------------------------------\n\n");
 }
 
 /* Find lineshape function */

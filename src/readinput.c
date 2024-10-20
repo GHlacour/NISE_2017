@@ -59,7 +59,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     }
 
     control = 0;
-
+    printf("\nIdentified input parameters:\n");
     // Read input data
     do {
         pStatus = fgets(&Buffer[0], sizeof(Buffer), inputFile);
