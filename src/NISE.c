@@ -87,11 +87,13 @@ int main(int argc, char* argv[]) {
         time(&timeStart);
 
         /* Intro */
-        printf("----- ----- ----- ----- ----- -----\n");
-        printf("  Running the 23/8-2017 version of\n");
-        printf("              NISE3.1\n");
-        printf("    by Thomas la Cour Jansen.\n");
-        printf("----- ----- ----- ----- ----- -----\n");
+        printf("\n");
+        printf("----- ----- ----- ----- ----- ----- -----\n");
+        printf("                 NISE3.4\n");
+        printf("      by Thomas la Cour Jansen and\n");
+        printf("                co-workes.\n");
+        printf("    Running the %s Git version.\n",GIT_VERSION);
+        printf("----- ----- ----- ----- ----- ----- -----\n");
         printf("\n");
 
         // Read the input
