@@ -6,6 +6,10 @@ Feedback on the program and the manual are welcome via e-mail: t.l.c.jansen@rug.
 
 Hamiltonians for the NISE code can be created with the AIM program [22,23]. An external tutorial is available [24] and a YouTube video demonstration of the installation of the programme [25].
 
+## Official NISE developer team
+Computational Spectroscopy group of Thomas la Cour Jansen, University of Groningen\
+Group of Ana Cunha, University of Antwerp
+
 # References
 1. T. L. C. Jansen and J. Knoester. J. Phys. Chem. B, 110:22910–22916, (2006).
 2. T. L. C. Jansen and J. Knoester. Acc. Chem. Res., 42(9):1405–1411, (2009).
