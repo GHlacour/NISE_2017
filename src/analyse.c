@@ -30,7 +30,8 @@ void analyse(t_non *non){
   float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
   float *rho,*local_rho,*spec_rho,*rho2,*rho4;
-
+  // float *mu_x, *mu_y,*mu_z;
+  float *dipeb;
   /* Aid arrays */
   float *vecr,*veci,*vecr_old,*veci_old;
 
@@ -98,6 +99,17 @@ void analyse(t_non *non){
   if (mu_traj==NULL){
     printf("Dipole file %s not found!\n",non->dipoleFName);
     exit(1);
+  }
+
+  if (string_in_array(non->technique,(char*[]){"AnalyseFull","AnalyzeFull"},2)){
+    outone=fopen("ExcitonStats.dat","w");
+    if (outone==NULL){
+      printf("Problem encountered opening AnalyseFull.dat for writing.\n");
+      printf("Disk full or write protected?\n");
+      exit(1);
+    }
+    fprintf(outone,"# Exciton Energy & mu_x & my_y & mu_z & mu^2\n");
+    fclose(outone);
   }
 
   /* Open file with cluster information if appicable */
@@ -207,7 +219,7 @@ void analyse(t_non *non){
       spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
       local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
       /* Call subroutines for finding varius density matrices */
-      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
+      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz, e);
       calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
       counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
       /* Find Averages */
@@ -222,7 +234,8 @@ void analyse(t_non *non){
             average_coupling[i]+=Hamil_i_e[Sindex(i,j,N)];
           }
         }
-      }     
+      }
+
     }
   }
 
@@ -560,13 +573,14 @@ int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float 
 }  
 
 /* Find dipole magnitude for the eigenstates (mu squared) */
-void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz){
-  float *dip,*dipeb;
+void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz, float *e){
+  float *dip, *dipeb;
   int i,j,x,N;
+  FILE *outone;
 
   N=non->singles;
   dip=(float *)calloc(N,sizeof(float));
-  dipeb=(float *)calloc(N,sizeof(float));
+  dipeb=(float *)calloc(3*N,sizeof(float));
 
   /* Clear the dipole square vector */
   /* as values from previous frame are there */
@@ -586,16 +600,33 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,floa
     
     /* Transform to eigen basis */
     for (i=0;i<N;i++){
-      dipeb[i]=0;
+      dipeb[i+x*N]=0;
       for (j=0;j<N;j++){
-          dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
+          dipeb[i+x*N]+=H[i+j*N]*dip[j]; // i is eigen state, j site
       }
     }
     /* Add to exciton dipole square */
     for (i=0;i<N;i++){
-      dip2[i]+=dipeb[i]*dipeb[i];
+      dip2[i]+=dipeb[i+x*N]*dipeb[i+x*N];
     }
   }
+
+  /* Write Exciton Energy and dipole info to file */
+  if (string_in_array(non->technique,(char*[]){"AnalyseFull","AnalyzeFull"},2)){
+    outone=fopen("ExcitonStats.dat","a");
+    if (outone==NULL){
+      printf("Problem encountered opening AnalyseFull.dat for writing.\n");
+      printf("Disk full or write protected?\n");
+      exit(1);
+    }
+    for (i=0;i<non->singles;i++){
+      fprintf(outone,"%f %f %f %f %f\n",e[i]+non->shifte,dipeb[i],dipeb[i+N],dipeb[i+2*N],dip2[i]);
+    }  
+    //fprintf(outone,"\n");
+    fclose(outone);
+  }
+
+
   free(dip);
   free(dipeb);
   return;
