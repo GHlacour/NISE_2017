@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <mpi.h>
 #include "types.h"
 #include "types_MPI.h"
 #include "NISE_subs.h"
@@ -25,9 +26,9 @@
 #include "population.h"
 #include "anisotropy.h"
 #include "mcfret.h"
+#include "calc_Redfield.h"
 #include "propagate.h"
 #include "correlate.h"
-#include <mpi.h>
 #include "omp.h"
 #include "1DFFT.h"
 
@@ -211,7 +212,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Call the MCFRET Routine */
-        if (string_in_array(non->technique,(char*[]){"MCFRET",
+    if (string_in_array(non->technique,(char*[]){"MCFRET",
 	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
 	   "MCFRET-Density"},8)){
@@ -220,6 +221,14 @@ int main(int argc, char* argv[]) {
                 mcfret(non);
         }
     }
+
+    /* Call the Redfield Routine */
+    if (string_in_array(non->technique,(char*[]){"Redfield"},1)){
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Redfield(non);
+    }
+
 
     // Call the Luminescence Routine
     if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
