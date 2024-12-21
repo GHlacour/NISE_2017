@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
 	   "MCFRET-Density"},8)){
         /* Does not support MPI */
         if (parentRank == 0) {
-                mcfret(non);
+            mcfret(non);
         }
     }
 
