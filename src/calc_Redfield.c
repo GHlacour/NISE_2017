@@ -17,7 +17,6 @@ void calc_Redfield(t_non *non){
 
     float *SD_matrix;
     float *avHam;
-    float *RedfieldMat;
     float *omega;
     float dummy;
     float *c,*e;
@@ -33,7 +32,12 @@ void calc_Redfield(t_non *non){
 
     N=non->singles;
     TT=non->length;
-    sigma=10;
+    sigma=non->inhomogen;
+    if (sigma<=0) sigma=1;
+
+    printf("\n");
+    printf("The Spectral Density will be smoothened with a %f cm-1\n",sigma);
+    printf("wide gaussian function. Change with Inhomogeneous keyword.\n\n");
     
     /* Reserve Memory */
     SD_matrix=(float *)calloc(N*TT,sizeof(float));
@@ -93,12 +97,12 @@ void calc_Redfield(t_non *non){
                     product=c[i*N+k]*c[j*N+k]*c[i*N+k]*c[j*N+k];
                     /* Loop over positive frequencies */
                     for (l=0;l<TT;l++){
-                        cont=exp(-0.5*(fabs(deltaE)-omega[l])*(fabs(deltaE)-omega[l])/sigma/sigma)/sigma/sq2pi;
+                        cont=exp(-0.5*(deltaE-omega[l])*(deltaE-omega[l])/sigma/sigma)/sigma/sq2pi;
                         Redfield[i*N+j]+=cont*product*SD_matrix[k*TT+l];
                     }
                     /* Loop over negative frequencies */
                     for (l=1;l<TT;l++){
-                        cont=exp(-0.5*(fabs(deltaE)+omega[l])*(fabs(deltaE)+omega[l])/sigma/sigma)/sigma/sq2pi;
+                        cont=exp(-0.5*(deltaE+omega[l])*(deltaE+omega[l])/sigma/sigma)/sigma/sq2pi;
                         cont=cont*exp(omega[l]/non->temperature/k_B);
                         Redfield[i*N+j]+=cont*product*SD_matrix[k*TT+l];
                     }
@@ -112,7 +116,7 @@ void calc_Redfield(t_non *non){
         for (j=0;j<N;j++){
             if (i!=j){
                 Redfield[i*N+j]=Redfield[i*N+j]*icm2ifs*1000*twoPi*twoPi; // Where does the last 2pi come from?
-                Redfield[i*N+i]-=Redfield[i*N+j];
+                Redfield[j*N+j]-=Redfield[i*N+j];
             }
         }
     }
@@ -151,6 +155,12 @@ void calc_Redfield(t_non *non){
         fprintf(output,"\n");
     }
     fclose(output);
+
+    /*Free used memory */
+    free(SD_matrix),free(avHam),free(omega),free(c),free(e),free(Redfield);
+    printf("----------------------------------------------\n");
+    printf(" Redfield calculation succesfully completed\n");
+    printf("----------------------------------------------\n\n");
 
     return;
 }
