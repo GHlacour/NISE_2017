@@ -43,19 +43,41 @@ void calc_Redfield(t_non *non){
     Redfield=(float *)calloc(N*N,sizeof(float));
 
     /* Read in Spectral Density */
-    input=fopen("SpectralDensity.dat","r");
-    if (input==NULL){
-        printf("Problem opening SpectralDensity.dat file.\n");
-        printf("Did you run Technique Correlate?\n");
-        exit(1);
-    }    
-    for (i=0;i<TT;i++){
-        fscanf(input,"%f",&omega[i]);
-        for (j=0;j<N;j++){
-            fscanf(input,"%f",&SD_matrix[j*TT+i]);
-        }
+    input = fopen("SpectralDensity.dat", "r");
+    if (input == NULL) {
+       printf("Problem opening SpectralDensity.dat file.\n");
+       printf("Did you run Technique Correlate?\n");
+       exit(1);
     }
+
+    i = 0;
+    while (!feof(input)) {
+       int result = fscanf(input, "%f", &omega[i]);
+       if (result != 1) break;  // Break if we couldn't read a float
+
+       for (j = 0; j < N; j++) {
+          result = fscanf(input, "%f", &SD_matrix[j*TT + i]);
+          if (result != 1) {
+             printf("Unexpected end of file or format error\n");
+             printf("While reading SpectralDensity.dat.\n");
+             fclose(input);
+             exit(1);
+          }
+       }
+       i++;
+
+       if (i >= TT) {
+          printf("Warning: Maximum array size reached\n");
+          printf("Was a different trajectory length specified for the\n");
+          printf("Correlation and Redfield techniques?\n");
+          printf("Largest frequency read from SpectralDensity file\n");
+          printf("is %f cm-1.\n",omega[i-1]);
+          break;
+      }
+    }
+
     fclose(input);
+    
     domega=omega[1]-omega[0];
     printf("\nRead spectral density from the SpectralDensity.dat file.\n");
     printf("The frequency gap used is %f cm-1.\n",domega);
@@ -100,6 +122,11 @@ void calc_Redfield(t_non *non){
         for (j=0;j<N;j++){
             if (i!=j){
                 deltaE=e[i]-e[j];
+                if (deltaE>omega[(int)(TT/2)]) {
+                    printf("Energy gap larger than spectral density cutoff deteted!\n");
+                    printf("Please, veryfy that the spectral density is low enough for cutoff.\n");
+                    printf("Create a trajectory with smaller time intervals if needed.\n\n");
+                }
                 /* Loop over bath spectral density */
                 for (k=0;k<N;k++){
                     product=c[k*N+i]*c[k*N+j]*c[k*N+i]*c[k*N+j]; // i and j are eigenstates, k is site
