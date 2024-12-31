@@ -24,6 +24,7 @@ void calc_Redfield(t_non *non){
     float deltaE;
     float cont,product;
     float sigma;
+    float domega;
 
     int N; /* Number of chromophores */
     int TT; /* Total timesteps */
@@ -32,13 +33,7 @@ void calc_Redfield(t_non *non){
 
     N=non->singles;
     TT=non->length;
-    sigma=non->inhomogen;
-    if (sigma<=0) sigma=1;
 
-    printf("\n");
-    printf("The Spectral Density will be smoothened with a %f cm-1\n",sigma);
-    printf("wide gaussian function. Change with Inhomogeneous keyword.\n\n");
-    
     /* Reserve Memory */
     SD_matrix=(float *)calloc(N*TT,sizeof(float));
     omega=(float *)calloc(TT,sizeof(float));
@@ -61,7 +56,20 @@ void calc_Redfield(t_non *non){
         }
     }
     fclose(input);
-    
+    domega=omega[1]-omega[0];
+    printf("\nRead spectral density from the SpectralDensity.dat file.\n");
+    printf("The frequency gap used is %f cm-1.\n",domega);
+
+    sigma=non->inhomogen;
+    if (sigma<=0) sigma=domega*10;
+
+    printf("\n");
+    printf("The Spectral Density will be smoothened with a %f cm-1\n",sigma);
+    printf("wide Gaussian function. This can be changed with the Inhomogeneous keyword.\n\n");
+    if (sigma<5*domega){
+        printf("Using smoothning smaller or close to the resolution of the spectral density.\n");
+        printf("may result in inaccurate results. Please, consider a larger value!\n");
+    }
 
     /* Read in Average Hamiltonian */
     input=fopen("Av_Hamiltonian.txt","r");
@@ -94,7 +102,7 @@ void calc_Redfield(t_non *non){
                 deltaE=e[i]-e[j];
                 /* Loop over bath spectral density */
                 for (k=0;k<N;k++){
-                    product=c[i*N+k]*c[j*N+k]*c[i*N+k]*c[j*N+k];
+                    product=c[k*N+i]*c[k*N+j]*c[k*N+i]*c[k*N+j]; // i and j are eigenstates, k is site
                     /* Loop over positive frequencies */
                     for (l=0;l<TT;l++){
                         cont=exp(-0.5*(deltaE-omega[l])*(deltaE-omega[l])/sigma/sigma)/sigma/sq2pi;
@@ -132,7 +140,7 @@ void calc_Redfield(t_non *non){
     for (i=0;i<N;i++){
         //fprintf(output,"%f ",e[i]);
         for (j=0;j<N;j++){
-            fprintf(output,"%f ",Redfield[i*N+j]);
+            fprintf(output,"%f ",Redfield[i*N+j]); 
         }
         fprintf(output,"\n");
     }
@@ -150,7 +158,7 @@ void calc_Redfield(t_non *non){
     for (i=0;i<N;i++){
         fprintf(output,"%f ",e[i]);
         for (j=0;j<N;j++){
-            fprintf(output,"%f ",c[i*N+j]);
+            fprintf(output,"%f ",c[j*N+i]); // j runs over sites, i over eigenstates
         }
         fprintf(output,"\n");
     }
