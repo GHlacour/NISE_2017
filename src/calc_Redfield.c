@@ -11,6 +11,7 @@
 #include "propagate.h"
 #include "read_trajectory.h"
 
+/* This implementation follows the paper of Mino Yang and Graham Fleming, Chemical Physics 282 (2002) 163–180 Eq. 33 */
 void calc_Redfield(t_non *non){
     FILE *input;
     FILE *output;
@@ -121,8 +122,8 @@ void calc_Redfield(t_non *non){
     for (i=0;i<N;i++){
         for (j=0;j<N;j++){
             if (i!=j){
-                deltaE=e[i]-e[j];
-                if (deltaE>omega[(int)(TT/2)]) {
+                deltaE=e[j]-e[i];
+                if (fabs(deltaE)>omega[(int)(TT/2)]) {
                     printf("Energy gap larger than spectral density cutoff deteted!\n");
                     printf("Please, veryfy that the spectral density is low enough for cutoff.\n");
                     printf("Create a trajectory with smaller time intervals if needed.\n\n");
@@ -138,7 +139,8 @@ void calc_Redfield(t_non *non){
                     /* Loop over negative frequencies */
                     for (l=1;l<TT;l++){
                         cont=exp(-0.5*(deltaE+omega[l])*(deltaE+omega[l])/sigma/sigma)/sigma/sq2pi;
-                        cont=cont*exp(omega[l]/non->temperature/k_B);
+                        /* Suppression of upwards energy transfer */
+                        cont=cont*exp(-omega[l]/non->temperature/k_B);
                         Redfield[i*N+j]+=cont*product*SD_matrix[k*TT+l];
                     }
                 } 
