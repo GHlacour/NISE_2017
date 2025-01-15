@@ -16,7 +16,8 @@ add_executable(NISE
     anisotropy.h calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c
     analyse.h readinput.c readinput.h propagate.c propagate.h
     read_trajectory.c read_trajectory.h correlate.h correlate.c
-    project.c project.h types_MPI.h types_MPI.c mcfret.c mcfret.h 
+    project.c project.h types_MPI.h types_MPI.c mcfret.c mcfret.h
+    calc_Redfield.c calc_Redfield.h 
     sfg.c sfg.h calc_CG_2DES.c calc_CG_2DES.h eq_den.c eq_den.h   
     $<TARGET_OBJECTS:random_lib>
 )

@@ -32,7 +32,7 @@ void subtractMean(float* signal, int N) {
 }
 
 // Function to calculate correlation function using FFTW
-void calculateCorrelation(float *input1, float *input2, float *output, float *SD, int N) {
+void org_calculateCorrelation(float *input1, float *input2, float *output, float *SD, int N) {
     // Create FFTW plans
     fftwf_plan plan1, plan2, plan3;
 
@@ -72,6 +72,60 @@ void calculateCorrelation(float *input1, float *input2, float *output, float *SD
         output[i] *= normalization;
     }
 
+    // Free allocated memory and destroy FFTW plans
+    fftwf_destroy_plan(plan1);
+    fftwf_destroy_plan(plan2);
+    fftwf_destroy_plan(plan3);
+    fftwf_free(fft_input1);
+    fftwf_free(fft_input2);
+    fftwf_free(fft_output);
+}
+
+void calculateCorrelation(float *input1, float *input2, float *output, float *SD, int N) {
+    // Create FFTW plans
+    fftwf_plan plan1, plan2, plan3;
+    
+    // Allocate memory for FFTW input and output arrays
+    fftwf_complex *fft_input1 = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * (N/2 + 1));
+    fftwf_complex *fft_input2 = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * (N/2 + 1));
+    fftwf_complex *fft_output = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * (N/2 + 1));
+    
+    // Initialize FFTW plans
+    plan1 = fftwf_plan_dft_r2c_1d(N, input1, fft_input1, FFTW_ESTIMATE);
+    plan2 = fftwf_plan_dft_r2c_1d(N, input2, fft_input2, FFTW_ESTIMATE);
+    plan3 = fftwf_plan_dft_c2r_1d(N, fft_output, output, FFTW_ESTIMATE);
+    
+    // Execute FFT for input1 and input2
+    fftwf_execute(plan1);
+    fftwf_execute(plan2);
+    
+    // Calculate the complex conjugate multiplication and spectral density
+    // Only need to process N/2 + 1 elements due to conjugate symmetry
+    for (int i = 0; i <= N/2; i++) {
+        // Complex multiplication of fft_input1 and conjugate of fft_input2
+        fft_output[i][0] = (fft_input1[i][0] * fft_input2[i][0]) + (fft_input1[i][1] * fft_input2[i][1]);
+        fft_output[i][1] = (fft_input1[i][0] * (-fft_input2[i][1])) + (fft_input1[i][1] * fft_input2[i][0]);
+        
+        // Store real part in Spectral Density
+        // Note: For i=0 and i=N/2, the imaginary part should be zero
+        SD[i] = fft_output[i][0] / N;
+        
+        // Fill in the symmetric part of SD (except for i=0 and i=N/2)
+        if (i > 0 && i < N/2) {
+//            SD[N-i] = SD[i];
+            SD[N-i]=0; // Zero out symmetric part 
+        }
+    }
+    
+    // Execute inverse FFT to get the correlation function
+    fftwf_execute(plan3);
+    
+    // Normalize the correlation function
+    float normalization = 1.0 / N;
+    for (int i = 0; i < N; i++) {
+        output[i] *= normalization;
+    }
+    
     // Free allocated memory and destroy FFTW plans
     fftwf_destroy_plan(plan1);
     fftwf_destroy_plan(plan2);
@@ -148,7 +202,7 @@ void calc_Correlation(t_non *non){
       }
       if (a==b) {
         for (ti=0;ti<TT;ti++){
-          SD_matrix[a*TT+ti]=SD[ti]/TT;
+             SD_matrix[a*TT+ti]=SD[ti]/TT;
 	      }
         /* Generate lineshape function */
         calc_Lineshape(non,SD,lineshape_matrix_re+T*a,lineshape_matrix_im+T*a,T,TT,domega);
