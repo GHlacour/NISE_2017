@@ -123,7 +123,7 @@ void calc_Redfield(t_non *non){
 
     /* Calculate Redfield rates */
     for (i=0;i<N;i++){
-#pragma omp parallel for shared(warnings)
+#pragma omp parallel for shared(warnings) private(product,cont,deltaE)
         for (j=0;j<N;j++){
             if (i!=j){
                 deltaE=e[j]-e[i];
