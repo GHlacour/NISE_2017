@@ -31,9 +31,12 @@ void calc_Redfield(t_non *non){
     int TT; /* Total timesteps */
     int i,j,k,l;
     int segments;
+    int warnings;
 
     N=non->singles;
     TT=non->length;
+
+    warnings=0;
 
     /* Reserve Memory */
     SD_matrix=(float *)calloc(N*TT,sizeof(float));
@@ -120,13 +123,17 @@ void calc_Redfield(t_non *non){
 
     /* Calculate Redfield rates */
     for (i=0;i<N;i++){
+#pragma omp parallel for shared(warnings)
         for (j=0;j<N;j++){
             if (i!=j){
                 deltaE=e[j]-e[i];
                 if (fabs(deltaE)>omega[(int)(TT/2)]) {
-                    printf("Energy gap larger than spectral density cutoff deteted!\n");
-                    printf("Please, veryfy that the spectral density is low enough for cutoff.\n");
-                    printf("Create a trajectory with smaller time intervals if needed.\n\n");
+                    if (warnings==0){
+                        printf("Energy gap larger than spectral density cutoff deteted!\n");
+                        printf("Please, veryfy that the spectral density is low enough for cutoff.\n");
+                        printf("Create a trajectory with smaller time intervals if needed.\n\n");
+                    }
+                    warnings++;
                 }
                 /* Loop over bath spectral density */
                 for (k=0;k<N;k++){
@@ -146,7 +153,12 @@ void calc_Redfield(t_non *non){
                 } 
             }
         }
+        printf("Finished transfer from average eigenstate %d\n",i);
     }
+
+   if (warnings>0){
+       printf("There were %d instances of too large gap detected in total.\n\n",warnings);
+   } 
 
     /* Convert from cm-1 to ps and Set diagonal rates */
     for (i=0;i<N;i++){
