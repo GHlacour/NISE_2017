@@ -18,6 +18,7 @@
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
 #include "calc_CG_2DES.h"
+#include "calc_FD_CG_2DES.h"
 #include "eq_den.h"
 #include "analyse.h"
 #include "calc_CD.h"
@@ -305,6 +306,13 @@ int main(int argc, char* argv[]) {
         /* Does not support MPI */
         if (parentRank == 0)
             calc_CG_2DES(non);
+    }
+
+    /* Call the FD_CG_2DES Routine */
+    if (string_in_array(non->technique,(char*[]){"FD_CG_2DES"},1)){
+	/* Does not support MPI */
+	if (parentRank ==0)
+	    calc_FD_CG_2DES(non);
     }
 
     // Call the 2DFD calculation routine
