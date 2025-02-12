@@ -70,7 +70,7 @@ void calc_Redfield(t_non *non){
        }
        i++;
 
-       if (i >= TT) {
+       if (i > TT) {
           printf("Warning: Maximum array size reached\n");
           printf("Was a different trajectory length specified for the\n");
           printf("Correlation and Redfield techniques?\n");
