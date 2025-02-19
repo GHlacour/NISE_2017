@@ -344,4 +344,7 @@ ASALocalRun/
 healthchecksdb
 
 # Apple Specific Files
-.DS_Store
+**.DS_Store
+
+# Eliminated VSCode files
+**.json
