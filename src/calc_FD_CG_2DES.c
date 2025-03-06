@@ -67,16 +67,14 @@ void call_final_FD_CG_2DES(
 /* -=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-. */
 /* READ IN QUANTUM YIELDS FROM SEPARATE Q1 AND Q2 FILES */
 /* -=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-. */
-void read_in_QF_for_FD_CG_2DES(t_non *non, double *Q1, double *Q2){
+void read_in_QF_for_FD_CG_2DES(t_non *non, double *Q1, double *Q2, int segments){
     /* This function is used to read in the quantum yields Q1s
         and Q2s and make them available for further calculations*/
     /* Define variables for QFactors */
-    int segments;
     int f_states;
     int e_states;
     int g_states;
 
-    segments = project_dim(non);
     f_states = segments*(segments+1)/2;
     e_states = 2*segments;
     g_states = 3;
@@ -86,6 +84,7 @@ void read_in_QF_for_FD_CG_2DES(t_non *non, double *Q1, double *Q2){
     if (!Q1sFile) {
         fprintf(stderr, "File not found: Q1s.dat\n");
         return;
+        exit(0);
     }
     FILE *Q2sFile = fopen("Q2s.dat","r");
     if (!Q2sFile) {
@@ -147,8 +146,9 @@ void calc_FD_CG_2DES(t_non *non){
     Q1 = (double *)calloc(segments,sizeof(double));
     Q2 = (double *)calloc(f_states,sizeof(double));
 
+    printf("Reading in segments: %i \n", segments);
     printf("Reading in Quantum Yields from Q1s.dat Q2s.dat files.\n"); 
-    read_in_QF_for_FD_CG_2DES(non,Q1,Q2);
+    read_in_QF_for_FD_CG_2DES(non,Q1,Q2,segments);
 
     re_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
     im_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
@@ -228,6 +228,10 @@ void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     int RR,RW;
     float **re_2DES_NR_sum,  **re_2DES_R_sum, **im_2DES_NR_sum, **im_2DES_R_sum;
     float polWeight;
+    float factorWEA1;
+    float factorWEA2;
+    float factorR;
+    float factorRR;
 
     re_2DES_NR_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     re_2DES_R_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
@@ -253,73 +257,80 @@ void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
                 //indext1=S*9*non->tmax1+px[0]*3*non->tmax1+px[1]*non->tmax1+t1;
 		            indext1=CG_index(non,S,px[0],px[1],t1);
 		            indext2=R*N+S;
+                factorR=Q1[R]*polWeight*P_DA[indext2];
 	              //indext3=R*9*non->tmax3+px[2]*3*non->tmax3+px[3]*non->tmax3+t3;
 		            indext3=CG_index(non,R,px[2],px[3],t3);
-                RR=Sindex(R,R,N);
+                RR = Sindex(R, R, N); // R + R * ((N * 2) - R - 1) / 2; // Sindex(R, R, N);
+                
 		            /* Ground state bleach */
-                re_2DES_R_sum[t3][t1]-=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_NR_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
+                re_2DES_R_sum[t3][t1]-=factorR*re_doorway[indext1]*re_window_GB[indext3];
+                re_2DES_R_sum[t3][t1]+=factorR*im_doorway[indext1]*im_window_GB[indext3];
+                im_2DES_R_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_GB[indext3];
+                im_2DES_R_sum[t3][t1]+=factorR*im_doorway[indext1]*re_window_GB[indext3];
+                re_2DES_NR_sum[t3][t1]-=factorR*re_doorway[indext1]*re_window_GB[indext3];
+                re_2DES_NR_sum[t3][t1]-=factorR*im_doorway[indext1]*im_window_GB[indext3];
+                im_2DES_NR_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_GB[indext3];
+                im_2DES_NR_sum[t3][t1]-=factorR*im_doorway[indext1]*re_window_GB[indext3];
+                
 		            /* Stimulated Emission */
-                re_2DES_R_sum[t3][t1]-=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_SE[indext3];
-                re_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_SE[indext3];
-                im_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_SE[indext3];
-                im_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_SE[indext3];
-                re_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_SE[indext3];
-                re_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_SE[indext3];
-                im_2DES_NR_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_SE[indext3];
-                im_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_SE[indext3];
-	
+                re_2DES_R_sum[t3][t1]-=factorR*re_doorway[indext1]*re_window_SE[indext3];
+                re_2DES_R_sum[t3][t1]+=factorR*im_doorway[indext1]*im_window_SE[indext3];
+                im_2DES_R_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_SE[indext3];
+                im_2DES_R_sum[t3][t1]+=factorR*im_doorway[indext1]*re_window_SE[indext3];
+                re_2DES_NR_sum[t3][t1]-=factorR*re_doorway[indext1]*re_window_SE[indext3];
+                re_2DES_NR_sum[t3][t1]-=factorR*im_doorway[indext1]*im_window_SE[indext3];
+                im_2DES_NR_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_SE[indext3];
+                im_2DES_NR_sum[t3][t1]-=factorR*im_doorway[indext1]*re_window_SE[indext3];
+                
                 /* Excited State Absorption 1 */
-                re_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                re_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                im_2DES_R_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                im_2DES_R_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                re_2DES_NR_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                re_2DES_NR_sum[t3][t1]-=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                im_2DES_NR_sum[t3][t1]+=Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                im_2DES_NR_sum[t3][t1]+=Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
+                factorR=-factorR;
+                re_2DES_R_sum[t3][t1]+=factorR*re_doorway[indext1]*re_window_EA[indext3];
+                re_2DES_R_sum[t3][t1]+=factorR*im_doorway[indext1]*im_window_EA[indext3];
+                im_2DES_R_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_EA[indext3];
+                im_2DES_R_sum[t3][t1]-=factorR*im_doorway[indext1]*re_window_EA[indext3];
+                re_2DES_NR_sum[t3][t1]+=factorR*re_doorway[indext1]*re_window_EA[indext3];
+                re_2DES_NR_sum[t3][t1]-=factorR*im_doorway[indext1]*im_window_EA[indext3];
+                im_2DES_NR_sum[t3][t1]+=factorR*re_doorway[indext1]*im_window_EA[indext3];
+                im_2DES_NR_sum[t3][t1]+=factorR*im_doorway[indext1]*re_window_EA[indext3];
+
                 /* Excited State Absorption 2 */
                 /* like Ground state bleach */
-                re_2DES_R_sum[t3][t1]-=(-1)*Q2[RR]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_R_sum[t3][t1]+=(-1)*Q2[RR]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_R_sum[t3][t1]+=(-1)*Q2[RR]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_R_sum[t3][t1]+=(-1)*Q2[RR]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_NR_sum[t3][t1]-=(-1)*Q2[RR]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                re_2DES_NR_sum[t3][t1]-=(-1)*Q2[RR]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_NR_sum[t3][t1]+=(-1)*Q2[RR]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                im_2DES_NR_sum[t3][t1]-=(-1)*Q2[RR]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                printf("Calculating ESA2 for RR %s \n",RR);
+                  factorRR = Q2[RR]*polWeight*P_DA[indext2];
+                  re_2DES_R_sum[t3][t1]+=factorRR*re_doorway[indext1]*re_window_EA[indext3];
+                  re_2DES_R_sum[t3][t1]+=factorRR*im_doorway[indext1]*im_window_EA[indext3];
+                  im_2DES_R_sum[t3][t1]+=factorRR*re_doorway[indext1]*im_window_EA[indext3];
+                  im_2DES_R_sum[t3][t1]-=factorRR*im_doorway[indext1]*re_window_EA[indext3];
+                  re_2DES_NR_sum[t3][t1]+=factorRR*re_doorway[indext1]*re_window_EA[indext3];
+                  re_2DES_NR_sum[t3][t1]-=factorRR*im_doorway[indext1]*im_window_EA[indext3];
+                  im_2DES_NR_sum[t3][t1]+=factorRR*re_doorway[indext1]*im_window_EA[indext3];
+                  im_2DES_NR_sum[t3][t1]+=factorRR*im_doorway[indext1]*re_window_EA[indext3];
                 for (W=0; W<N; W++){
-                  if (W != R) {
-                    RW=Sindex(R,W,N);
+                  if (W != R) {                    
+                    RW = Sindex(R,W,N); //R + W * ((N * 2) - W - 1) / 2; //Sindex(R,W,21);
+                    factorWEA1=2*Q1[R]*polWeight*P_DA[indext2];
+                    indext3=CG_index(non,W,px[2],px[3],t3);
                     /* Excited State Absorption 1 */
-                    re_2DES_R_sum[t3][t1]+=2*Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                    re_2DES_R_sum[t3][t1]+=2*Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                    im_2DES_R_sum[t3][t1]+=2*Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                    im_2DES_R_sum[t3][t1]-=2*Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                    re_2DES_NR_sum[t3][t1]+=2*Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
-                    re_2DES_NR_sum[t3][t1]-=2*Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                    im_2DES_NR_sum[t3][t1]+=2*Q1[R]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_EA[indext3];
-                    im_2DES_NR_sum[t3][t1]+=2*Q1[R]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_EA[indext3];
+                    re_2DES_R_sum[t3][t1]-=factorWEA1*re_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_R_sum[t3][t1]+=factorWEA1*im_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_R_sum[t3][t1]+=factorWEA1*re_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_R_sum[t3][t1]+=factorWEA1*im_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_NR_sum[t3][t1]-=factorWEA1*re_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_NR_sum[t3][t1]-=factorWEA1*im_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_NR_sum[t3][t1]+=factorWEA1*re_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_NR_sum[t3][t1]-=factorWEA1*im_doorway[indext1]*re_window_GB[indext3];
                     /* Excited State Absorption 2 */
                     /* like Ground state bleach */
-                    re_2DES_R_sum[t3][t1]-=(-1)*Q2[RW]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                    re_2DES_R_sum[t3][t1]+=(-1)*Q2[RW]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                    im_2DES_R_sum[t3][t1]+=(-1)*Q2[RW]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                    im_2DES_R_sum[t3][t1]+=(-1)*Q2[RW]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                    re_2DES_NR_sum[t3][t1]-=(-1)*Q2[RW]*polWeight*re_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
-                    re_2DES_NR_sum[t3][t1]-=(-1)*Q2[RW]*polWeight*im_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                    im_2DES_NR_sum[t3][t1]+=(-1)*Q2[RW]*polWeight*re_doorway[indext1]*P_DA[indext2]*im_window_GB[indext3];
-                    im_2DES_NR_sum[t3][t1]-=(-1)*Q2[RW]*polWeight*im_doorway[indext1]*P_DA[indext2]*re_window_GB[indext3];
+                    factorWEA2=(-1)*Q2[RW]*polWeight*P_DA[indext2];
+                    re_2DES_R_sum[t3][t1]-=factorWEA2*re_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_R_sum[t3][t1]+=factorWEA2*im_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_R_sum[t3][t1]+=factorWEA2*re_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_R_sum[t3][t1]+=factorWEA2*im_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_NR_sum[t3][t1]-=factorWEA2*re_doorway[indext1]*re_window_GB[indext3];
+                    re_2DES_NR_sum[t3][t1]-=factorWEA2*im_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_NR_sum[t3][t1]+=factorWEA2*re_doorway[indext1]*im_window_GB[indext3];
+                    im_2DES_NR_sum[t3][t1]-=factorWEA2*im_doorway[indext1]*re_window_GB[indext3];
                   }
                 }
-
               }
             }
           }
