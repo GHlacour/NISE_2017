@@ -196,11 +196,6 @@ void calc_FD_CG_2DES(t_non *non){
                               re_window_GB,im_window_GB,
                               re_window_EA,im_window_EA,
                               re_2DES, im_2DES, Q1, Q2);
-        /*CG_full_2DES_segments(non,re_doorway,im_doorway,
-                              re_window_SE,im_window_SE,
-                              re_window_GB, im_window_GB,
-                              re_window_EA,im_window_EA,
-				                      P_DA,pro_dim);*/
     }
     
     free(re_doorway),      free(im_doorway);
@@ -212,9 +207,9 @@ void calc_FD_CG_2DES(t_non *non){
     return;
 }
 
-/* =================================================== */
-/* COMBINE DOORWAY AND WINDOW FUNCTION FOR CG SEGMENTS */
-/* =================================================== */
+/* ==================================================== */
+/* COMBINE DOORWAY AND WINDOW FUNCTIONS FOR CG SEGMENTS */
+/* ==================================================== */
 void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     float *re_window_SE,float *im_window_SE,float *re_window_GB, float *im_window_GB,
     float *re_window_EA,float *im_window_EA,float *P_DA,int N, char *waittime,int wfile,
@@ -239,7 +234,6 @@ void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     im_2DES_R_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     
     /* We repeat everyting for each waiting time t2 */
-    //for (t2=0;t2<non->tmax2;t2++){
     t2 = non->tmax2-1;
     /* We repeat everyting for each labframe polarization */
     for (pol=0;pol<3;pol++){
@@ -254,11 +248,9 @@ void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
             for (S=0; S<N; S++){
               for (R=0; R<N; R++){
                 /* First do GB */
-                //indext1=S*9*non->tmax1+px[0]*3*non->tmax1+px[1]*non->tmax1+t1;
 		            indext1=CG_index(non,S,px[0],px[1],t1);
 		            indext2=R*N+S;
                 factorR=Q1[R]*polWeight*P_DA[indext2];
-	              //indext3=R*9*non->tmax3+px[2]*3*non->tmax3+px[3]*non->tmax3+t3;
 		            indext3=CG_index(non,R,px[2],px[3],t3);
                 RR = Sindex(R, R, N); // R + R * ((N * 2) - R - 1) / 2; // Sindex(R, R, N);
                 
