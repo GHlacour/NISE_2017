@@ -18,7 +18,8 @@ add_executable(NISE
     read_trajectory.c read_trajectory.h correlate.h correlate.c
     project.c project.h types_MPI.h types_MPI.c mcfret.c mcfret.h
     calc_Redfield.c calc_Redfield.h 
-    sfg.c sfg.h calc_CG_2DES.c calc_CG_2DES.h eq_den.c eq_den.h   
+    sfg.c sfg.h calc_CG_2DES.c calc_CG_2DES.h eq_den.c eq_den.h
+    calc_FD_CG_2DES.c calc_FD_CG_2DES.h   
     $<TARGET_OBJECTS:random_lib>
 )
 
