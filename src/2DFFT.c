@@ -259,7 +259,7 @@ int main(int argc,char *argv[]){
   while (wfile>-1){
 	  /* Read new waiting time */	  
   if (wfile==1){
-     if (fscanf(WTime,"%s",&waittime)==1){
+     if (fscanf(WTime,"%s",waittime)==1){
      printf("Doing 2DFFT for %s fs\n",waittime);
      } else {
 	fclose(WTime);

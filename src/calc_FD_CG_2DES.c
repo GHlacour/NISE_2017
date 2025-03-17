@@ -12,7 +12,7 @@
 #include "types.h"
 #include "NISE_subs.h"
 #include "polar.h"
-#include "calc_CG_2DES.h"
+#include "CG_subs.h"
 #include "calc_FD_CG_2DES.h"
 #include <stdarg.h>
 #include "project.h"
@@ -46,7 +46,7 @@ void call_final_FD_CG_2DES(
     while (wfile>-1){
       /* Read new waiting time */
       if (wfile==1){
-        if (fscanf(WTime,"%s",&waittime)==1){ // Should this not be waittime instead of &waittime?
+        if (fscanf(WTime,"%s",waittime)==1){ // Should this not be waittime instead of &waittime?
           printf("Calculating FD-CG2DES for %s fs \n",waittime);
           non->tmax2 = floor(atof(waittime)/(non->deltat));
         } else {
@@ -57,7 +57,7 @@ void call_final_FD_CG_2DES(
         wfile=-1;
       }
       
-      CG_2DES_P_DA(non,P_DA,segments);
+      CG_P_DA(non,P_DA,segments);
       
       FD_CG_full_2DES_segments(non,re_doorway,im_doorway,re_window_SE,im_window_SE,
         re_window_GB,im_window_GB,re_window_EA,im_window_EA,P_DA,segments,waittime,wfile,Q1,Q2);
@@ -163,22 +163,22 @@ void calc_FD_CG_2DES(t_non *non){
     printf("Performing the FD_CG_2DES calculation.\n"); 
  
     if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_doorway"))) {
-        CG_2DES_doorway(non, re_doorway, im_doorway);
+        CG_doorway(non, re_doorway, im_doorway);
     }  
      if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_SE")) ) {
-        CG_2DES_window_SE(non, re_window_SE, im_window_SE); 
+        CG_window_SE(non, re_window_SE, im_window_SE); 
      } 
       if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_GB"))){
-        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
+        CG_window_GB(non, re_window_GB, im_window_GB); 
       }
   
       if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_EA"))){
-        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
+        CG_window_EA(non, re_window_EA, im_window_EA); 
       }
 
     /* Call the rate routine routine */
     if (!strcmp(non->technique, "FD_CG_2DES")||  (!strcmp(non->technique, "FD_CG_full_2DES_segments")) || (!strcmp(non->technique, "FD_CG_2DES_waitingtime"))){
-      CG_2DES_P_DA(non,P_DA,segments);
+      CG_P_DA(non,P_DA,segments);
         printf("Starting calculation of the 2DES with specific time delay\n");
         
         if ((!strcmp(non->technique, "FD_CG_2DES_waitingtime"))){
