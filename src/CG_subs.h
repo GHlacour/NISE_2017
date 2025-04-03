@@ -2,6 +2,7 @@
 #define _CG_subs_
 
 int CG_index(t_non *non,int seg_num,int alpha,int beta,int t1);
+void normalize_DW(t_non *non,float *re,float *im,int samples);
 void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax);
 void read_doorway_window_from_file(t_non *non,char fname[],float *im,float *re,int tmax);
 void CG_doorway(t_non *non,float *re_doorway,float *im_doorway);

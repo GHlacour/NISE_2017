@@ -299,21 +299,15 @@ int main(int argc, char* argv[]) {
 
     /* Call the CG_2DES Routine */
     if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_doorway","CG_2DES_window_GB","CG_2DES_window_SE","CG_2DES_window_EA",
-        "combine_CG_2DES","CG_2DES_waitingtime"},7)){
-//    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
-//     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
-//     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
-//     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))
-//     ||  (!strcmp(non->technique, "CG_2DES_waitingtime")) ) {
+        "CG_2DES_waitingtime"},6)){
         /* Does not support MPI */
         if (parentRank == 0)
             calc_CG_2DES(non);
     }
 
     /* Call the FD_CG_2DES Routine */
- //   if (string_in_array(non->technique,(char*[]){"FD_CG_2DES"},1)){
     if (string_in_array(non->technique,(char*[]){"FD_CG_2DES","FD_CG_2DES_doorway","FD_CG_2DES_window_GB","FD_CG_2DES_window_SE",
-            "FD_CG_2DES_window_EA","FD_combine_CG_2DES","FD_CG_2DES_waitingtime"},7)){    
+            "FD_CG_2DES_window_EA","FD_CG_2DES_waitingtime"},6)){    
 	/* Does not support MPI */
 	    if (parentRank ==0)
 	        calc_FD_CG_2DES(non);

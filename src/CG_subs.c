@@ -32,6 +32,19 @@
     return index;
 }
 
+/* Normalize response function with respect to the number of samples */
+void normalize_DW(t_non *non,float *re,float *im,int samples){
+  int MAX_NUMBERS,number;
+  int pro_dim;
+
+  pro_dim=project_dim(non);
+  MAX_NUMBERS = pro_dim*9*non->tmax;
+  for (number=0;number<MAX_NUMBERS;number++){
+    im[number]=im[number]/samples;
+    re[number]=re[number]/samples;
+  }
+}
+
 /* This function writed the final response (doorway/window) functions to file. The function below
    reads these files. */
 void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax){
@@ -254,6 +267,8 @@ void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax
       fclose(log);
     }
   
+    /* Normalize doorway/window function with respect to number of samples */
+    normalize_DW(non,im_doorway,re_doorway,samples);
     /* Save  the imaginary part for time domain response */
     write_response_to_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
     /* The calculation is finished we can close all auxillary arrays before
@@ -613,7 +628,9 @@ void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax
       time_now=log_time(time_now,log);
       fclose(log);
     }
-  
+
+    /* Normalize doorway/window function with respect to number of samples */
+    normalize_DW(non,im_window_SE,re_window_SE,samples);
     /* Save the time domain response */
     write_response_to_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1); 
     /* Close all auxillary arrays before writing */
@@ -800,6 +817,8 @@ void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax
       fclose(log);
     }
    
+    /* Normalize doorway/window function with respect to number of samples */
+    normalize_DW(non,im_window_GB,re_window_GB,samples);
     /* Save the time domain response */
     write_response_to_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1); 
     /* Close all auxillary arrays before writing */
@@ -1019,6 +1038,9 @@ void write_response_to_file(t_non *non,char fname[],float *im,float *re,int tmax
       time_now=log_time(time_now,log);
       fclose(log);
     }
+
+    /* Normalize doorway/window function with respect to number of samples */
+    normalize_DW(non,im_window_EA,re_window_EA,samples);
     /* Save  the imaginary part for time domain response */
     write_response_to_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
     /* Free all auxillary arrays */
