@@ -31,7 +31,7 @@ void calc_CG_2DES(t_non *non){
     float *re_window_SE, * im_window_SE;
     float *re_window_GB, * im_window_GB;
     float *re_window_EA, * im_window_EA;
-    float *re_2DES , *im_2DES;
+ 
     float *P_DA;
     int pro_dim,i;
     pro_dim=project_dim(non);
@@ -44,52 +44,44 @@ void calc_CG_2DES(t_non *non){
     im_window_GB = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
     re_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_window_EA = (float *)calloc(non->tmax*9*pro_dim,sizeof(float)); 
-    P_DA=(float *)calloc(pro_dim*pro_dim,sizeof(float));
     
     printf("Performing the CG_2DES calculation.\n"); 
 
-    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway"))) {
-        CG_doorway(non, re_doorway, im_doorway);
-      }  
-     if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ) {
-        CG_window_SE(non, re_window_SE, im_window_SE); 
-     } 
-      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_GB"))){
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_doorway"},2)){
+      CG_doorway(non, re_doorway, im_doorway);
+    }  
+    
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_window_SE"},2)){
+      CG_window_SE(non, re_window_SE, im_window_SE); 
+    } 
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_window_GB"},2)){
         CG_window_GB(non, re_window_GB, im_window_GB); 
-      }
-  
-      if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_window_EA"))){
-        CG_window_EA(non, re_window_EA, im_window_EA); 
-      }
+    }
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_window_EA"},2)){
+      CG_window_EA(non, re_window_EA, im_window_EA); 
+    }
+
     /* Call the rate routine routine */
-    if (!strcmp(non->technique, "CG_2DES")||  (!strcmp(non->technique, "CG_full_2DES_segments")) || (!strcmp(non->technique, "CG_2DES_waitingtime"))){
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_full_2DES_segments","CG_2DES_waitingtime"},3)){
       CG_P_DA(non,P_DA,pro_dim);
-        printf("Starting calculation of the 2DES with spcifical time delay\n");
-        if ((!strcmp(non->technique, "CG_2DES_waitingtime"))){
-            /* Read in absorption, emission and coupling from file if needed */
-	    printf("Calculating spectroscopy from precalculated doorway function, window function\n");
-	    read_doorway_window_from_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
-      read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
-      printf("Completed reading pre-calculated data.\n");
-        }
-        call_final_CG_2DES(non,P_DA,pro_dim,re_doorway,im_doorway,
-                              re_window_SE,im_window_SE,
-                              re_window_GB,im_window_GB,
-                              re_window_EA,im_window_EA,
-                              re_2DES, im_2DES);
-        /*CG_full_2DES_segments(non,re_doorway,im_doorway,
-                              re_window_SE,im_window_SE,
-                              re_window_GB, im_window_GB,
-                              re_window_EA,im_window_EA,
-				                      P_DA,pro_dim);*/
+      printf("Starting calculation of the 2DES with spcifical time delay\n");
+      if ((!strcmp(non->technique, "CG_2DES_waitingtime"))){
+        /* Read in absorption, emission and coupling from file if needed */
+	      printf("Calculating spectroscopy from precalculated doorway function, window function\n");
+	      read_doorway_window_from_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
+        read_doorway_window_from_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
+        read_doorway_window_from_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
+        read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
+        printf("Completed reading pre-calculated data.\n");
+      }
+
+      call_final_CG_2DES(non,pro_dim,re_doorway,im_doorway,re_window_SE,im_window_SE,
+                              re_window_GB,im_window_GB,re_window_EA,im_window_EA);       
     }
     free(re_doorway),      free(im_doorway);
     free(re_window_SE),    free(im_window_SE);
     free(re_window_GB),    free(im_window_GB);
     free(re_window_EA),    free(im_window_EA);  
-    free(P_DA);
     return;
 }
 
@@ -97,14 +89,17 @@ void calc_CG_2DES(t_non *non){
    It is called by the main routine after the reservation of memory for
    various variables. */
 void call_final_CG_2DES(
-  t_non *non,float *P_DA,int pro_dim,float *re_doorway,float *im_doorway,
+  t_non *non,int pro_dim,float *re_doorway,float *im_doorway,
   float *re_window_SE, float *im_window_SE,float *re_window_GB, float *im_window_GB,
-  float *re_window_EA, float *im_window_EA,float *re_2DES , float *im_2DES){
+  float *re_window_EA, float *im_window_EA){
 
   /* Define variables for multiple waiting time use */
   FILE *WTime;
   char waittime[16];
   int wfile;
+  float *P_DA;
+
+  P_DA=(float *)calloc(pro_dim*pro_dim,sizeof(float));
                           
   /* Check if Waitingtime.dat is defined */
   sprintf(waittime,"");
@@ -135,6 +130,7 @@ void call_final_CG_2DES(
     CG_full_2DES_segments(non,re_doorway,im_doorway,re_window_SE,im_window_SE,
       re_window_GB,im_window_GB,re_window_EA,im_window_EA,P_DA,pro_dim,waittime,wfile);
   }
+  free(P_DA);
 }
 
 
