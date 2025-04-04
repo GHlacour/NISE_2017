@@ -448,7 +448,7 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
   
   printf("The waiting time propagation successfully completed!\n");  
   return;
-};
+}
   
   /* Calcualte doorway function for stimulated emission */
   void CG_window_SE(t_non *non, float *re_window_SE, float *im_window_SE){
