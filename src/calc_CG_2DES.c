@@ -426,6 +426,8 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
   ivecL_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
   ivecR_com_inv = (float _Complex *)calloc(N * N, sizeof(float _Complex));
   P_DA_com = (float _Complex *)calloc(N * N, sizeof(float _Complex));
+
+  clearvec(P_DA,N*N);
   /* Open the rate matrix file */
   Rate=fopen("RateMatrix.dat","r");
   if (Rate==NULL){
