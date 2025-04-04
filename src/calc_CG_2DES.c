@@ -32,7 +32,6 @@ void calc_CG_2DES(t_non *non){
     float *re_window_GB, * im_window_GB;
     float *re_window_EA, * im_window_EA;
  
-    float *P_DA;
     int pro_dim,i;
     pro_dim=project_dim(non);
     
@@ -63,7 +62,6 @@ void calc_CG_2DES(t_non *non){
 
     /* Call the rate routine routine */
     if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_full_2DES_segments","CG_2DES_waitingtime"},3)){
-      CG_P_DA(non,P_DA,pro_dim);
       printf("Starting calculation of the 2DES with spcifical time delay\n");
       if ((!strcmp(non->technique, "CG_2DES_waitingtime"))){
         /* Read in absorption, emission and coupling from file if needed */
