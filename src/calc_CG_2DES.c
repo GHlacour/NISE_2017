@@ -34,7 +34,12 @@ void calc_CG_2DES(t_non *non){
  
     int pro_dim,i;
     pro_dim=project_dim(non);
-    
+    if (non->Npsites!=non->singles){
+      printf(RED "Please, assign all sites to segments for CG calculations.\n" RESET);
+      exit(1);
+    }
+
+    /* Allocate space for doorway and window functions */
     re_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     im_doorway   = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));
     re_window_SE = (float *)calloc(non->tmax*9*pro_dim,sizeof(float));

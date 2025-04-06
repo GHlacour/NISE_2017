@@ -43,6 +43,10 @@ void calc_FD_CG_2DES(t_non *non){
   float *re_window_EA, * im_window_EA;
   int i;
   segments = project_dim(non);
+  if (non->Npsites!=non->singles){
+    printf(RED "Please, assign all sites to segments for CG calculations.\n" RESET);
+    exit(1);
+  }
   f_states = segments*(segments+1)/2;
   e_states = 2*segments;
 
@@ -53,6 +57,7 @@ void calc_FD_CG_2DES(t_non *non){
   printf("Reading in Quantum Yields from Q1s.dat Q2s.dat files.\n"); 
   read_in_QF_for_FD_CG_2DES(non,Q1,Q2,segments);
 
+  /* Allocate space for doorway and window functions */
   re_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
   im_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
   re_window_SE = (float *)calloc(non->tmax*9*segments,sizeof(float));
