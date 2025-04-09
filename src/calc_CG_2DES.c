@@ -66,11 +66,11 @@ void calc_CG_2DES(t_non *non){
     }
 
     /* Call the rate routine routine */
-    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_full_2DES_segments","CG_2DES_waitingtime"},3)){
-      printf("Starting calculation of the 2DES with spcifical time delay\n");
-      if ((!strcmp(non->technique, "CG_2DES_waitingtime"))){
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_combine"},2)){
+      printf("Starting calculation of the 2DES with coarse graned routine.\n");
+      if ((!strcmp(non->technique, "CG_2DES_combine"))){
         /* Read in absorption, emission and coupling from file if needed */
-	      printf("Calculating spectroscopy from precalculated doorway function, window function\n");
+	      printf("Calculating spectroscopy from precalculated doorway function and window functions.\n");
 	      read_doorway_window_from_file(non,"doorway.dat",im_doorway,re_doorway,non->tmax1);
         read_doorway_window_from_file(non,"windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
         read_doorway_window_from_file(non,"windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
