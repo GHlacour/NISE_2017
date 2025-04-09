@@ -11,10 +11,14 @@ This inverse participation ratio (IPR) is expressed as:
 \begin{equation}
 	D_{IPR}=\left\langle\frac{1}{N}\sum_i\left(\sum_j |c_{ij}|^{4}\right)^{-1}\right\rangle.
 \end{equation}
+The Manhattan exciton size is calculated as \cite{Jansen.2025.J.Chem.Phys..162.074113}:
+\begin{equation}
+	D_{MES}=\left\langle\frac{1}{N}\sum_i\left(\sum_j |c_{ij}|\right)^{2}\right\rangle.
+\end{equation}
 In a file named \ilc{Analyse.dat} statistics is given for each site including.
 This include the average energy and the standard deviation.
 The average coupling strength (signed sum of all couplings of a given site with all other sites) and the standard deviation of this quantity.
-In a file named \ilc{Av\_Hamiltonian.txt} the average Hamiltonian is stored as a single snapshot in the GROASC format.
+In a file named \ilc{Av\_Hamiltonian.dat} the average Hamiltonian is stored as a single snapshot in the GROASC format.
 Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \ilk{MinFrequencies} and \ilk{MaxFrequencies}.
 This is done both with and without a weight determined by the contribution to the absorption spectrum as:
 \begin{equation}
@@ -95,7 +99,7 @@ This technique claculates the Redfield rate matrix (see Eq. 33 of Ref. \citenum{
 It requires the spectral density as calculated with the Autocorrelation technique and the average Hamiltonian, which can be obtained using the Analyse technique.
 The rate equation is then:
 \begin{equation}
-	k_{ij}=\sum_n=1 |c_in|^2|c_jn|^2 C_n(\omega_j-\omega_i),
+	k_{ij}=\sum_{n=1} |c_{in}|^2|c_{jn}|^2 C_n(\omega_j-\omega_i),
 \end{equation}
 For negative frequency differences (upward energy transfer) the spectral sensity is suppressed using the Boltzmann factor: $C_n(-omega)=\exp(-\omega/k_B T)C_n(\omega)$.
 Here, $\omega_j$ and $\omega_i$ are the eigen energies of the exciton states $i$ and $j$.
