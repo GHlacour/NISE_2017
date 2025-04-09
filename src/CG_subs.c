@@ -270,7 +270,7 @@ void CG_doorway(t_non *non,float *re_doorway,float *im_doorway){
   /* Normalize doorway/window function with respect to number of samples */
   normalize_DW(non,im_doorway,re_doorway,samples);
   /* Save  the imaginary part for time domain response */
-  write_response_to_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
+  write_response_to_file(non,"doorway.dat",im_doorway,re_doorway,non->tmax1);
   /* The calculation is finished we can close all auxillary arrays before
    * writing output to file. */
   free(vecr);
@@ -634,7 +634,7 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
     /* Normalize doorway/window function with respect to number of samples */
     normalize_DW(non,im_window_SE,re_window_SE,samples);
     /* Save the time domain response */
-    write_response_to_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1); 
+    write_response_to_file(non,"windows_SE.dat",im_window_SE,re_window_SE,non->tmax1); 
     /* Close all auxillary arrays before writing */
     /* output to file. */
     free(vecr);
@@ -822,7 +822,7 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
     /* Normalize doorway/window function with respect to number of samples */
     normalize_DW(non,im_window_GB,re_window_GB,samples);
     /* Save the time domain response */
-    write_response_to_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1); 
+    write_response_to_file(non,"windows_GB.dat",im_window_GB,re_window_GB,non->tmax1); 
     /* Close all auxillary arrays before writing */
     /* output to file. */
     free(vecr);
@@ -1044,7 +1044,7 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
     /* Normalize doorway/window function with respect to number of samples */
     normalize_DW(non,im_window_EA,re_window_EA,samples);
     /* Save  the imaginary part for time domain response */
-    write_response_to_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
+    write_response_to_file(non,"windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
     /* Free all auxillary arrays */
     free(mu_xyz);
     free(Hamil_i_e);

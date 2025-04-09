@@ -92,10 +92,10 @@ void calc_FD_CG_2DES(t_non *non){
       if ((!strcmp(non->technique, "FD_CG_2DES_waitingtime"))){
         /* Read in absorption, emission and coupling from file if needed */
         printf("Calculating spectroscopy from precalculated doorway function, window function\n");
-        read_doorway_window_from_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
-        read_doorway_window_from_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
-        read_doorway_window_from_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
-        read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
+        read_doorway_window_from_file(non,"doorway.dat",im_doorway,re_doorway,non->tmax1);
+        read_doorway_window_from_file(non,"windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
+        read_doorway_window_from_file(non,"windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
+        read_doorway_window_from_file(non,"windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
         printf("Completed reading pre-calculated data.\n");
       }
       
