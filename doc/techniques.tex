@@ -185,10 +185,13 @@ Furthermore, the sum of the ground state bleach and the stimulated emission can 
 
 \section{CG$\_$2DES (coarse-grained two-dimensional electronic spectroscopy)$^{+}$}
 This calculates the two-dimensional electronic spectra with the coarse-grained approach.\cite{Zhong.2024.J.Chem.TheoryComput..20.6111}
-This is especially efficient for large molecular systems that separate the system into different segments and calculate the 2DES based on the doorway-window function.
+This is especially efficient for large molecular systems that separate the system into different segments and calculate the 2DES based
+on the doorway-window function.
 The technique \ilo{CG$\_$2DES$\_$doorway} provides the doorway part of the CG-2DES results.
-The techniques \ilo{CG$\_$2DES$\_$window$\_$SE}, \ilo{CG$\_$2DES$\_$window$\_$GB}, and \ilo{CG$\_$2DES$\_$window$\_$EA} provide these window functions separately.
-The calculation time is independent of the delay time $t_2$.
+The techniques \ilo{CG$\_$2DES$\_$window$\_$SE}, \ilo{CG$\_$2DES$\_$window$\_$GB}, and \ilo{CG$\_$2DES$\_$window$\_$EA} provide these
+window functions separately. The calculation time is independent of the delay time $t_2$.
+\ilo{CG$\_$2DES$\_$combine} can be use to calculate the final spectra using precalculated doorway and window functions.
+
 The response functions governing this technique are provided in ref. \cite{Zhong.2024.J.Chem.TheoryComput..20.6111}.
 
 If a file called \ilc{Waitingtimes.dat} is present all the waiting times given in the file (in fs) will be calculated simultaneously and the response function files will be named \ilc{RparI\_0fs.dat} etc.
