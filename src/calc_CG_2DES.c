@@ -136,7 +136,6 @@ void call_final_CG_2DES(
   free(P_DA);
 }
 
-
 /* Combine the doorway and window functions for the segments */
 void CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
   float *re_window_SE,float *im_window_SE,float *re_window_GB,float *im_window_GB,
