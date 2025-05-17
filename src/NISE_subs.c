@@ -622,7 +622,7 @@ float pbc1(float r, int x, float *box){
 }
 
 // Diagonalize real nonsymmetric matrix. Output complex eigenvalues, left and right eigenvectors.
-void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+void old_diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
     int INFO, lwork;
     float *work, *Kcopy;
     int i, j;
@@ -701,5 +701,46 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
 
     /* Free space */
     free(Kcopy), free(work), free(pivot);
+    return;
+}
+
+// Diagonalize real nonsymmetric matrix. Output complex eigenvalues, left and right eigenvectors.
+void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N) {
+    int INFO, lwork;
+    float *work, *Kcopy;
+    int i, j;
+    int *pivot;
+    int M;
+    /* Diagonalization*/
+    /* Find lwork for diagonalization */
+    lwork = -1;
+    work = (float *)calloc(1, sizeof(float));
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    lwork = work[0];
+    free(work);
+    work = (float *)calloc(lwork, sizeof(float));
+    Kcopy = (float *)calloc(N * N, sizeof(float));
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            Kcopy[i * N + j] = K[i * N + j];
+        }
+    }
+
+    /* Do diagonalization*/
+    sgeev_("V", "V", &N, Kcopy, &N, eig_re, eig_im, evecL, &N, evecR, &N, work, &lwork, &INFO);
+    if (INFO != 0) {
+        printf("Something went wrong trying to diagonalize a matrix...\nExit code %d\n",INFO);
+        exit(0);
+    }
+    free(work);
+
+    /* Copy matrix */
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            ivecL[i * N + j] = evecL[i * N + j];
+            ivecR[i * N + j] = evecR[i * N + j];
+        }
+    }
     return;
 }
