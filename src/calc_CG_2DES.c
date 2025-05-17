@@ -446,7 +446,7 @@ void CG_2DES_P_DA(t_non *non,float *P_DA,int N){
   printf("\n\nCompleted reading the rate matrix.\n");
 
   /* Diagonalize K matrix */
-  cg_diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
+  diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);
   /* Check if the eigenvalues contain imaginary parts */
   for (int a = 0; a<N; a++) {
       sum_eig_im += fabs(eigK_im[a]);
