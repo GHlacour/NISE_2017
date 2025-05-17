@@ -99,12 +99,12 @@ void mcfret(t_non *non){
             printf("Completed reading pre-calculated data.\n");
         }
         mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
-    }
 
-    /* Write the calculated ratematrix to file */
-    write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
-    /* Write the calculated coherence matrix to file */
-    write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
+        /* Write the calculated ratematrix to file */
+        write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
+        /* Write the calculated coherence matrix to file */
+        write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
+    }
 
     /* Call the MCFRET Analyse routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Analyse"))){    
