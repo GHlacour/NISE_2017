@@ -16,6 +16,17 @@ endif()
 
 # Project definitions
 project(NISE VERSION 3.1 LANGUAGES C)
+# Run Git command to get the current commit hash (or other version details)
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Pass the Git version to the C code as a preprocessor macro
+add_definitions(-DGIT_VERSION=\"${GIT_VERSION}\")
+
 add_subdirectory("src")
 add_subdirectory("doc")
 add_subdirectory("example")

@@ -81,25 +81,33 @@ int project_dim(t_non* non){
    int N,i;
    int max;
    max=0;
+   /* No projection specified all is one segment */
    if (non->Npsites==0){
       return 1;
    }
+   /* Exactly one segment with Npsites is specified */
    if (non->Npsites<non->singles){
       return 1;
    }
+   /* All sites are distributed in segments */
    if (non->Npsites==non->singles){
       N=non->singles;
       for (i=0;i<non->singles;i++){
-      if (non->psites[i]>=N){
+        if (non->psites[i]>=N){
              printf(RED "More projection segments than number of sites not allowed\n" RESET);
-         exit(0);
-      }
-      if (non->psites[i]>max){
+             exit(0);
+        }
+        if (non->psites[i]>max){
              max=non->psites[i];
-      }
+        }
       }
       //printf("Identified %d projection segments\n",max+1);
       return max+1;
+   }
+   if (non->Npsites>non->singles){
+    printf(RED "More segments than sites was specified.\n");
+    printf("Please, specify as many segments as sites or less!\n" RESET);
+    exit(0);
    }
    printf(RED "Something went wrong in projection input analysis.\n");
    printf("You should not be able to end up here! Contact developers!\n" RESET);
@@ -115,7 +123,7 @@ void project_degeneracies(t_non* non,int *degen,int segments){
     }
     /* Count members of each segment */
     for (i=0;i<non->singles;i++){
-	degen[non->psites[i]]++;
+	    degen[non->psites[i]]++;
     }
     return;    
 }

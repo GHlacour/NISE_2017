@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <omp.h>
+//#include <omp.h>
 #include "types.h"
 #include "NISE_subs.h"
 #include "read_trajectory.h"

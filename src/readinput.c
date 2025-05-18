@@ -3,8 +3,8 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <fftw3.h>
-#include "omp.h"
+//#include <fftw3.h>
+//#include "omp.h"
 #include "types.h"
 #include "readinput.h"
 #include "NISE_subs.h"
@@ -59,7 +59,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     }
 
     control = 0;
-
+    printf("\nIdentified input parameters:\n");
     // Read input data
     do {
         pStatus = fgets(&Buffer[0], sizeof(Buffer), inputFile);

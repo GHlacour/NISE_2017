@@ -133,22 +133,27 @@ void population(t_non *non){
 
   /* Find basis for average Hamiltonian if needed */
   if (!strcmp(non->basis,"Average")){
-    for (samples=non->begin;samples<non->end;samples++){
-      ti=samples*non->sample;
+    /* We will average over every single snapshot in the range to get a more accurate result */
+    /* This should not be too expensive. */
+    for (samples=non->begin*non->sample;samples<non->end*non->sample;samples++){
+      ti=samples*1; // We will sample every timepoint along the trajectory
       /* Read Hamiltonian */
-      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+      read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
     
       /* Find average */
       for (a=0;a<nn2;a++){
-	if (samples==non->begin){
+	    if (samples==non->begin*non->sample){
             Hamil_0[a]=Hamil_i_e[a];
-	}
+	    }
         Hamil_av[a]+=Hamil_i_e[a]-Hamil_0[a];
       }
     }
     for (a=0;a<nn2;a++){
-      Hamil_av[a]=Hamil_0[a]+Hamil_av[a]/(samples-non->begin);
+      Hamil_av[a]=Hamil_0[a]+Hamil_av[a]/(samples-non->begin*non->sample);
+//      printf("%f ",Hamil_av[a]);
     }
+//    printf("\n");
+
     /* Diagonalize average Hamiltonian */
     build_diag_H(Hamil_av,H,e,non->singles);
     /* Print eigenvalues to user */

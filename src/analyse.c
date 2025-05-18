@@ -3,17 +3,20 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <fftw3.h>
-#include "omp.h"
+//#include <fftw3.h>
+//#include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
 #include "read_trajectory.h"
 #include "propagate.h"
 #include "analyse.h"
 
-
+/* This function calculates various properties of the exciton wavefunctions */
+/* Such as the delocalization length in specific spectral regions and */
+/* density matrices characterizing the exciton states. The average */
+/* Hamiltonian and correlations functions are also evaluated. */
 void analyse(t_non *non){
-  // Initialize variables
+  /* Initialize variables */
   float *average_frequency;
   float *average_coupling;
   float *average_H;
@@ -28,8 +31,9 @@ void analyse(t_non *non){
   float local_spectral_participation_ratio;
   float *cEig,*dip2,*cDOS;
   float *rho,*local_rho,*spec_rho,*rho2,*rho4;
-
-  // Aid arrays
+  // float *mu_x, *mu_y,*mu_z;
+  float *dipeb;
+  /* Aid arrays */
   float *vecr,*veci,*vecr_old,*veci_old;
 
   /* Floats */
@@ -64,7 +68,7 @@ void analyse(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
 
-  // Allocate memory
+  /* Allocate memory */
   N=non->singles;
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
@@ -96,6 +100,17 @@ void analyse(t_non *non){
   if (mu_traj==NULL){
     printf("Dipole file %s not found!\n",non->dipoleFName);
     exit(1);
+  }
+
+  if (string_in_array(non->technique,(char*[]){"AnalyseFull","AnalyzeFull"},2)){
+    outone=fopen("ExcitonStats.dat","w");
+    if (outone==NULL){
+      printf("Problem encountered opening AnalyseFull.dat for writing.\n");
+      printf("Disk full or write protected?\n");
+      exit(1);
+    }
+    fprintf(outone,"# Exciton Energy & mu_x & my_y & mu_z & mu^2\n");
+    fclose(outone);
   }
 
   /* Open file with cluster information if appicable */
@@ -135,7 +150,7 @@ void analyse(t_non *non){
   fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
   fclose(log);
 
-
+  /* Initialize the values of various parameters */
   participation_ratio=0;
   local_participation_ratio=0;
   spectral_participation_ratio=0;
@@ -159,21 +174,24 @@ void analyse(t_non *non){
         printf("ITIME %d\n",ti);
         exit(1);
       }
-      //      printf("%d\n",cl);
       // Configuration belong to cluster
       if (non->cluster==cl){
          Ncl++;
       }
     }
     if (non->cluster==-1 || non->cluster==cl){
+
     /* Read Hamiltonian */
       read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 
       build_diag_H(Hamil_i_e,H,e,N);
+
       participation_ratio+=calc_participation_ratio(N,H);
       local_participation_ratio+=calc_local_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
       spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
       local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
+
+      /* Call subroutines for finding varius density matrices */
       find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
       calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
       counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
@@ -193,6 +211,7 @@ void analyse(t_non *non){
     }
   }
   
+  /* Adjust number of calculated samples if clusters were used */
   if (Ncl>0) Nsam=Ncl;
   /* Normalize average_frequencies */
   for (i=0;i<non->singles;i++){
@@ -212,29 +231,29 @@ void analyse(t_non *non){
         printf("Cluster trajectory file to short, could not fill buffer!!!\n");
         printf("ITIME %d\n",ti);
         exit(1);
-      }
-      //      printf("%d\n",cl);
-      // Configuration belong to cluster
+      }      
     }
+
+    // Include frame if configuration belong to cluster or no clusters are used
     if (non->cluster==-1 || non->cluster==cl){
 
-    /* Read Hamiltonian */
-    read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+      /* Read Hamiltonian */
+      read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 
-    // Find standard deviation for frequencies
-    for (i=0;i<non->singles;i++){
-      x=(Hamil_i_e[Sindex(i,i,N)]-average_frequency[i]);
-      fluctuation[i]+=x*x;
-      x=(Hamil_i_e[Sindex(i,i,N)]-avall);
-      flucall+=x*x;
-      x=0;
-      for (j=0;j<non->singles;j++){
-        if (i!=j) x+=Hamil_i_e[Sindex(i,j,N)];
+      // Find standard deviation for frequencies
+      for (i=0;i<non->singles;i++){
+        x=(Hamil_i_e[Sindex(i,i,N)]-average_frequency[i]);
+        fluctuation[i]+=x*x;
+        x=(Hamil_i_e[Sindex(i,i,N)]-avall);
+        flucall+=x*x;
+        x=0;
+        for (j=0;j<non->singles;j++){
+          if (i!=j) x+=Hamil_i_e[Sindex(i,j,N)];
+        }
+        x=x-average_coupling[i];
+        Jfluctuation[i]+=x*x;
       }
-      x=x-average_coupling[i];
-      Jfluctuation[i]+=x*x;
     }
-  }
   }
   /* Normalize fluctuations and take square root */
   for (i=0;i<non->singles;i++){
@@ -247,7 +266,7 @@ void analyse(t_non *non){
   flucall=sqrt(flucall);
 
   /* Write Average Hamiltonian in GROASC format */
-  outone=fopen("Av_Hamiltonian.txt","w");
+  outone=fopen("Av_Hamiltonian.dat","w");
     if (outone==NULL){
     printf("Problem encountered opening Analyse.dat for writing.\n");
     printf("Disk full or write protected?\n");
@@ -270,6 +289,13 @@ void analyse(t_non *non){
     exit(1);
   }
 
+  if (counts==0){
+    printf(YELLOW "\nNo exciton states were found in the defined frequency range!\n");
+    printf("Range dependent properties will be zero in the output.\n\n" RESET);
+    counts=1;
+  }
+
+  /* Normalize delocalization parameters */
   participation_ratio/=(non->singles*Nsam);
   local_participation_ratio/=counts;
   spectral_participation_ratio/=(non->singles*Nsam);
@@ -297,7 +323,7 @@ void analyse(t_non *non){
   printf("===================================\n");
   printf("\n");
 
-  // Print output to file
+  /* Print output to file */
   fprintf(outone,"# Using frequency range %f to %f cm-1\n",non->min1,non->max1);
   fprintf(outone,"# Site AvFreq. SDFreq AvJ SDJ cEig cDOS\n");
   for (i=0;i<non->singles;i++){
@@ -311,8 +337,10 @@ void analyse(t_non *non){
     printf("Disk full or write protected?\n");
     exit(1);
   }
+
   normal=0; /* Normalize Density Matrix */
   for (i=0;i<non->singles;i++) normal+=local_rho[i+non->singles*i];
+  if (normal==0) normal=1; // No exciton states in range
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
       fprintf(outone,"%e ",local_rho[i+non->singles*j]/normal);
@@ -329,6 +357,7 @@ void analyse(t_non *non){
   }
   normal=0; /* Normalize Density Matrix */
   for (i=0;i<non->singles;i++) normal+=spec_rho[i+non->singles*i];
+  if (normal==0) normal=1; // No exciton states in range
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
       fprintf(outone,"%e ",spec_rho[i+non->singles*j]/normal);
@@ -343,8 +372,10 @@ void analyse(t_non *non){
     printf("Disk full or write protected?\n");
     exit(1);
   }
+
   normal=0; /* Normalize Density Matrix */
   for (i=0;i<non->singles;i++) normal+=rho2[i+non->singles*i];
+  if (normal==0) normal=1; // No exciton states in range
   for (i=0;i<non->singles;i++){
     for (j=0;j<non->singles;j++){
       rho2[i+non->singles*j]=rho2[i+non->singles*j]/normal;
@@ -377,7 +408,6 @@ void analyse(t_non *non){
   free(fluctuation);
   free(average_coupling);
   free(Jfluctuation);
-  // free(mu_eg);
   free(Hamil_i_e);
   free(mu_xyz);
   free(average_H);
@@ -392,17 +422,16 @@ void analyse(t_non *non){
   free(local_rho);
   free(spec_rho);
   
-  // The calculation is finished, lets write output
-  log=fopen("NISE.log","a");
-  fprintf(log,"Finished Calculating Response!\n");
-  fprintf(log,"Writing to file!\n");  
-  fclose(log);
-
   fclose(mu_traj),fclose(H_traj);
   if (non->cluster!=-1){
     fclose(Cfile);
   } 
- 
+
+  // The calculation is finished
+  log=fopen("NISE.log","a");
+  fprintf(log,"Finished Calculating Response!\n");
+  fprintf(log,"Writing to file!\n");  
+  fclose(log);
 
   printf("----------------------------------------------\n");
   printf(" Analyse calculation succesfully completed\n");
@@ -419,7 +448,7 @@ float calc_participation_ratio(int N,float *H){
   parti=0;
   for (i=0;i<N;i++){
     inter=0;
-    // Loop over sites
+    /* Loop over sites */
     for (j=0;j<N;j++){
       inter+=H[i+N*j]*H[i+N*j]*H[i+N*j]*H[i+N*j];
     }
@@ -437,7 +466,7 @@ float calc_local_participation_ratio(int N,float *H,float min,float max,float *e
   parti=0;
   for (i=0;i<N;i++){
     inter=0;
-    // Loop over sites
+    /* Loop over sites */
     if (e[i]>min-shift && e[i]<max-shift){
       for (j=0;j<N;j++){
           inter+=H[i+N*j]*H[i+N*j]*H[i+N*j]*H[i+N*j];
@@ -457,7 +486,7 @@ float calc_spectral_participation_ratio(int N,float *H){
   parti=0;
   for (i=0;i<N;i++){
     inter=0;
-    // Loop over sites
+    /* Loop over sites */
     for (j=0;j<N;j++){
       inter+=fabs(H[i+N*j]);
     }
@@ -475,7 +504,7 @@ float calc_local_spectral_participation_ratio(int N,float *H,float min,float max
   parti=0;
   for (i=0;i<N;i++){
     inter=0;
-    // Loop over sites
+    /* Loop over sites */
     if (e[i]>min-shift && e[i]<max-shift){
       for (j=0;j<N;j++){
           inter+=fabs(H[i+N*j]);
@@ -487,51 +516,74 @@ float calc_local_spectral_participation_ratio(int N,float *H,float min,float max
   return parti;
 }
 
+/* The subroutine determine the spectrally weighted and normal weigth */
+/* of the sites to the eigenstates in the given spectral range. */
 int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float min,float max,int counts,float shift){
   int i,j;
   
-  // Loop over eigenstates
+  /* Loop over eigenstates */
   for (i=0;i<N;i++){
-    // Only for eigenstates in given range
+    /* Only for eigenstates in given range */
     if (e[i]>min-shift && e[i]<max-shift){
       counts++;
-      // Loop over sites
+      /* Loop over sites */
       for (j=0;j<N;j++){
-	cEig[j]+=dip2[i]*H[i+N*j]*H[i+N*j];
-	cDOS[j]+=H[i+N*j]*H[i+N*j];
+	      cEig[j]+=dip2[i]*H[i+N*j]*H[i+N*j];
+	      cDOS[j]+=H[i+N*j]*H[i+N*j];
       }
     }
   }
   return counts;
 }  
 
-// Find dipole magnitude
-void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz){
-  float *dip,*dipeb;
+/* Find dipole magnitude for the eigenstates (mu squared) */
+void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz, float *e){
+  float *dip, *dipeb;
   int i,j,x,N;
+  FILE *outone;
 
   N=non->singles;
   dip=(float *)calloc(N,sizeof(float));
-  dipeb=(float *)calloc(N,sizeof(float));
+  dipeb=(float *)calloc(3*N,sizeof(float));
 
-  for (i=0;i<N;i++){
-    dip2[i]=0;
-  }
+  /* Clear the dipole square vector */
+  /* as values from previous frame are there */
+  clearvec(dip2,N);
+
   for (x=0;x<3;x++){
       /* Read mu(tj) */
       read_dipole(non,mu_traj,dip,mu_xyz,x,step);
+
     
-    // Transform to eigen basis
+    /* Transform to eigen basis */
     for (i=0;i<N;i++){
-      dipeb[i]=0;
+      dipeb[i+x*N]=0;
       for (j=0;j<N;j++){
-          dipeb[i]+=H[i+j*N]*dip[j]; // i is eigen state, j site
+          dipeb[i+x*N]+=H[i+j*N]*dip[j]; // i is eigen state, j site
       }
     }
+    /* Add to exciton dipole square */
     for (i=0;i<N;i++){
-      dip2[i]+=dipeb[i]*dipeb[i];
+      dip2[i]+=dipeb[i+x*N]*dipeb[i+x*N];
     }
   }
+
+  /* Write Exciton Energy and dipole info to file */
+  if (string_in_array(non->technique,(char*[]){"AnalyseFull","AnalyzeFull"},2)){
+    outone=fopen("ExcitonStats.dat","a");
+    if (outone==NULL){
+      printf("Problem encountered opening AnalyseFull.dat for writing.\n");
+      printf("Disk full or write protected?\n");
+      exit(1);
+    }
+    for (i=0;i<non->singles;i++){
+      fprintf(outone,"%f %f %f %f %f\n",e[i]+non->shifte,dipeb[i],dipeb[i+N],dipeb[i+2*N],dip2[i]);
+    }  
+    //fprintf(outone,"\n");
+    fclose(outone);
+  }
+
+
   free(dip);
   free(dipeb);
   return;
@@ -556,96 +608,100 @@ void calc_densitymatrix(t_non *non,float *rho,float *rho2,float *rho4,float *loc
         /* Find density matrix element */
         d=H[i+j*N]*H[i+k*N];
         rho[j+k*N]+=d;
-	rho4[j+k*N]+=d*d;
-	/* Only include the eigenstate if it is within the *
-	 * given spectral region */
+	      rho4[j+k*N]+=d*d;
+	      /* Only include the eigenstate if it is within the *
+	       * given spectral region */
         if (e[i]>min-shift && e[i]<max-shift){
-	  rho2[j+k*N]+=fabs(d);
+	        rho2[j+k*N]+=fabs(d);
           local_rho[j+k*N]+=d;
           spec_rho[j+k*N]+=d*dip2[i];
         }
       }
     }
-  }        
+  }
+  return;        
 }
 
 /* Define Segments depending on a clustering of the absolute density matrix */
 void cluster(t_non *non,float *rho){
-   int *segments;
-   int i,j,k;
-   int N;
-   int n_seg;
-   float norm;
-   FILE *handle;
-   N=non->singles;
+  int *segments;
+  int i,j,k;
+  int N;
+  int n_seg;
+  float norm;
+  FILE *handle;
+  N=non->singles;
 
-   segments=(int *)calloc(N,sizeof(int));
+  segments=(int *)calloc(N,sizeof(int));
 
-   /* Assign all sites their own segment as a start */
-   for (i=0;i<N;i++){
-       segments[i]=i;
-   }
+  /* Assign all sites their own segment as a start */
+  for (i=0;i<N;i++){
+    segments[i]=i;
+  }
 
-   /* Normalize absolute value density matrix */
-   norm=rho[0];
-   for (i=0;i<N;i++){
-       for (j=0;j<N;j++){
-	   rho[i+j*N]=rho[i+j*N]/norm;
-       }
-   }
+  /* Normalize absolute value density matrix */
+  norm=rho[0];
+  for (i=0;i<N;i++){
+    for (j=0;j<N;j++){
+	    rho[i+j*N]=rho[i+j*N]/norm;
+    }
+  }
 
-   /* Run over all possible segments */
-   for (i=0;i<N;i++){
-       /* Run over all later sites */
-       for (j=i+1;j<N;j++){
-           /* Test if two sites belong to the same segment */
-	   if (rho[i+j*N]>non->thres){
-               /* If so merge segments to the one with lowest index */
-               if (segments[j]<segments[i]){
-		   for (k=0;k<N;k++){
-	               if (segments[k]==segments[i] && k!=i){
-                           segments[k]=segments[j];
-		       }
-		   }
-		   segments[i]=segments[j];
-	       } else {
-                   for (k=0;k<N;k++){
-                       if (segments[k]==segments[j] && k!=j){
-                           segments[k]=segments[i];
-                       }
-                   }
-		   segments[j]=segments[i];
-	       }
-	   }
-       }
-   }
+  /* Run over all possible segments */
+  for (i=0;i<N;i++){
+    /* Run over all later sites */
+    for (j=i+1;j<N;j++){
+      /* Test if two sites belong to the same segment */
+	    if (rho[i+j*N]>non->thres){
+        /* If so merge segments to the one with lowest index */
+        if (segments[j]<segments[i]){
+		      for (k=0;k<N;k++){
+	          if (segments[k]==segments[i] && k!=i){
+              segments[k]=segments[j];
+		        }
+		      }
+		      segments[i]=segments[j];
+	      } else {
+          for (k=0;k<N;k++){
+            if (segments[k]==segments[j] && k!=j){
+              segments[k]=segments[i];
+            }
+          }
+		      segments[j]=segments[i];
+	      }
+	    }
+    }
+  }
 
-   /* Reduce segments numbers */
-   n_seg=0;
-   for (i=0;i<N;i++){
-       if (segments[i]>n_seg){
-	  /* Update segment numbers */
-	  n_seg=n_seg+1;
-	  for (j=i+1;j<N;j++){
-              if (segments[j]==segments[i]){
-		 segments[j]=n_seg;
-              }
-	  }
-	  segments[i]=n_seg;
-       }
-   }
-   printf("Using cluster threshold %f.\n",non->thres);
-   printf("\nIdentified %d segments\n\n",n_seg+1); 
-   
+  /* Reduce segments numbers */
+  n_seg=0;
+  for (i=0;i<N;i++){
+    if (segments[i]>n_seg){
+	    /* Update segment numbers */
+	    n_seg=n_seg+1;
+	    for (j=i+1;j<N;j++){
+        if (segments[j]==segments[i]){
+		      segments[j]=n_seg;
+        }
+	    }
+	    segments[i]=n_seg;
+    }
+  }
 
-   handle=fopen("Segments.dat","w");
-   fprintf(handle,"%d\n",N);
-   /* Run over all sites */
-   for (i=0;i<N;i++){
-     fprintf(handle,"%d ",segments[i]);	   
-   }
-   fclose(handle);
+  printf("Using segmentation threshold (Threshold) %f.\n",non->thres);
+  printf("on the Absolute Value Density Matrix calculated in the selected\n");
+  printf("frequency range: (%f to %f) cm-1:\n",non->min1,non->max1);
+  printf("Identified %d segments\n\n",n_seg+1);  
 
-   free(segments);
+  handle=fopen("Segments.dat","w");
+  fprintf(handle,"%d\n",N);
+  /* Run over all sites */
+  for (i=0;i<N;i++){
+    fprintf(handle,"%d ",segments[i]);	   
+  }
+  fclose(handle);
+
+  free(segments);
+  return;
 }
 

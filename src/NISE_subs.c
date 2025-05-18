@@ -4,7 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <omp.h>
+//#include <omp.h>
 #include "types.h"
 #include "NISE_subs.h"
 #include "read_trajectory.h"
@@ -33,8 +33,10 @@ void free2D(void** arr) {
 /* Inform user that they are trying to run code in parallel that is not parallelized */
 void not_parallel(){
     printf(RED "This part of the code is not parallel!!!\n");
-    printf("You may waiste valuable computational resources.\n");
-    printf("Consider running in serial if possible.\n\n" RESET);
+    printf("You may waste valuable computational resources.\n");
+    printf("If running interactively you are fine, if you run\n");
+    printf("trough a queue on a computer cluster, please,\n");
+    printf("consider running in serial by asking for only one CPU.\n\n" RESET);
 }
 
 // Copy a vector
