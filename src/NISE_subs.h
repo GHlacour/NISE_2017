@@ -12,6 +12,8 @@ void unitmat(float *a,int N);
 void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N);
 void matrix_on_vector(float *c,float *vr,float *vi,int N);
 void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
+float find_norm(float *phi_r,float *phi_i,int N);
+void re_normalize(float *phi_r,float *phi_i,int N,float norm);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);

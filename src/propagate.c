@@ -271,6 +271,7 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
     float cr1, cr2, ci1, ci2;
     int i, k, kmax;
     int N2;
+    float norm;
 
     /* printf("Entered the RK4 routine.\n"); */
     
@@ -355,11 +356,13 @@ void propagate_vec_RK4(t_non *non,float *Hamiltonian_i,float *cr,float *ci,int m
             }
         }
 
+        norm=find_norm(cr,ci,N);
         /* Update wavefunction */
         for (k=0;k<N;k++){
             cr[k]=cr[k]+(k1r[k]+2*k2r[k]+2*k3r[k]+k4r[k])/6.0;
             ci[k]=ci[k]+(k1i[k]+2*k2i[k]+2*k3i[k]+k4i[k])/6.0;
         }
+        re_normalize(cr,ci,N,norm);
     }
 
     free(H0),free(col),free(row);
@@ -385,6 +388,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     float cr1, cr2, ci1, ci2;
     int i,j, k, kmax;
     int N2;
+    float norm;
 
     /* printf("Entered the RK4 routine.\n"); */
 
@@ -505,7 +509,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
                     /* c > a,b */
                 k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
                 k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
-		k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
+		        k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
                 k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5)*factor;
             }
         }
@@ -570,12 +574,13 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
             }
         }
 
-    /* Update wavefunction */
-	for (k=0;k<N2;k++){
+        /* Update wavefunction */
+        norm=find_norm(cr,ci,N2);
+	    for (k=0;k<N2;k++){
             cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
             ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
         }
-
+        re_normalize(cr,ci,N2,norm);
     }
     free(HD),free(H0),free(col),free(row);
     free(k1r),free(k2r),free(k3r),free(k4r);
@@ -599,6 +604,7 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
     float cr1, cr2, ci1, ci2;
     int i,j, k, kmax;
     int N2;
+    float norm;
 
     /* printf("Entered the RK4 routine.\n"); */
 
@@ -784,10 +790,12 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
         }
 
     /* Update wavefunction */
+        norm=find_norm(cr,ci,N2);
         for (k=0;k<N2;k++){
             cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
             ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
         }
+        re_normalize(cr,ci,N2,norm);
 
     }
     free(HD),free(H0),free(col),free(row);
