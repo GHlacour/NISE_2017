@@ -7,6 +7,7 @@
 //#include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "read_trajectory.h"
 #include "propagate.h"
 #include "analyse.h"
 
@@ -161,26 +162,7 @@ void analyse(t_non *non){
 
   /* Read coupling, this is done if the coupling and transition-dipoles are *
    * time-independent and only one snapshot is stored */
-  if (!strcmp(non->hamiltonian,"Coupling")){
-    C_traj=fopen(non->couplingFName,"rb");
-    if (C_traj==NULL){
-      printf("Coupling file not found!\n");
-      exit(1);
-    }
-    if (read_He(non,Hamil_i_e,C_traj,-1)!=1){
-      printf("Coupling trajectory file to short, could not fill buffer!!!\n");
-      exit(1);
-    }
-    fclose(C_traj);
-    /* Reading in single fixed transition dipole vector matrix */
-    for (xx=0;xx<3;xx++){
-      if (read_mue(non,mu_xyz+non->singles*xx,mu_traj,0,xx)!=1){
-         printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-         printf("ITIME %d %d\n",0,xx);
-         exit(1);
-      }
-    }
-  }
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
 
   // Loop over samples first time
   for (samples=non->begin;samples<non->end;samples++){
@@ -198,31 +180,22 @@ void analyse(t_non *non){
       }
     }
     if (non->cluster==-1 || non->cluster==cl){
-      /* Read Hamiltonian */
-      if (!strcmp(non->hamiltonian,"Coupling")){
-          if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-              printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-              exit(1);
-          }
-      } else {
-	        if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-	            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	            exit(1);
-  	      }
-      }
 
-      /* Build the Exciton Hamiltonian and find the exciton states */
+    /* Read Hamiltonian */
+      read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
+
       build_diag_H(Hamil_i_e,H,e,N);
-      /* Call subroutines for calculating participation ratios */
+
       participation_ratio+=calc_participation_ratio(N,H);
       local_participation_ratio+=calc_local_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
       spectral_participation_ratio+=calc_spectral_participation_ratio(N,H);
       local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
+
       /* Call subroutines for finding varius density matrices */
-      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz, e);
+      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
       calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
       counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
-      /* Find Averages */
+    /* Find Averages */
       for (i=0;i<non->singles;i++){
         average_frequency[i]+=Hamil_i_e[Sindex(i,i,N)];
         avall+=Hamil_i_e[Sindex(i,i,N)];
@@ -234,11 +207,10 @@ void analyse(t_non *non){
             average_coupling[i]+=Hamil_i_e[Sindex(i,j,N)];
           }
         }
-      }
-
+      }     
     }
   }
-
+  
   /* Adjust number of calculated samples if clusters were used */
   if (Ncl>0) Nsam=Ncl;
   /* Normalize average_frequencies */
@@ -261,20 +233,12 @@ void analyse(t_non *non){
         exit(1);
       }      
     }
+
     // Include frame if configuration belong to cluster or no clusters are used
-    if (non->cluster==-1 || non->cluster==cl){      
+    if (non->cluster==-1 || non->cluster==cl){
+
       /* Read Hamiltonian */
-      if (!strcmp(non->hamiltonian,"Coupling")){
-          if (read_Dia(non,Hamil_i_e,H_traj,ti)!=1){
-            printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-            exit(1);
-          }
-      } else {
-	        if (read_He(non,Hamil_i_e,H_traj,ti)!=1){
-	          printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-	          exit(1);
-  	    }
-      }
+      read_Hamiltonian(non,Hamil_i_e,H_traj,ti);
 
       // Find standard deviation for frequencies
       for (i=0;i<non->singles;i++){
@@ -587,16 +551,9 @@ void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,floa
   clearvec(dip2,N);
 
   for (x=0;x<3;x++){
-    /* Read mu(tj) */
-    if (!strcmp(non->hamiltonian,"Coupling")){
-      copyvec(mu_xyz+non->singles*x,dip,non->singles);
-    } else {
-      if (read_mue(non,dip,mu_traj,step,x)!=1){
-        printf("Dipole trajectory file to short, could not fill buffer!!!\n");
-	      printf("JTIME %d %d\n",step,x);
-	      exit(1);
-	    }
-    }
+      /* Read mu(tj) */
+      read_dipole(non,mu_traj,dip,mu_xyz,x,step);
+
     
     /* Transform to eigen basis */
     for (i=0;i<N;i++){

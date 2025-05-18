@@ -7,6 +7,7 @@
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
+#include "read_trajectory.h"
 #include "propagate.h"
 #include "anisotropy.h"
 
@@ -14,6 +15,7 @@ void anisotropy(t_non *non){
   // Initialize variables
   float avall,flucall;
   float *Hamil_i_e,*H,*e,*mu_eg;
+  float *mu_xyz;
 
   // Aid arrays
   float *vecr,*veci,*vecr_old,*veci_old;
@@ -27,7 +29,9 @@ void anisotropy(t_non *non){
 
   /* File handles */
   FILE *H_traj,*mu_traj;
+  FILE *C_traj;
   FILE *outone,*log;
+  FILE *Cfile;
 
   /* Integers */
   int nn2,N;
@@ -55,6 +59,7 @@ void anisotropy(t_non *non){
   nn2=non->singles*(non->singles+1)/2;
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
   mu_eg=(float *)calloc(N,sizeof(float));
+  mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
   H=(float *)calloc(N*N,sizeof(float));
   e=(float *)calloc(N,sizeof(float));
   Anis=(float *)calloc(non->tmax,sizeof(float));
@@ -63,17 +68,9 @@ void anisotropy(t_non *non){
   pos_f=(float *)calloc(non->singles*3,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
 
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
-  }
+
 
   itime=0;
   // Do calculation
@@ -109,6 +106,11 @@ void anisotropy(t_non *non){
     exit(0);
   }
 
+/* Read coupling, this is done if the coupling and transition-dipoles are *
+   * time-independent and only one snapshot is stored */
+  read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
+
+
   /* Loop over samples */
   for (samples=non->begin;samples<non->end;samples++){
     vecr=(float *)calloc(non->singles*non->singles,sizeof(float));
@@ -134,18 +136,11 @@ void anisotropy(t_non *non){
     for (t1=0;t1<non->tmax;t1++){
       tj=ti+t1;
       /* Read Hamiltonian */
-      if (read_He(non,Hamil_i_e,H_traj,tj)!=1){
-        printf("Hamiltonian trajectory file to short, could not fill buffer!!!\n");
-        exit(1);
-      }
-      // Read mu(ti)
+      read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+      
+      /* Read mu(tj) */      
       for (x=0;x<3;x++){
-         if (read_mue(non,pos_f+x*non->singles,mu_traj,tj,x)!=1){
-            printf("Dipole trajectory file to short, could not fill buffer!!!\n"
-);
-            printf("ITIME %d %d\n",ti,x);
-            exit(1);
-         }
+          read_dipole(non,mu_traj,pos_f+x*non->singles,mu_xyz,x,tj);
       }
 
       for (a=0;a<non->singles;a++){
@@ -207,6 +202,7 @@ void anisotropy(t_non *non){
 
   free(Hamil_i_e);
   free(H);
+  free(mu_xyz);
   free(e);
   free(Anis);
   free(Ori);
