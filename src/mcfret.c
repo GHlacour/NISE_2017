@@ -599,7 +599,7 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     for (i=0;i<segments;i++){
 	/* Weak check */
 	if (fabs(im_e[i])>0.1*fabs(re_e[i])){
-           printf(RED "An imaginary rate matrix eigenvalue larger than 10\%\n");
+           printf(RED "An imaginary rate matrix eigenvalue larger than 10 %% \n");
 	   printf("of the real value found! Averaging over more relaizations\n");
 	   printf("is adviseable. Use rate matrix with caution!\n" RESET);
 	   exit(0);

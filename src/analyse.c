@@ -302,7 +302,7 @@ void analyse(t_non *non){
   flucall=sqrt(flucall);
 
   /* Write Average Hamiltonian in GROASC format */
-  outone=fopen("Av_Hamiltonian.txt","w");
+  outone=fopen("Av_Hamiltonian.dat","w");
     if (outone==NULL){
     printf("Problem encountered opening Analyse.dat for writing.\n");
     printf("Disk full or write protected?\n");

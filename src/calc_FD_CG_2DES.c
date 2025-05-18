@@ -12,7 +12,7 @@
 #include "types.h"
 #include "NISE_subs.h"
 #include "polar.h"
-#include "calc_CG_2DES.h"
+#include "CG_subs.h"
 #include "calc_FD_CG_2DES.h"
 #include <stdarg.h>
 #include "project.h"
@@ -23,15 +23,106 @@
 #include "MPI_subs.h"
 #include <complex.h>
 
+/* ======================================================== */
+/* MAIN ROUTINE INTEGRATING CG DOORWAY AND WINDOW FUNCTIONS */
+/* ======================================================== */
+void calc_FD_CG_2DES(t_non *non){
+  /* This is the main routine which will control the flow of the FD
+  coarse grained 2DES calculation. It uses the general NISE input. */
+  int segments;
+  int f_states;
+  int e_states;
+  int g_states;
+
+  double *Q1;
+  double *Q2;
+
+  float *re_doorway, *im_doorway; 
+  float *re_window_SE, * im_window_SE;
+  float *re_window_GB, * im_window_GB;
+  float *re_window_EA, * im_window_EA;
+  int i;
+  segments = project_dim(non);
+  if (non->Npsites!=non->singles){
+    printf(RED "Please, assign all sites to segments for CG calculations.\n" RESET);
+    exit(1);
+  }
+  f_states = segments*(segments+1)/2;
+  e_states = 2*segments;
+
+  Q1 = (double *)calloc(segments,sizeof(double));
+  Q2 = (double *)calloc(f_states,sizeof(double));
+
+  printf("Reading in segments: %i \n", segments);
+  printf("Reading in Quantum Yields from Q1s.dat Q2s.dat files.\n"); 
+  read_in_QF_for_FD_CG_2DES(non,Q1,Q2,segments);
+
+  /* Allocate space for doorway and window functions */
+  re_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
+  im_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
+  re_window_SE = (float *)calloc(non->tmax*9*segments,sizeof(float));
+  im_window_SE = (float *)calloc(non->tmax*9*segments,sizeof(float));   
+  re_window_GB = (float *)calloc(non->tmax*9*segments,sizeof(float));
+  im_window_GB = (float *)calloc(non->tmax*9*segments,sizeof(float)); 
+  re_window_EA = (float *)calloc(non->tmax*9*segments,sizeof(float));
+  im_window_EA = (float *)calloc(non->tmax*9*segments,sizeof(float)); 
+
+  
+  printf("Performing the FD_CG_2DES calculation.\n"); 
+
+  if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_doorway"))) {
+      CG_doorway(non, re_doorway, im_doorway);
+  }  
+   if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_SE")) ) {
+      CG_window_SE(non, re_window_SE, im_window_SE); 
+   } 
+    if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_GB"))){
+      CG_window_GB(non, re_window_GB, im_window_GB); 
+    }
+
+    if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_EA"))){
+      CG_window_EA(non, re_window_EA, im_window_EA); 
+    }
+
+  /* Call the rate routine routine */
+  if (string_in_array(non->technique,(char*[]){"FD_CG_2DES","FD_CG_2DES_combine"},2)){
+    
+      printf("Starting calculation of the FD-2DES\n");
+      
+      if ((!strcmp(non->technique, "FD_CG_2DES_combine"))){
+        /* Read in absorption, emission and coupling from file if needed */
+        printf("Calculating spectroscopy from precalculated doorway and window functions.\n");
+        read_doorway_window_from_file(non,"doorway.dat",im_doorway,re_doorway,non->tmax1);
+        read_doorway_window_from_file(non,"windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
+        read_doorway_window_from_file(non,"windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
+        read_doorway_window_from_file(non,"windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
+        printf("Completed reading pre-calculated data.\n");
+      }
+      
+      call_final_FD_CG_2DES(non,segments,re_doorway,im_doorway,re_window_SE,im_window_SE,re_window_GB,im_window_GB,
+                            re_window_EA,im_window_EA, Q1, Q2);
+  }
+  
+  free(re_doorway),      free(im_doorway);
+  free(re_window_SE),    free(im_window_SE);
+  free(re_window_GB),    free(im_window_GB);
+  free(re_window_EA),    free(im_window_EA);  
+
+  free(Q1),free(Q2);
+  return;
+}
+
 void call_final_FD_CG_2DES(
-  t_non *non,float *P_DA,int segments,float *re_doorway,float *im_doorway,
+  t_non *non,int segments,float *re_doorway,float *im_doorway,
   float *re_window_SE, float *im_window_SE,float *re_window_GB, float *im_window_GB,
-  float *re_window_EA, float *im_window_EA,float *re_2DES, float *im_2DES, double *Q1, double *Q2){
+  float *re_window_EA, float *im_window_EA, double *Q1, double *Q2){
     /* Define variables for multiple waiting time use */
     FILE *WTime;
     char waittime[16];
     int wfile;
-                            
+    float *P_DA;
+
+    P_DA = (float *)calloc(segments*segments,sizeof(float));
     /* Check if Waitingtime.dat is defined */
     sprintf(waittime,"");
     wfile=0;
@@ -46,7 +137,7 @@ void call_final_FD_CG_2DES(
     while (wfile>-1){
       /* Read new waiting time */
       if (wfile==1){
-        if (fscanf(WTime,"%s",&waittime)==1){ // Should this not be waittime instead of &waittime?
+        if (fscanf(WTime,"%s",waittime)==1){ // Should this not be waittime instead of &waittime?
           printf("Calculating FD-CG2DES for %s fs \n",waittime);
           non->tmax2 = floor(atof(waittime)/(non->deltat));
         } else {
@@ -57,11 +148,12 @@ void call_final_FD_CG_2DES(
         wfile=-1;
       }
       
-      CG_2DES_P_DA(non,P_DA,segments);
+      CG_P_DA(non,P_DA,segments);
       
       FD_CG_full_2DES_segments(non,re_doorway,im_doorway,re_window_SE,im_window_SE,
         re_window_GB,im_window_GB,re_window_EA,im_window_EA,P_DA,segments,waittime,wfile,Q1,Q2);
     }
+    free(P_DA);
 }
 
 /* -=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-._.-=-. */
@@ -118,94 +210,7 @@ void read_in_QF_for_FD_CG_2DES(t_non *non, double *Q1, double *Q2, int segments)
     }
 }
 
-/* ======================================================== */
-/* MAIN ROUTINE INTEGRATING CG DOORWAY AND WINDOW FUNCTIONS */
-/* ======================================================== */
-void calc_FD_CG_2DES(t_non *non){
-    /* This is the main routine which will control the flow of the FD
-    coarse grained 2DES calculation. It uses the general NISE input. */
-    int segments;
-    int f_states;
-    int e_states;
-    int g_states;
- 
-    double *Q1;
-    double *Q2;
 
-    float *re_doorway, *im_doorway; 
-    float *re_window_SE, * im_window_SE;
-    float *re_window_GB, * im_window_GB;
-    float *re_window_EA, * im_window_EA;
-    float *re_2DES , *im_2DES;
-    float *P_DA;
-    int i;
-    segments = project_dim(non);
-    f_states = segments*(segments+1)/2;
-    e_states = 2*segments;
-
-    Q1 = (double *)calloc(segments,sizeof(double));
-    Q2 = (double *)calloc(f_states,sizeof(double));
-
-    printf("Reading in segments: %i \n", segments);
-    printf("Reading in Quantum Yields from Q1s.dat Q2s.dat files.\n"); 
-    read_in_QF_for_FD_CG_2DES(non,Q1,Q2,segments);
-
-    re_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
-    im_doorway   = (float *)calloc(non->tmax*9*segments,sizeof(float));
-    re_window_SE = (float *)calloc(non->tmax*9*segments,sizeof(float));
-    im_window_SE = (float *)calloc(non->tmax*9*segments,sizeof(float));   
-    re_window_GB = (float *)calloc(non->tmax*9*segments,sizeof(float));
-    im_window_GB = (float *)calloc(non->tmax*9*segments,sizeof(float)); 
-    re_window_EA = (float *)calloc(non->tmax*9*segments,sizeof(float));
-    im_window_EA = (float *)calloc(non->tmax*9*segments,sizeof(float)); 
-    P_DA = (float *)calloc(segments*segments,sizeof(float));
-    
-    printf("Performing the FD_CG_2DES calculation.\n"); 
- 
-    if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_doorway"))) {
-        CG_2DES_doorway(non, re_doorway, im_doorway);
-    }  
-     if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_SE")) ) {
-        CG_2DES_window_SE(non, re_window_SE, im_window_SE); 
-     } 
-      if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_GB"))){
-        CG_2DES_window_GB(non, re_window_GB, im_window_GB); 
-      }
-  
-      if (!strcmp(non->technique, "FD_CG_2DES") ||  (!strcmp(non->technique, "FD_CG_2DES_window_EA"))){
-        CG_2DES_window_EA(non, re_window_EA, im_window_EA); 
-      }
-
-    /* Call the rate routine routine */
-    if (!strcmp(non->technique, "FD_CG_2DES")||  (!strcmp(non->technique, "FD_CG_full_2DES_segments")) || (!strcmp(non->technique, "FD_CG_2DES_waitingtime"))){
-      CG_2DES_P_DA(non,P_DA,segments);
-        printf("Starting calculation of the 2DES with specific time delay\n");
-        
-        if ((!strcmp(non->technique, "FD_CG_2DES_waitingtime"))){
-            /* Read in absorption, emission and coupling from file if needed */
-	        printf("Calculating spectroscopy from precalculated doorway function, window function\n");
-	        read_doorway_window_from_file(non,"CG_2DES_doorway.dat",im_doorway,re_doorway,non->tmax1);
-            read_doorway_window_from_file(non,"CG_2DES_windows_EA.dat",im_window_EA,re_window_EA,non->tmax1);
-            read_doorway_window_from_file(non,"CG_2DES_windows_GB.dat",im_window_GB,re_window_GB,non->tmax1);
-            read_doorway_window_from_file(non,"CG_2DES_windows_SE.dat",im_window_SE,re_window_SE,non->tmax1);
-            printf("Completed reading pre-calculated data.\n");
-        }
-        
-        call_final_FD_CG_2DES(non,P_DA,segments,re_doorway,im_doorway,
-                              re_window_SE,im_window_SE,
-                              re_window_GB,im_window_GB,
-                              re_window_EA,im_window_EA,
-                              re_2DES, im_2DES, Q1, Q2);
-    }
-    
-    free(re_doorway),      free(im_doorway);
-    free(re_window_SE),    free(im_window_SE);
-    free(re_window_GB),    free(im_window_GB);
-    free(re_window_EA),    free(im_window_EA);  
-    free(P_DA);
-    free(Q1),free(Q2);
-    return;
-}
 
 /* ==================================================== */
 /* COMBINE DOORWAY AND WINDOW FUNCTIONS FOR CG SEGMENTS */
