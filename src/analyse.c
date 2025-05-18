@@ -192,7 +192,7 @@ void analyse(t_non *non){
       local_spectral_participation_ratio+=calc_local_spectral_participation_ratio(N,H,non->min1,non->max1,e,non->shifte);
 
       /* Call subroutines for finding varius density matrices */
-      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz);
+      find_dipole_mag(non,dip2,samples,mu_traj,H,mu_xyz,e);
       calc_densitymatrix(non,rho,rho2,rho4,local_rho,spec_rho,H,e,dip2);
       counts=find_cEig(cEig,cDOS,dip2,H,e,N,non->min1,non->max1,counts,non->shifte);
     /* Find Averages */
@@ -537,7 +537,7 @@ int find_cEig(float *cEig,float *cDOS,float *dip2,float *H,float *e,int N,float 
 }  
 
 /* Find dipole magnitude for the eigenstates (mu squared) */
-void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz, float *e){
+void find_dipole_mag(t_non *non,float *dip2,int step,FILE *mu_traj,float *H,float *mu_xyz,float *e){
   float *dip, *dipeb;
   int i,j,x,N;
   FILE *outone;
