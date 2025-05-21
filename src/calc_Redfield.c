@@ -98,7 +98,7 @@ void calc_Redfield(t_non *non){
     }
 
     /* Read in Average Hamiltonian */
-    input=fopen("Av_Hamiltonian.txt","r");
+    input=fopen("Av_Hamiltonian.dat","r");
     if (input==NULL){
         printf("Problem opening Av_Hamiltonian.txt file.\n");
         printf("Did you run Technique Analyse?\n");

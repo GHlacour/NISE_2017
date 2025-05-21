@@ -121,6 +121,32 @@ void trans_matrix_on_vector(float *c,float *vr,float *vi,int N){
     free(xi);
 }
 
+/* Find the norm for a complex vector */
+float find_norm(float *phi_r,float *phi_i,int N){
+    float norm;
+    int a;
+    norm=0;
+    for (a=0;a<N;a++){
+        norm+=phi_r[a]*phi_r[a]+phi_i[a]*phi_i[a];
+    }
+    return norm;
+}
+
+/* Find new norm of a complex vector and renormalize to preserve old norm */
+void re_normalize(float *phi_r,float *phi_i,int N,float norm){
+    int a;
+    float new_norm,factor;
+    new_norm=find_norm(phi_r,phi_i,N);
+    if (norm!=new_norm){
+        factor=sqrt(norm/new_norm);
+        for (a=0;a<N;a++){
+            phi_r[a]=phi_r[a]*factor;
+            phi_i[a]=phi_i[a]*factor;
+    
+        }
+    }
+}
+
 /**
  * Method that logs a message, in which the message can be formatted like printf accepts.
  */
