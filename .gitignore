@@ -342,3 +342,9 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Apple Specific Files
+**.DS_Store
+
+# Eliminated VSCode files
+**.json

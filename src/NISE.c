@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <mpi.h>
 #include "types.h"
 #include "types_MPI.h"
 #include "NISE_subs.h"
@@ -17,6 +18,7 @@
 #include "calc_2DIRraman.h"
 #include "calc_2DES.h"
 #include "calc_CG_2DES.h"
+#include "calc_FD_CG_2DES.h"
 #include "eq_den.h"
 #include "analyse.h"
 #include "calc_CD.h"
@@ -25,9 +27,9 @@
 #include "population.h"
 #include "anisotropy.h"
 #include "mcfret.h"
+#include "calc_Redfield.h"
 #include "propagate.h"
 #include "correlate.h"
-#include <mpi.h>
 #include "omp.h"
 #include "1DFFT.h"
 
@@ -87,11 +89,13 @@ int main(int argc, char* argv[]) {
         time(&timeStart);
 
         /* Intro */
-        printf("----- ----- ----- ----- ----- -----\n");
-        printf("  Running the 23/8-2017 version of\n");
-        printf("              NISE3.1\n");
-        printf("    by Thomas la Cour Jansen.\n");
-        printf("----- ----- ----- ----- ----- -----\n");
+        printf("\n");
+        printf("----- ----- ----- ----- ----- ----- -----\n");
+        printf("                 NISE3.4\n");
+        printf("      by Thomas la Cour Jansen and\n");
+        printf("                co-workers.\n");
+        printf("    Running the %s Git version.\n",GIT_VERSION);
+        printf("----- ----- ----- ----- ----- ----- -----\n");
         printf("\n");
 
         // Read the input
@@ -151,7 +155,7 @@ int main(int argc, char* argv[]) {
     // Delegate to different subroutines depending on the technique
 
     // Call the Hamiltonian Analysis routine
-    if (string_in_array(non->technique,(char*[]){"Analyse","Analyze"},2)){
+    if (string_in_array(non->technique,(char*[]){"Analyse","Analyze","AnalyseFull","AnalyzeFull"},4)){
         // Does not support MPI
         if (parentRank == 0)
             analyse(non);
@@ -209,15 +213,23 @@ int main(int argc, char* argv[]) {
     }
 
     /* Call the MCFRET Routine */
-        if (string_in_array(non->technique,(char*[]){"MCFRET",
+    if (string_in_array(non->technique,(char*[]){"MCFRET",
 	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
 	   "MCFRET-Density"},8)){
         /* Does not support MPI */
         if (parentRank == 0) {
-                mcfret(non);
+            mcfret(non);
         }
     }
+
+    /* Call the Redfield Routine */
+    if (string_in_array(non->technique,(char*[]){"Redfield"},1)){
+        // Does not support MPI
+        if (parentRank == 0)
+            calc_Redfield(non);
+    }
+
 
     // Call the Luminescence Routine
     if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3)){
@@ -286,18 +298,20 @@ int main(int argc, char* argv[]) {
     }
 
     /* Call the CG_2DES Routine */
-    if (!strcmp(non->technique, "CG_2DES") ||  (!strcmp(non->technique, "CG_2DES_doorway")) || 
-     (!strcmp(non->technique, "CG_2DES_P_DA")) ||  (!strcmp(non->technique, "CG_2DES_window_GB"))
-     ||  (!strcmp(non->technique, "CG_2DES_window_SE")) ||  (!strcmp(non->technique, "CG_2DES_window_EA"))
-     ||  (!strcmp(non->technique, "CG_full_2DES_segments")) ||  (!strcmp(non->technique, "combine_CG_2DES"))
-     ||  (!strcmp(non->technique, "CG_2DES_waitingtime")) ) {
+    if (string_in_array(non->technique,(char*[]){"CG_2DES","CG_2DES_doorway","CG_2DES_window_GB","CG_2DES_window_SE","CG_2DES_window_EA",
+        "CG_2DES_waitingtime"},6)){
         /* Does not support MPI */
         if (parentRank == 0)
             calc_CG_2DES(non);
     }
 
-    // Call the 2DFD calculation routine
-    if (!strcmp(non->technique, "2DFD")) { }
+    /* Call the FD_CG_2DES Routine */
+    if (string_in_array(non->technique,(char*[]){"FD_CG_2DES","FD_CG_2DES_doorway","FD_CG_2DES_window_GB","FD_CG_2DES_window_SE",
+            "FD_CG_2DES_window_EA","FD_CG_2DES_waitingtime"},6)){    
+	/* Does not support MPI */
+	    if (parentRank ==0)
+	        calc_FD_CG_2DES(non);
+    }
 
     // Call the 1DFT calculation routine
     if (!strcmp(non->technique, "1DFFT")) {

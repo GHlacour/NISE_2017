@@ -9,6 +9,7 @@ float static icm2ifs=2.99792458e-5;
 float static ifs2icm=1.0/2.99792458e-5;
 float static sqrt2=1.41421356237;
 float static ithirty=1.0/30;
+float static sq2pi=2.50662827463;
 
 // Structures
 typedef struct {

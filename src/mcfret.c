@@ -566,7 +566,6 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     //float work[lwork];
     float *rate; /* Rate Matrix to be destroyed */
     int *degen; /* Degeneracies of segments */
-    int info;
     int i;
     int imax;
     float fmax;
@@ -587,37 +586,32 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     //sgeev_(&jobvl, &jobvr, &segments, rate, &segments, re_e, im_e, vl, &segments, vr, &segments, work, &lwork, &info);
     //free(rate);
 
-    /* Check for errors */
-    if (info != 0) {
-        fprintf(stderr, "Error in sgeev: info = %d\n", info);
-        exit(0);
-    }
-
     /* Check for imaginary eigenvalues and find the one closest to zero */
     imax=0;
     fmax=re_e[0];
+    
     for (i=0;i<segments;i++){
-	/* Weak check */
-	if (fabs(im_e[i])>0.1*fabs(re_e[i])){
-           printf(RED "An imaginary rate matrix eigenvalue larger than 10\%\n");
-	   printf("of the real value found! Averaging over more relaizations\n");
-	   printf("is adviseable. Use rate matrix with caution!\n" RESET);
-	   exit(0);
+	    /* Weak check */
+	    if (fabs(im_e[i])>0.1*fabs(re_e[i])){
+            printf(RED "An imaginary rate matrix eigenvalue larger than 10%%\n");
+	        printf("of the real value found! Averaging over more relaizations\n");
+	        printf("is adviseable. Use rate matrix with caution!\n" RESET);
+	        exit(0);
 
-	/* Hard Check */
-	} else if (fabs(im_e[i])>1e-8) {
-           printf(YELLOW "Warning! An imaginary eigenvalue of the rate matrix was found.");
-           printf("Check validity. Averaging over more disorder realizations\n");
-	   printf("may remove imaginary eigenvalues." RESET);
-	}
+	    /* Hard Check */
+	    } else if (fabs(im_e[i])>1e-8) {
+            printf(YELLOW "Warning! An imaginary eigenvalue of the rate matrix was found.");
+            printf("Check validity. Averaging over more disorder realizations\n");
+	        printf("may remove imaginary eigenvalues." RESET);
+	    }
 
-	/* Check if it is larger than the previous ones */
-	if (re_e[i]>fmax){
+	    /* Check if it is larger than the previous ones */
+	    if (re_e[i]>fmax){
             fmax=re_e[i];
-	    imax=i;
-	}
+	        imax=i;
+	    }
     }
-
+    
     /* Write eigenvalues to file and find normalization for the */
     /* equilibrium population. */
     popnorm=0;
@@ -653,7 +647,7 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
     return;
 }
 
-/* Analyse rate matrix */
+/* Analyse rate matrix and find thermal correction */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
       float *qc_rate_matrix,*qc;
       float C;
