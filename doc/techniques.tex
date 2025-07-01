@@ -15,9 +15,10 @@ The Manhattan exciton size is calculated as \cite{Jansen.2025.J.Chem.Phys..162.0
 \begin{equation}
 	D_{MES}=\left\langle\frac{1}{N}\sum_i\left(\sum_j |c_{ij}|\right)^{2}\right\rangle.
 \end{equation}
-In a file named \ilc{Analyse.dat} statistics is given for each site including.
-This include the average energy and the standard deviation.
+In a file named \ilc{Analyse.dat} statistics is given for each site.
+This includes the average energy and the standard deviation.
 The average coupling strength (signed sum of all couplings of a given site with all other sites) and the standard deviation of this quantity.
+The Stokes shift associated with each site is given in the last column using $2\lambda=\frac{\sigma^2}{k_BT}$.
 In a file named \ilc{Av\_Hamiltonian.dat} the average Hamiltonian is stored as a single snapshot in the GROASC format.
 Furthermore, the density matrix is calculated for the spectral region defined by the upper and lower bounds of \ilk{MinFrequencies} and \ilk{MaxFrequencies}.
 This is done both with and without a weight determined by the contribution to the absorption spectrum as:
