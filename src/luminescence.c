@@ -166,10 +166,10 @@ void luminescence(t_non *non){
             bltz_weight_itime(mu_eg,Hamil_i_e,non);
         }*/    
 	// Find response
-	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
-        if (x==0) calc_S1(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
-        if (x==1) calc_S1(re_S_1y,im_S_1y,t1,non,vecr,veci,mu_eg);
-        if (x==2) calc_S1(re_S_1z,im_S_1z,t1,non,vecr,veci,mu_eg);
+	calc_LUM(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+        if (x==0) calc_LUM(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
+        if (x==1) calc_LUM(re_S_1y,im_S_1y,t1,non,vecr,veci,mu_eg);
+        if (x==2) calc_LUM(re_S_1z,im_S_1z,t1,non,vecr,veci,mu_eg);
 
 	/* Probagate vector */
         propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
