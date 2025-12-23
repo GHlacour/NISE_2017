@@ -1,7 +1,7 @@
 #include "types_MPI.h"
 
 const t_non_datatype T_NON_TYPE = {
-    69,
+    74,
     {
         1, 1, 1,
         1, 1, 1,
