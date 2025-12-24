@@ -35,11 +35,11 @@ void read_shift(t_non *non){
 
     // Allocate memory
     non->SingleShiftSite=(int *)calloc(non->SingleShiftSites,sizeof(int));
-    non->SingleShift=(float *)calloc(non->SingleShiftSites,sizeof(float));
+    non->SingleShift=(float *)calloc(2*non->SingleShiftSites,sizeof(float));
 
     // Read shifts
     for (i=0;i<non->SingleShiftSites;i++){
-        fscanf(shiftFile,"%d %f",&non->SingleShiftSite[i],&non->SingleShift[i]);
+        fscanf(shiftFile,"%d %f %f",&non->SingleShiftSite[i],&non->SingleShift[i*2],&non->SingleShift[i*2+1]);
     }
 
     fclose(shiftFile);
@@ -61,7 +61,7 @@ void apply_singleshift(t_non *non,float *Hamil_i_e){
     int index;
     for (i=0;i<non->SingleShiftSites;i++){
         index=Sindex(non->SingleShiftSite[i],non->SingleShiftSite[i], non->singles);
-        Hamil_i_e[index]+=non->SingleShift[i];
+        Hamil_i_e[index]=Hamil_i_e[index]*non->SingleShift[2*i]+non->SingleShift[2*i+1];
     }
     return;
 }
