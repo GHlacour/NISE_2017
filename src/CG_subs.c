@@ -1026,14 +1026,39 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
               /* Zero coupling between different segments */
             zero_coupling(Hamil_i_e,non);
             /* Propagate dipole moment */
-              /* Currently only coupling propagation done! TLC */
-  #pragma omp parallel for
-            for (a=0;a<N;a++){
-              propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);   
+              /* Added RK4 and sparse matrix propagation 9/9-2025 TLC */
+              if(non->propagation == 1) {
+#pragma omp parallel for
+                for (a=0;a<N;a++){
+                  propagate_vec_coupling_S_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);
+                }
+              } else if (non->propagation == 3) {
+#pragma omp parallel for
+                for (a=0;a<N;a++){
+                  propagate_vec_RK4_doubles_ES(non, Hamil_i_e, fr+a*nn2, fi+a*nn2, non->ts);
+                }
+              } else if (non->propagation == 0) {
+                float* Urs = calloc(non->singles * non->singles, sizeof(float));
+                float* Uis = calloc(non->singles * non->singles, sizeof(float));
+
+                int* Rs = calloc(non->singles * non->singles, sizeof(int));
+                int* Cs = calloc(non->singles * non->singles, sizeof(int));
+
+                int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
+#pragma omp parallel for \
+        shared(non, Urs, Uis, Rs, Cs, fr, fi)
+                for (a=0;a<N;a++){
+                  propagate_double_sparce_ES(non, Urs, Uis, Rs, Cs,fr + a * nn2, fi + a * nn2,elements,non->ts);
+                } 
+                free(Urs), free(Uis), free(Rs), free(Cs);     
+              } else {
+                printf("Propagation method for EA not recognized\n");
+                exit(1);
+              }
             }
           }
         }
-      }
+      
       /* Update Log file with time and sample number */
       log=fopen("NISE.log","a");
       fprintf(log,"Finished sample (window EA) %d\n",samples);        

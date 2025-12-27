@@ -413,16 +413,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
 
             /* Propagate left side nonrephasing */
             for (int t1 = 0; t1 < non->tmax1; t1++) {
-		propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1,1,1);
-                /* if (non->propagation == 0) {
-                    propagate_vec_DIA_S(
-                        non, Hamil_i_e, leftnr[t1], leftni[t1], 1
-                    );
-                } else if (non->propagation == 1) {
-                    propagate_vec_coupling_S(
-                        non, Hamil_i_e, leftnr[t1], leftni[t1], non->ts, 1
-                    );
-                }*/
+        		propagate_vector(non, Hamil_i_e, leftnr[t1], leftni[t1], 1,1,1);
             }
         }
 
@@ -433,9 +424,6 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                 int tl = tk + t3;
                 /* Read Dipole t4 */
                 mureadE(non, mut4, tl, px[3], mu_traj, mu_xyz, pol);
-                //if (non->anharmonicity == 0) {
-                //    read_over(non, over, mu2_traj, tl, px[3]);
-                //}
 
                 /* Multiply with the last dipole */
                 dipole_double_last_ES(non, mut4, fr, fi, leftrr, leftri);
@@ -477,115 +465,10 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
                     exit(1);
                 }
 
-                /* Propagate vectors left */
-                //if (non->anharmonicity == 0) {
-                //    read_A(non, Anh, A_traj, tl);
-                //}
+                /* Call subrotine for all double propagations */
+                propagate_double_2DES_control(non,Hamil_i_e,ft1r,ft1i,fr,fi,rightrr,rightri,
+                                  rightnr,rightni,currentSample,molPol,t3);
 
-                /* Propagate */
-                if (non->propagation == 0) {
-                    float* Urs = calloc(non->singles * non->singles, sizeof(float));
-                    float* Uis = calloc(non->singles * non->singles, sizeof(float));
-
-                    int* Rs = calloc(non->singles * non->singles, sizeof(int));
-                    int* Cs = calloc(non->singles * non->singles, sizeof(int));
-
-                    // bug? Cs and Rs seems to be exchanged (TLC just multiplying with imaginary number)
-                    int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
-                    if (currentSample == non->begin && molPol == 0 && t3 == 0) {
-                        printf("Sparse matrix efficiency: %f pct.\n",
-                               (1 - (1.0 * elements / (non->singles * non->singles))) * 100);
-                        printf("Present truncation %f.\n",
-                               non->thres / ((double) non->deltat * icm2ifs * (double) twoPi / non->ts * (non->deltat *
-                                   icm2ifs * twoPi / non->ts)));
-                        printf("Suggested truncation %f.\n", 0.001);
-                    }
-
-                    // Key parallel loop 1
-                    // Initial step, former t1=-1
-                    propagate_double_sparce_ES(
-                        non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts);
-
-                    int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
-                    #pragma omp parallel for \
-                        shared(non, Urs, Uis, Rs, Cs, ft1r, ft1i) \
-                        schedule(static, 1)
-
-                    for(t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_double_sparce_ES(
-                            non, Urs, Uis, Rs, Cs, ft1r[t1],
-                            ft1i[t1], elements, non->ts);
-                    }
-
-                    // Propagate vectors right
-                    // Key parallel loop 2
-                    // Initial step
-                    propagate_vec_DIA_S(non, Hamil_i_e, rightnr, rightni, -1);
-
-                    for(t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_DIA_S(
-                            non, Hamil_i_e, rightrr[t1], rightri[t1], -1
-                        );
-                    }
-
-                    free(Urs), free(Uis), free(Rs), free(Cs);
-                }
-                else if(non->propagation == 1) {
-                    // Key parallel loop 1
-                    // Initial step
-                    propagate_vec_coupling_S_doubles_ES(
-                        non, Hamil_i_e, fr, fi, non->ts); 
-
-                    int t1;
-                    #pragma omp parallel for \
-                        shared(non,Hamil_i_e,ft1r,ft1i) \
-                        schedule(static, 1)
-
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_coupling_S_doubles_ES(
-                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts); 
-                    }
-
-                    // Key parallel loop 2
-                    // Initial step
-                    propagate_vec_coupling_S(
-                        non, Hamil_i_e, rightnr, rightni, non->ts, -1
-                    );
-
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_coupling_S(
-                            non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
-                        );
-                    }
-                }
-		else if(non->propagation == 1) {
-                    // Key parallel loop 1
-                    // Initial step
-                    propagate_vec_RK4_doubles_ES(
-                        non, Hamil_i_e, fr, fi, non->ts);
-
-                    int t1;
-                    #pragma omp parallel for \
-                        shared(non,Hamil_i_e,ft1r,ft1i) \
-                        schedule(static, 1)
-
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_RK4_doubles_ES(
-                            non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts);
-                    }
-
-                    // Key parallel loop 2
-                    // Initial step
-                    propagate_vec_RK4(
-                        non, Hamil_i_e, rightnr, rightni, non->ts, -1
-                    );
-
-                    for (t1 = 0; t1 < non->tmax1; t1++) {
-                        propagate_vec_RK4(
-                            non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
-                        );
-                    }
-                }
             }
         }
 

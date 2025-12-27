@@ -19,6 +19,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     char* pValue;
     int control;
     char prop[256];
+    char windowC[256];
 
     // Defaults
     non->interpol = 1;
@@ -37,6 +38,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     non->tmax3=256;
     non->homogen=0.0;
     non->inhomogen=0.0;
+    non->window=0; // No windowing by default
     sprintf(non->basis, "Local");
     sprintf(non->hamiltonian, "Full");
     sprintf(non->pbcFName, "");
@@ -90,8 +92,6 @@ void readInput(int argc, char* argv[], t_non* non) {
 
         // Position file keyword
         if (keyWordS("Positionfile", Buffer, non->positionFName, LabelLength) == 1) continue;
-        // PDB file keyword
-        if (keyWordS("PDBfile", Buffer, non->pdbFName, LabelLength) == 1) continue;
 
         // Coupling file keyword
         if (keyWordS("Couplingfile", Buffer, non->couplingFName, LabelLength) == 1) continue;
@@ -122,6 +122,9 @@ void readInput(int argc, char* argv[], t_non* non) {
 
         // Read Inhomogeneous Lifetime
         if (keyWordF("Inhomogeneous", Buffer, &non->inhomogen, LabelLength) == 1) continue;
+
+        // Read Windowing option
+        if (keyWordS("Window", Buffer, windowC, LabelLength) == 1) continue;
 
         // Read timestep
         if (keyWordF("Timestep", Buffer, &non->deltat, LabelLength) == 1) continue;
@@ -245,6 +248,14 @@ void readInput(int argc, char* argv[], t_non* non) {
         printf("\nUsing propagation scheme 'RK4' with coupling cut!\n");
         printf("Coupling cutoff %f effective during t1, t2, and t3.\n\n",
                non->couplingcut);
+    }
+
+
+    if (!strcmp(windowC, "Hann")) {
+        non->window = 1;
+        printf("\nUsing a Hann window function!\n");
+        printf("For 2D techniques, this need to be specified\n");
+        printf("in the 2DFFT input file as well!\n\n");
     }
 
     if (non->propagation == 0) {

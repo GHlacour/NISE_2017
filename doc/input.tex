@@ -123,6 +123,7 @@ The NISE program use the following input:\\
 \item [Length] [Number of snapshots in trajectory] 
 \item [Samplerate] [Number of snapshots between ensemble averaging]
 \item [Lifetime] [The life time in fs included in 2D response functions]
+\item [Window] [Hann] (If this keyword is included a Hann window function is applied during the Fourier transform.)
 \item [Homogeneous] [Homogeneous lifetime for exponential apodization in fs, only included after FFT]
 \item [Inhomogeneous] [Inhomogeneous lifetime for gaussian apodization in fs, only included after FFT]
 \item [Timestep] [The length of each timestep in fs]
@@ -135,8 +136,8 @@ The NISE program use the following input:\\
 \item [Singles] [Number of singly excited states]
 \item [Propagation] [Sparse/Coupling/RK4 default is Sparse] (Coupling recommended for fast calculations)
 \item [Couplingcut] [Value in cm$^{-1}$ below which the couplings are neglected, default 0, only used in the Coupling propagation scheme. \footnote{From the 16/8-2022 version couplings below the cutoff are neglected when reading in the Hamiltonian or when it is constructed on the fly. NOTE that before this the approximation was NOT applied during t$_2$ for two-dimensional spectroscopic calculations and it was not used for the Analysis of the Hamiltonian.}]
-\item [Trotter] [The number of trotter steps in the Paarmann approximation for double excited 
-states, 5 recommended for the Sparse propagation scheme, for the Coupling propagation scheme this is the general number of trotter steps the recommended value is then 1 ]
+\item [Trotter] [The number of trotter steps] (In the Paarmann approximation for double excited 
+states as implemented in the Sparse propagation scheme, 5 is recommended in that case, for the Coupling and RK4 propagation schemes this is the general number of trotter steps the recommended value is then 1 )
 \item [ImaginaryTimesteps] [The number of trotter steps in the imaginary time propagation for calculating the effect of the equilibrium density matrix, typically a value of 5 is sufficient. If the value is set to 0 exact matrix diagonalization is used. ]
 \item [MinFrequencies] [minw1] [minw2] [minw3, all in reciprocal cm]
 \item [MaxFrequencies] [maxw1] [maxw2] [maxw3, all in reciprocal cm]
@@ -174,6 +175,7 @@ R'(t_1,t_2,t_3)=R(t_1,t_2,t_3)
 \exp\left(-(t_1+t_3)/2 t_{\textrm{homo}}-(t_1+t_3)^2/2 t_{\textrm{inhomo}}^2\right)
 \end{equation}
 for non-rephasing signals. As default no apodization is performed. The apodizations are inactive when set to zero.  
+A Hann window function can also be applied by defining the keyword Window Hann. The Hann function corresponds to multiplying with the square of a cosine damping the signal from one to zero over the interval from zero coherence time to the maximal coherence time.
 
 The HamiltonianType allow the use of different ways to store the Hamiltonian trajectories. The default setting is Full, where the full Hamiltonian is given in the Hamiltonianfile, if Coupling is specified the couplings are assumed to be constant and given in the Couplingfile. The Hamiltonianfile then contain the trajectory of fluctuating diagonal elements. If TransitionDipole is specified the couplings are calculated on the fly using the transition-dipole coupling scheme. The chromophore positions must then be provided in the Positionfile and the transition-dipoles in the Dipolefile. As for the Coupling method the HamiltonianFile then only contains the diagonal elements. The dipoles are then assumed in Debye and Positions in \AA ngstr\"{o}m. If ExtendedDipole is selected the extended-dipole coupling scheme is used to calculate coupling on the fly. The dipole magnitude is then taken from the Dipolefile. The position of the two transition point-charges must be provided in the Positionfile, with the first point corresponding to odd timepoints and the second point corresponding to even timepoints.
 

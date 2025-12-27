@@ -19,4 +19,12 @@ void build_diag_H(float *Hamiltonian_i,float *H,float *e,int N);
 int time_evolution_mat(t_non *non,float *Hamiltonian_i,float *Ur,float *Ui,int *R,int *C,int m);
 void propagate_double_sparce(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m,float *Anh);
 void propagate_double_sparce_ES(t_non *non,float *Ur,float *Ui,int *R,int *C,float *fr,float *fi,int elements,int m);
+void propagate_double_2DIR_control(t_non* non, float* Hamil_i_e, float** ft1r, float** ft1i,
+                                  float* fr, float* fi, float** rightrr, float** rightri,
+                                  float* rightnr, float* rightni, int currentSample,
+                                  int molPol, int t3, float* Anh);
+void propagate_double_2DES_control(t_non* non, float* Hamil_i_e, float** ft1r, float** ft1i,
+                                  float* fr, float* fi, float** rightrr, float** rightri,
+                                  float* rightnr, float* rightni, int currentSample,
+                                  int molPol, int t3);
 #endif // _PROPAGATE_
