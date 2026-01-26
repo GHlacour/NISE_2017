@@ -201,8 +201,8 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
 
      fftw_execute(fftPlan);
      for (i=0;i<2*fft;i++){
-          spec_r[i+fft*2*ip]=fftOut[i][1];
-          spec_i[i+fft*2*ip]=fftOut[i][0];
+          spec_r[i+fft*2*ip]=fftOut[i][1]*2*non->deltat*c_v;
+          spec_i[i+fft*2*ip]=fftOut[i][0]*2*non->deltat*c_v;
      }
   }
   outone=fopen(fname,"w");
@@ -226,7 +226,49 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
       fprintf(outone,"\n");
     }
   }
-    
-  fclose(outone);
+
+  if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3))
+  {
+
+  float total_area, delta_freq = 1.0/non->deltat/c_v/fft; 
+  float current_freq, upper_limit, lower_limit;
+  float  scaled_area;
+  total_area=0;
+  float area_full =0;
+  for(i = 0; i < fft; i++)
+   {if(i >= fft/2) 
+    {
+    current_freq = -((fft-i)/non->deltat/c_v/fft-shift1); 
+    }
+    else
+    {
+      current_freq = (i/non->deltat/c_v/fft)+shift1;  
+    }
+    total_area+=spec_r[i]*pow(current_freq,3)*delta_freq; 
+    area_full+=spec_r[i]*delta_freq; 
 }
+
+  scaled_area = total_area*3.13618894e-16;  
+  area_full = area_full*2*c_v*non->deltat;
+
+  if(strcmp(fname,"Luminescence.dat")==0){
+    printf("Emission rate, measured in 1/ns, is: %f.\n",scaled_area);
+    printf("The area under the graph is %f.\n", area_full);}
+
+  if(strcmp(fname,"Luminescence_x.dat")==0){ 
+    printf("The area under the graph for the x axis component is %f.\n", area_full);}
+
+  if(strcmp(fname,"Luminescence_y.dat")==0){ 
+    printf("The area under the graph for the y axis component is %f.\n", area_full);}
+
+ if(strcmp(fname,"Luminescence_z.dat")==0){ 
+    printf("The area under the graph for the z axis component is %f.\n", area_full);}
+
+ }
+
+  fclose(outone);
+
+  return; 
+ }
+
 
