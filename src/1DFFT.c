@@ -15,7 +15,7 @@
 #include "read_trajectory.h"
 #include "omp.h"
 
-
+/* Read in data fron file and do FFT adding a lineshape function */
 void Lineshape_FFT(t_non *non){
   FILE *outone,*outone1;
   int samples,i;
@@ -54,9 +54,10 @@ void Lineshape_FFT(t_non *non){
   }    
   printf("\n\nCompleted reading the TD_Absorption.dat file.\n");
   
-  outone1=fopen("lineshape.dat","r");
+  /* Lineshape is assumed to contain exp(-g(t))*/
+  outone1=fopen("Lineshape.dat","r");
   if (outone1==NULL){
-    printf("lineshape.dat file not found!\n");
+    printf("Lineshape.dat file not found!\n");
     exit(1);
   }
       // Read data from the file
@@ -88,6 +89,7 @@ void Lineshape_FFT(t_non *non){
   return;
 }
 
+/* Do FFT by reading in from file */
 void ONE_DFFT(t_non *non){
   FILE *outone;
   /* Floats */
@@ -170,19 +172,25 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
         fftIn[i][1]=0;
      }
      for (i=0;i<non->tmax1;i++){
+        // Normalize to number of samples
         fftIn[i][0]=im_S_1[i+non->tmax*ip]/samples;
         fftIn[i][1]=re_S_1[i+non->tmax*ip]/samples;
-        if (non->lifetime > 0.0){
-           fftIn[i][0]*=exp(-i*non->deltat/(2*non->lifetime));
-           fftIn[i][1]*=exp(-i*non->deltat/(2*non->lifetime));
+        if (non->lifetime > 0.0){ // Add exponential decay
+          fftIn[i][0]*=exp(-i*non->deltat/(2*non->lifetime));
+          fftIn[i][1]*=exp(-i*non->deltat/(2*non->lifetime));
         }
-        if (non->homogen > 0.0){
-           fftIn[i][0]*=exp(-i*non->deltat/(2*non->homogen));
-           fftIn[i][1]*=exp(-i*non->deltat/(2*non->homogen));
+        if (non->homogen > 0.0){  // Add exponential decay
+          fftIn[i][0]*=exp(-i*non->deltat/(2*non->homogen));
+          fftIn[i][1]*=exp(-i*non->deltat/(2*non->homogen));
         }
-        if (non->inhomogen > 0.0){
-           fftIn[i][0]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
-           fftIn[i][1]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
+        if (non->inhomogen > 0.0){ // Add Gaussian decay
+          fftIn[i][0]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
+          fftIn[i][1]*=exp(-i*non->deltat*i*non->deltat/(2*non->inhomogen*non->inhomogen));
+        }
+        if (non->window==1){ // Add Hann window / raised cosine window
+          fftIn[i][0]*=cos(i*twoPi/(4*non->tmax-4))*cos(i*twoPi/(4*non->tmax-4));
+          fftIn[i][1]*=cos(i*twoPi/(4*non->tmax-4))*cos(i*twoPi/(4*non->tmax-4));
+//          printf("%f %f %f %f\n",i*non->deltat,fftIn[i][0],fftIn[i][1],cos(i*twoPi/(4*non->tmax-4))*cos(i*twoPi/(4*non->tmax-4)));
         }
 /*    fftIn[fft-i][0]=-im_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
     fftIn[fft-i][1]=re_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));*/
@@ -222,61 +230,3 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
   fclose(outone);
 }
 
-/* Do 1D Fourier transform */
-void do_1DFFTold(t_non *non,char fname[256],float *re_S_1,float *im_S_1,int samples){
-
-  /* Floats */
-  float shift1;
-  fftw_complex *fftIn,*fftOut;
-  fftw_plan fftPlan;
-  /* Integers */
-  int i,fft;
-  /* Files */
-  FILE *outone;
-
-  shift1=non->shifte;
-
-  fft=0;
-  if (fft<non->tmax1*2) fft=2*non->tmax1;
- 
-  /* Fourier transform 1D spectrum */
-  fftIn = fftw_malloc(sizeof(fftw_complex) * (fft*2));
-  fftOut = fftw_malloc(sizeof(fftw_complex) * (fft*2));
-  fftPlan = fftw_plan_dft_1d(fft,fftIn,fftOut,FFTW_FORWARD,FFTW_ESTIMATE);
-    
-  for (i=0;i<=fft;i++){
-    fftIn[i][0]=0;
-    fftIn[i][1]=0;
-  }
-  for (i=0;i<non->tmax1;i++){
-    fftIn[i][0]=im_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
-    fftIn[i][1]=re_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
-    fftIn[fft-i][0]=-im_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
-    fftIn[fft-i][1]=re_S_1[i]/samples*exp(-i*non->deltat/(2*non->lifetime));
-  }
-
-  fftw_execute(fftPlan);
-  outone=fopen(fname,"w");
-  for (i=fft/2;i<=fft-1;i++){
-    if (-((fft-i)/non->deltat/c_v/fft-shift1)>non->min1 && -((fft-i)/non->deltat/c_v/fft-shift1)<non->max1){ 
-      fprintf(outone,"%f %e %e\n",-((fft-i)/non->deltat/c_v/fft-shift1),fftOut[i][1],fftOut[i][0]);
-/*        fprintf(outone,"%f ",-((fft-i)/non->deltat/c_v/fft-shift1));
-        for (ip=0;ip<pro_dim;ip++){
-	  fprintf(outone,"%e %e ",spec_r[i+fft*2*ip],spec_i[i+fft*2*ip]);
-        }
-        fprintf(outone,"\n");*/
-    }
-  }
-  for (i=0;i<=fft/2-1;i++){
-    if (-((-i)/non->deltat/c_v/fft-shift1)>non->min1 && -((-i)/non->deltat/c_v/fft-shift1)<non->max1){ 
-      fprintf(outone,"%f %e %e\n",-((-i)/non->deltat/c_v/fft-shift1),fftOut[i][1],fftOut[i][0]);
-/*      fprintf(outone,"%f ",-((-i)/non->deltat/c_v/fft-shift1));
-      for (ip=0;ip<pro_dim;ip++){
-          fprintf(outone,"%e %e ",spec_r[i+fft*2*ip],spec_i[i+fft*2*ip]);
-      }
-      fprintf(outone,"\n");*/
-    }
-  }
-    
-  fclose(outone);
-}

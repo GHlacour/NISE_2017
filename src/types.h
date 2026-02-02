@@ -81,8 +81,9 @@ typedef struct {
   float temperature;
   float anharmonicity;
   int Npsites;
-  int printLevel;
+  int window; // 0 no window, 1 Hann window
   int *psites;
+  int printLevel;
 } t_non;
 
 #define RESET   "\033[0m"

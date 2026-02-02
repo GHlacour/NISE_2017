@@ -45,7 +45,7 @@ int main(int argc,char *argv[]){
   int wfile;
   float static c_v=2.99792458e-5;/* Speed of light in cm/fs */
   float shift1,shift3;
-  int form;
+  int form,window=0;
   int RamanDiagramCheck, Raman2D = 0;
   float w1,w3;
   float sw;
@@ -157,6 +157,15 @@ int main(int argc,char *argv[]){
       inhomo=(float) atof(pValue);
       printf("%f fs.\n",inhomo);
       continue;
+    }
+
+    /* Window */
+    if (!strncmp(&Buffer[0],"Window",LabelLength)){
+      printf("Window:");
+
+      sscanf(Buffer,"%s %s",format,format);
+      if (!strcmp(&format[0],"Hann")) window=1;
+      if (window==1) printf("Hann\n");
     }
 
     /* Format */
@@ -333,6 +342,15 @@ int main(int argc,char *argv[]){
                   rr=rr*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
                   ir=ir*exp(-(ti[1]-ti[3])*(ti[1]-ti[3])/2/inhomo/inhomo);
               }
+              if (window==1){ // Apply a Hann window / raised cosine window
+                rr=rr*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat)*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat);
+                rr=rr*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat)*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat);
+                ir=ir*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat)*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat);
+                ir=ir*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat)*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat);
+              }
+              // Scale boundary points with factor 0.5
+              if (i==0) rr=rr/2,ir=ir/2;
+              if (k==0) rr=rr/2,ir=ir/2;
 	            if (index<fft*fft){
 	                fftIn[index][0]=rr;
 	                fftIn[index][1]=ir;
@@ -477,6 +495,15 @@ int main(int argc,char *argv[]){
              rr=rr*exp(-(ti[1]+ti[3])*(ti[1]+ti[3])/2/inhomo/inhomo);
              ir=ir*exp(-(ti[1]+ti[3])*(ti[1]+ti[3])/2/inhomo/inhomo);
           }
+          if (window==1){ // Apply a Hann window / raised cosine window
+            rr=rr*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat)*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat);
+            rr=rr*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat)*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat);
+            ir=ir*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat)*cos(ti[1]*twoPi/(4*t.tmax1-4)/deltat);
+            ir=ir*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat)*cos(ti[3]*twoPi/(4*t.tmax3-4)/deltat);
+          }
+          // Scale boundary points with factor 0.5
+          if (i==0) rr=rr/2.0,ir=ir/2.0;
+          if (k==0) rr=rr/2.0,ir=ir/2.0;
           if (index<fft*fft){
             fftIn[index][0]+=rr;
             fftIn[index][1]+=ir;

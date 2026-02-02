@@ -325,9 +325,11 @@ void analyse(t_non *non){
 
   /* Print output to file */
   fprintf(outone,"# Using frequency range %f to %f cm-1\n",non->min1,non->max1);
-  fprintf(outone,"# Site AvFreq. SDFreq AvJ SDJ cEig cDOS\n");
+  fprintf(outone,"# Site AvFreq.  SDFreq     AvJ      SDJ      cEig         cDOS      2lambda\n");
   for (i=0;i<non->singles;i++){
-    fprintf(outone,"%d %f %f %f %F %e %e\n",i,average_frequency[i]+non->shifte,fluctuation[i],average_coupling[i],Jfluctuation[i],cEig[i]/counts,cDOS[i]/counts);
+    fprintf(outone,"%d %f %f %f %F %e %e %f\n",i,average_frequency[i]+non->shifte,
+      fluctuation[i],average_coupling[i],Jfluctuation[i],cEig[i]/counts,
+      cDOS[i]/counts,fluctuation[i]*fluctuation[i]/k_B/non->temperature);
   }
   fclose(outone);
 

@@ -428,7 +428,8 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 	indexa = Sindex(a, a, N);
         for (b = a; b < N; b++) {
 	    index = Sindex(a, b, N);
-            HD[index]=f*(Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]);
+            HD[index]=f*(Hamiltonian_i[indexa]
+                + Hamiltonian_i[Sindex(b, b, N)]);
 	    if (a == b) {
                 if (non->anharmonicity == 0) {
                     HD[index] -= Anh[a]*f;
@@ -463,24 +464,24 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     /* Loop over couplings */
 	for (k=0;k<kmax;k++){
     /* Loop over wave functions <ca|Hab|cb> and <cb|Hba|ca> */
-            a=col[k];
+        a=col[k];
 	    b=row[k];
     /* c < a,b */
-            for (c=0; c < N; c++) {
-                index1 = Sindex(a,c,N);
-                index2 = Sindex(b,c,N);
-		factor = 1.0;
-                    /* c < a,b */
+        for (c=0; c < N; c++) {
+            index1 = Sindex(a,c,N);
+            index2 = Sindex(b,c,N);
+		    factor = 1.0;
+            /* c < a,b */
 		    /* c == a */
-		if (c==a) factor=sqrt2;
+		    if (c==a) factor=sqrt2;
                     /* a < c < b */
                     /* c == b */
-		if (b==a) factor=sqrt2;
+		    if (b==a) factor=sqrt2;
                     /* c > a,b */
-		k1r[index1]+=H0[k]*ci[index2]*factor;
-		k1i[index1]-=H0[k]*cr[index2]*factor;
-		k1r[index2]+=H0[k]*ci[index1]*factor;
-                k1i[index2]-=H0[k]*cr[index1]*factor;
+		    k1r[index1]+=H0[k]*ci[index2]*factor;
+		    k1i[index1]-=H0[k]*cr[index2]*factor;
+		    k1r[index2]+=H0[k]*ci[index1]*factor;
+            k1i[index2]-=H0[k]*cr[index1]*factor;
 	    }
 	}
 	
@@ -644,7 +645,8 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
         indexa = Sindex(a, a, N);
         for (b = a+1; b < N; b++) {
             index = Sindex(a, b, N);
-            HD[index]=f*(Hamiltonian_i[indexa] + Hamiltonian_i[Sindex(b, b, N)]);
+            HD[index]=f*(Hamiltonian_i[indexa]
+                + Hamiltonian_i[Sindex(b, b, N)]);
         }
     }
 
@@ -663,9 +665,12 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
 
     /* Find k1 */
     /* Diagonal part */
-        for (k=0;k<N2;k++){
-            k1r[k]+=HD[k]*ci[k];
-            k1i[k]-=HD[k]*cr[k];
+        for (a=0;a<N;a++){
+            for (b=a+1;b<N;b++){
+                k=Sindex(a,b,N);
+                k1r[k]+=HD[k]*ci[k];
+                k1i[k]-=HD[k]*cr[k];
+            }
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -674,10 +679,9 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
             b=row[k];
     /* c < a,b */
             for (c=0; c < N; c++) {
-		if (c!=b && c!=a){
+		        if (c!=b && c!=a){ // Exclude the |aa> states
                     index1 = Sindex(a,c,N);
                     index2 = Sindex(b,c,N);
-                    factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                     /* if (c==a) factor=0.0; */
@@ -685,19 +689,22 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
                     /* c == b */
                     /* if (b==a) factor=0.0; */
                     /* c > a,b */
-                    k1r[index1]+=H0[k]*ci[index2]*factor;
-                    k1i[index1]-=H0[k]*cr[index2]*factor;
-                    k1r[index2]+=H0[k]*ci[index1]*factor;
-                    k1i[index2]-=H0[k]*cr[index1]*factor;
-		}
+                    k1r[index1]+=H0[k]*ci[index2];
+                    k1i[index1]-=H0[k]*cr[index2];
+                    k1r[index2]+=H0[k]*ci[index1];
+                    k1i[index2]-=H0[k]*cr[index1];
+        		}
             }
         }
 
     /* Find k2 */
     /* Diagonal part */
-        for (k=0;k<N2;k++){
-            k2r[k]+=HD[k]*(ci[k]+k1i[k]*0.5);
-            k2i[k]-=HD[k]*(cr[k]+k1r[k]*0.5);
+        for (a=0;a<N;a++){
+            for (b=a+1;b<N;b++){
+                k=Sindex(a,b,N);
+                k2r[k]+=HD[k]*(ci[k]+k1i[k]*0.5);
+                k2i[k]-=HD[k]*(cr[k]+k1r[k]*0.5);
+            }
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -706,10 +713,9 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
             b=row[k];
     /* c < a,b */
             for (c=0; c < N; c++) {
-		if (c!=b && c!=a){
+		        if (c!=b && c!=a){
                     index1 = Sindex(a,c,N);
                     index2 = Sindex(b,c,N);
-                    factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                     /* if (c==a) factor=0.0; */
@@ -717,19 +723,22 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
                     /* c == b */
                     /* if (b==a) factor=0.0; */
                     /* c > a,b */
-                    k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
-                    k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
-                    k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5)*factor;
-                    k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5)*factor;
-		}
+                    k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5);
+                    k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5);
+                    k2r[index2]+=H0[k]*(ci[index1]+k1i[index1]*0.5);
+                    k2i[index2]-=H0[k]*(cr[index1]+k1r[index1]*0.5);
+		        }
             }
         }
 
     /* Find k3 */
     /* Diagonal part */
-        for (k=0;k<N2;k++){
-            k3r[k]+=HD[k]*(ci[k]+k2i[k]*0.5);
-            k3i[k]-=HD[k]*(cr[k]+k2r[k]*0.5);
+        for (a=0;a<N;a++){
+            for (b=a+1;b<N;b++){
+                k=Sindex(a,b,N);
+                k3r[k]+=HD[k]*(ci[k]+k2i[k]*0.5);
+                k3i[k]-=HD[k]*(cr[k]+k2r[k]*0.5);
+            }
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -738,10 +747,9 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
             b=row[k];
     /* c < a,b */
             for (c=0; c < N; c++) {
-		if (c!=b && c!=a){
+		        if (c!=b && c!=a){
                     index1 = Sindex(a,c,N);
                     index2 = Sindex(b,c,N);
-                    factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                     /* if (c==a) factor=sqrt2; */
@@ -749,19 +757,22 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
                     /* c == b */
                     /* if (b==a) factor=sqrt2; */
                     /* c > a,b */
-                    k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5)*factor;
-                    k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5)*factor;
-                    k3r[index2]+=H0[k]*(ci[index1]+k2i[index1]*0.5)*factor;
-                    k3i[index2]-=H0[k]*(cr[index1]+k2r[index1]*0.5)*factor;
-		}
+                    k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5);
+                    k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5);
+                    k3r[index2]+=H0[k]*(ci[index1]+k2i[index1]*0.5);
+                    k3i[index2]-=H0[k]*(cr[index1]+k2r[index1]*0.5);
+		        }
             }
         }
 
     /* Find k4 */
     /* Diagonal part */
-        for (k=0;k<N2;k++){
-            k4r[k]+=HD[k]*(ci[k]+k3i[k]);
-            k4i[k]-=HD[k]*(cr[k]+k3r[k]);
+        for (a=0;a<N;a++){
+            for (b=a+1;b<N;b++){
+                k=Sindex(a,b,N);
+                k4r[k]+=HD[k]*(ci[k]+k3i[k]);
+                k4i[k]-=HD[k]*(cr[k]+k3r[k]);
+            }
         }
     /* Loop over couplings */
         for (k=0;k<kmax;k++){
@@ -770,10 +781,9 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
             b=row[k];
     /* c < a,b */
             for (c=0; c < N; c++) {
-		if (c!=b && c!=a){
+		        if (c!=b && c!=a){
                     index1 = Sindex(a,c,N);
                     index2 = Sindex(b,c,N);
-                    factor = 1.0;
                     /* c < a,b */
                     /* c == a */
                     /* if (c==a) factor=0.0; */
@@ -781,19 +791,22 @@ void propagate_vec_RK4_doubles_ES(t_non *non,float *Hamiltonian_i,float *cr,floa
                     /* c == b */
                     /* if (b==a) factor=0.0; */
                     /* c > a,b */
-                    k4r[index1]+=H0[k]*(ci[index2]+k3i[index2])*factor;
-                    k4i[index1]-=H0[k]*(cr[index2]+k3r[index2])*factor;
-                    k4r[index2]+=H0[k]*(ci[index1]+k3i[index1])*factor;
-                    k4i[index2]-=H0[k]*(cr[index1]+k3r[index1])*factor;
+                    k4r[index1]+=H0[k]*(ci[index2]+k3i[index2]);
+                    k4i[index1]-=H0[k]*(cr[index2]+k3r[index2]);
+                    k4r[index2]+=H0[k]*(ci[index1]+k3i[index1]);
+                    k4i[index2]-=H0[k]*(cr[index1]+k3r[index1]);
 		}
             }
         }
 
     /* Update wavefunction */
-        norm=find_norm(cr,ci,N2);
-        for (k=0;k<N2;k++){
-            cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
-            ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
+        norm=find_norm(cr,ci,N2); /* Find old norm */
+        for (a=0;a<N;a++){
+            for (b=a+1;b<N;b++){
+                k=Sindex(a,b,N);
+                cr[k]=cr[k]+(k1r[k]+2.0*k2r[k]+2.0*k3r[k]+k4r[k])/6.0;
+                ci[k]=ci[k]+(k1i[k]+2.0*k2i[k]+2.0*k3i[k]+k4i[k])/6.0;
+            }
         }
         re_normalize(cr,ci,N2,norm);
 
@@ -1459,4 +1472,239 @@ void propagate_double_sparce_ES(t_non* non, float* Ur, float* Ui, int* R, int* C
     free(vi);
 }
 
+/* Control 2DIR propagation */
+void propagate_double_2DIR_control(t_non* non, float* Hamil_i_e, float** ft1r, float** ft1i,
+                                  float* fr, float* fi, float** rightrr, float** rightri,
+                                  float* rightnr, float* rightni, int currentSample,
+                                  int molPol, int t3, float* Anh) {
 
+    /* Define variables */
+    float *Urs, *Uis;
+    int *Rs, *Cs;
+    int elements;
+    int t1;
+
+    /* Propagate */
+    if (non->propagation == 0) {
+        float* Urs = calloc(non->singles * non->singles, sizeof(float));
+        float* Uis = calloc(non->singles * non->singles, sizeof(float));
+
+        int* Rs = calloc(non->singles * non->singles, sizeof(int));
+        int* Cs = calloc(non->singles * non->singles, sizeof(int));
+
+        // bug? Cs and Rs seems to be exchanged (TLC just multiplying with imaginary number)
+        int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
+        if (currentSample == non->begin && molPol == 0 && t3 == 0) {
+            printf("Sparse matrix efficiency: %f pct.\n",
+                (1 - (1.0 * elements / (non->singles * non->singles))) * 100);
+            printf("Present truncation %f.\n",
+                non->thres / ((double) non->deltat * icm2ifs * (double) twoPi / non->ts * (non->deltat *
+                icm2ifs * twoPi / non->ts)));
+            printf("Suggested truncation %f.\n", 0.001);
+        }
+
+        // Key parallel loop 1
+        // Initial step, former t1=-1
+        propagate_double_sparce(non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts, Anh);
+
+        int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
+#pragma omp parallel for \
+        shared(non, Anh, Urs, Uis, Rs, Cs, ft1r, ft1i) \
+        schedule(static, 1)
+
+        for(t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_double_sparce(non, Urs, Uis, Rs, Cs, ft1r[t1],
+                ft1i[t1], elements, non->ts, Anh
+            );
+        }
+
+        // Propagate vectors right
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_DIA_S(non, Hamil_i_e, rightnr, rightni, -1);
+
+        for(t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_DIA_S(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], -1
+            );
+        }
+
+        free(Urs), free(Uis), free(Rs), free(Cs);
+    }
+    else if(non->propagation == 1) {
+        // Key parallel loop 1
+        // Initial step
+        propagate_vec_coupling_S_doubles(
+            non, Hamil_i_e, fr, fi, non->ts,Anh); 
+
+        int t1;
+#pragma omp parallel for \
+        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
+        schedule(static, 1)
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_coupling_S_doubles(
+                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts,Anh); 
+        }
+
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_coupling_S(
+            non, Hamil_i_e, rightnr, rightni, non->ts, -1
+        );
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_coupling_S(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+            );
+        }
+    }
+	/* RK4 propagation */
+	else if(non->propagation == 3) {
+        // Key parallel loop 1
+        // Initial step
+        propagate_vec_RK4_doubles(
+            non, Hamil_i_e, fr, fi, non->ts,Anh);
+
+        int t1;
+#pragma omp parallel for \
+        shared(non,Hamil_i_e,Anh,ft1r,ft1i) \
+        schedule(static, 1)
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_RK4_doubles(
+                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts,Anh);
+        }
+
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_RK4(
+            non, Hamil_i_e, rightnr, rightni, non->ts, -1
+        );
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_RK4(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+            );
+        }
+    }
+}
+
+
+void propagate_double_2DES_control(t_non* non, float* Hamil_i_e, float** ft1r, float** ft1i,
+                                  float* fr, float* fi, float** rightrr, float** rightri,
+                                  float* rightnr, float* rightni, int currentSample,
+                                  int molPol, int t3) {
+
+    /* Define variables */
+    float *Urs, *Uis;
+    int *Rs, *Cs;
+    int elements;
+    int t1;
+
+    /* Propagate */
+    if (non->propagation == 0) {
+        float* Urs = calloc(non->singles * non->singles, sizeof(float));
+        float* Uis = calloc(non->singles * non->singles, sizeof(float));
+
+        int* Rs = calloc(non->singles * non->singles, sizeof(int));
+        int* Cs = calloc(non->singles * non->singles, sizeof(int));
+
+        // bug? Cs and Rs seems to be exchanged (TLC just multiplying with imaginary number)
+        int elements = time_evolution_mat(non, Hamil_i_e, Urs, Uis, Cs, Rs, non->ts);
+        if (currentSample == non->begin && molPol == 0 && t3 == 0) {
+            printf("Sparse matrix efficiency: %f pct.\n",
+                (1 - (1.0 * elements / (non->singles * non->singles))) * 100);
+            printf("Present truncation %f.\n",
+                non->thres / ((double) non->deltat * icm2ifs * (double) twoPi / non->ts * (non->deltat *
+                icm2ifs * twoPi / non->ts)));
+            printf("Suggested truncation %f.\n", 0.001);
+        }
+
+        // Key parallel loop 1
+        // Initial step, former t1=-1
+        propagate_double_sparce_ES(
+            non, Urs, Uis, Rs, Cs, fr, fi, elements, non->ts);
+
+        int t1; // MSVC can't deal with C99 declarations inside a for with OpenMP
+#pragma omp parallel for \
+        shared(non, Urs, Uis, Rs, Cs, ft1r, ft1i) \
+        schedule(static, 1)
+
+        for(t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_double_sparce_ES(
+                non, Urs, Uis, Rs, Cs, ft1r[t1],
+                ft1i[t1], elements, non->ts);
+        }
+
+        // Propagate vectors right
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_DIA_S(non, Hamil_i_e, rightnr, rightni, -1);
+
+        for(t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_DIA_S(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], -1
+            );
+        }
+
+        free(Urs), free(Uis), free(Rs), free(Cs);
+    }
+    else if(non->propagation == 1) {
+        // Key parallel loop 1
+        // Initial step
+        propagate_vec_coupling_S_doubles_ES(
+            non, Hamil_i_e, fr, fi, non->ts); 
+
+        int t1;
+#pragma omp parallel for \
+        shared(non,Hamil_i_e,ft1r,ft1i) \
+        schedule(static, 1)
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_coupling_S_doubles_ES(
+                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts); 
+        }
+
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_coupling_S(
+            non, Hamil_i_e, rightnr, rightni, non->ts, -1
+        );
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_coupling_S(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+            );
+        }
+    }
+	else if(non->propagation == 3) {
+        // Key parallel loop 1
+        // Initial step
+        propagate_vec_RK4_doubles_ES(
+            non, Hamil_i_e, fr, fi, non->ts);
+
+        int t1;
+#pragma omp parallel for \
+        shared(non,Hamil_i_e,ft1r,ft1i) \
+        schedule(static, 1)
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_RK4_doubles_ES(
+                non, Hamil_i_e, ft1r[t1], ft1i[t1], non->ts);
+        }
+
+        // Key parallel loop 2
+        // Initial step
+        propagate_vec_RK4(
+            non, Hamil_i_e, rightnr, rightni, non->ts, -1
+        );
+
+        for (t1 = 0; t1 < non->tmax1; t1++) {
+            propagate_vec_RK4(
+                non, Hamil_i_e, rightrr[t1], rightri[t1], non->ts, -1
+            );
+        }
+    }
+
+}
