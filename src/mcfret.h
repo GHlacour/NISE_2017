@@ -1,7 +1,7 @@
 #ifndef _MCFRET_ /* ignore */
 #define _MCFRET_
 void mcfret(t_non *non);
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments);
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments, float *partition_functions);
 void mcfret_autodetect(t_non *non, float treshold);
 void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission, float *ave_vecr);
 void mcfret_coupling(float *J,t_non *non);
@@ -16,6 +16,7 @@ float trace_rate(float *matrix,int N);
 void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple);
 void write_matrix_to_file(char fname[],float *matrix,int N);
 void write_matrix_to_file_float(char fname[],float *matrix,int N);
+void read_vector_from_file(char fname[],float *vector,int N);
 void read_matrix_from_file(char fname[],float *matrix,int N);
 void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax);
 void triangular_on_square(float *T,float *S,int N);

@@ -1586,33 +1586,60 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
 /* Analyse rate matrix and find thermal correction */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
       float *qc_rate_matrix,*qc;
+      /* Thermal correction */
+      float *tc_rate_matrix;
+      float *partition_functions;
+      float partition_function_i, partition_function_j, equilibration_rate;
       float C;
+      float column;
       int i,j;
       float kBT=non->temperature*k_B; /* Kelvin to cm-1 */                     
   
       qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-      qc=(float *)calloc(segments*segments,sizeof(float));                     
+      qc=(float *)calloc(segments*segments,sizeof(float));
+      
+      tc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+      /* load the segment ensemble avg partition functions */
+      /* Allocate memory for the partition function vector */
+      partition_functions = (float *)calloc(segments,sizeof(float));        
+      read_vector_from_file("avg_partition_functions.txt",partition_functions,segments); 
+
       /* Find quantum correction factors */                                    
       for (i=0;i<segments;i++){
+          partition_function_i = partition_functions[i];
+	  column = 0;
           for (j=0;j<segments;j++){                                            
               if (i!=j){
-                      /* Quantum correction factor from D.W. Oxtoby. */
-                      /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
-                      C=2/(1+exp((E[i]-E[j])/kBT));                            
-                      qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
-                      qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
+                  /* Quantum correction factor from D.W. Oxtoby. */
+                  /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
+                  C=2/(1+exp((E[i]-E[j])/kBT));                            
+                  qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
+                  qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
                   qc[i*segments+j]=C;
-              }       
-              else{   
+		  /* Original Thermal Correction */
+		  equilibration_rate = rate_matrix[i*segments+j] + rate_matrix[j*segments+i];
+		  partition_function_j = partition_functions[j];
+		  /* rate from segment i to segment j */
+		  tc_rate_matrix[i+segments*j] = equilibration_rate * partition_function_j / (partition_function_i + partition_function_j);
+                  column += tc_rate_matrix[i+segments*j];
+	      }       
+              else{ 
                   qc[i*segments+j]=0;
               }       
           }
+	  /* Ensure population conservation in the TC_rate_matrix */
+	  tc_rate_matrix[i+segments*i] = -column;
       }
   
       /* Write the quantum corrected rate matrix. */
       write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+      /* Write the thermal corrected rate matrix. */
+      write_matrix_to_file("TC_RateMatrix.dat",tc_rate_matrix,segments);
       /* Write the applied quantum correction factors. */
       write_matrix_to_file("QC.dat",qc,segments);                              
+      free(qc_rate_matrix);
+      free(tc_rate_matrix);
+      free(qc);
       return;                                                                  
   }
 
@@ -1749,7 +1776,7 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *ener
 }
 
 /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments){
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments, float *partition_functions){
     int index,N;
     float *H,*e;
     double *c2;
@@ -1763,7 +1790,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
     cnr=(double *)calloc(N*N,sizeof(double));
     matrix=(double *)calloc(N*N,sizeof(double));
 
-    int a,b,c;
+    int a,b,c,s;
     double kBT=(double) non->temperature*k_B; /* Kelvin to cm-1 */
     double *Q,iQ;
  
@@ -1823,6 +1850,11 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
         }
     }      
 
+    /* Update the ensemble average partition function for each segment*/
+    for(s=0;s<segments;s++){
+       partition_functions[s] += Q[s];
+    }
+
     free(H);
     free(c2);
     free(e);
@@ -1835,7 +1867,7 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
 /* Define variables and arrays */
    /* Integers */
     int ti;
-    int segments;
+    int segments,s;
     int samples;
     int ele;
     int my_samples;
@@ -1844,10 +1876,13 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     /* Vectors representing time dependent states: real and imaginary part */
     float *vecr;
     float *Hamiltonian_i;
+    /* Vector representing the ensemble average partition function for each segment */
+    float *partition_functions;
     /* File handles */
     FILE *H_traj;
     FILE *mu_traj;
     FILE *Cfile;
+    FILE *avg_partition_functions;
     /* Open Trajectory files */
     open_files(non,&H_traj,&mu_traj,&Cfile);
 
@@ -1859,6 +1894,9 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     segments=project_dim(non);
     N=non->singles;
   
+    /* Allocate memory for the partition function vector */
+    partition_functions = (float *)calloc(segments,sizeof(float));
+    
     clearvec(ave_den_mat,N*N);
     /* Initialize sample numbers */
     my_samples=determine_samples(non);
@@ -1871,7 +1909,7 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
       ti=samples*non->sample; 
       read_Hamiltonian(non,Hamiltonian_i,H_traj,ti);
       /* Use the thermal equilibrium as initial state */
-      density_matrix(vecr,Hamiltonian_i,non,segments);
+      density_matrix(vecr,Hamiltonian_i,non,segments,partition_functions);
 
       for (ele=0; ele<non->singles*non->singles; ele++){
           ave_den_mat[ele] +=vecr[ele]; 
@@ -1889,6 +1927,20 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
             } 
         }
     }
+
+    /* normalise the segments' partition funcions */
+    for (s=0;s<segments;s++){
+        partition_functions[s] *= i_samples;
+    }
+
+    /* write partition function vector to a file */
+    avg_partition_functions = fopen("avg_partition_functions.txt","w");
+    for (s=0;s<segments;s++){
+        fprintf(avg_partition_functions,"%f\n",partition_functions[s]);
+    }
+    fclose(avg_partition_functions);
+
+    free(partition_functions);
     free(vecr); 
     free(Hamiltonian_i); 
     return;
@@ -2043,6 +2095,22 @@ void read_matrix_from_file(char fname[],float *matrix,int N){
     }
     fclose(file_handle);
 }
+
+/* Read a vector from a text file */
+void read_vector_from_file(char fname[],float *vector,int N){
+    FILE *file_handle;
+    int i;
+    file_handle=fopen(fname,"r");
+    if (file_handle == NULL) {
+        printf("Error opening the file %s.\n",fname);
+        exit(0);
+    }
+    for (i=0;i<N;i++){
+        fscanf(file_handle,"%f",&vector[i]);
+    }
+    fclose(file_handle);
+}
+
 
 /* Read the absorption/emission function from file */
 void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax){
