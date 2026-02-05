@@ -1571,7 +1571,7 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
 	/* Skip adjusting quantum correction in the high-temperature limit */
 	if (non->temperature<100000){
 	    energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
-	}
+    }
     }
     fclose(Efile);
 
@@ -1595,14 +1595,14 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
       int i,j;
       float kBT=non->temperature*k_B; /* Kelvin to cm-1 */                     
   
+      /* Allocate memory for the partition functions and rate matrices */
       qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-      qc=(float *)calloc(segments*segments,sizeof(float));
-      
+      qc=(float *)calloc(segments*segments,sizeof(float)); 
       tc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-      /* load the segment ensemble avg partition functions */
-      /* Allocate memory for the partition function vector */
       partition_functions = (float *)calloc(segments,sizeof(float));        
-      read_vector_from_file("avg_partition_functions.txt",partition_functions,segments); 
+      
+      /* load the segment ensemble avg partition functions */
+      read_vector_from_file("Segment_Partition_Functions.dat",partition_functions,segments); 
 
       /* Find quantum correction factors */                                    
       for (i=0;i<segments;i++){
@@ -1616,7 +1616,7 @@ void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
                   qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
                   qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
                   qc[i*segments+j]=C;
-		  /* Original Thermal Correction */
+		  /* Partition Function Based Thermal Correction */
 		  equilibration_rate = rate_matrix[i*segments+j] + rate_matrix[j*segments+i];
 		  partition_function_j = partition_functions[j];
 		  /* rate from segment i to segment j */
@@ -1928,13 +1928,13 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
         }
     }
 
-    /* normalise the segments' partition funcions */
+    /* Normalise the segments' partition funcions */
     for (s=0;s<segments;s++){
         partition_functions[s] *= i_samples;
     }
 
-    /* write partition function vector to a file */
-    avg_partition_functions = fopen("avg_partition_functions.txt","w");
+    /* Write partition function vector to a file */
+    avg_partition_functions = fopen("Segment_Partition_Functions.dat","w");
     for (s=0;s<segments;s++){
         fprintf(avg_partition_functions,"%f\n",partition_functions[s]);
     }
@@ -2019,98 +2019,6 @@ float trace_rate(float *matrix,int N){
     }
     return trace;
 }
-
-/* Integrate the rate response */
-void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
-    int i;
-    float simple; /* Variable for trapezium integral */
-    float simp13; /* Variable for Simpsons 1/3 rule integral */
-    simple=0;
-    simp13=0;
-    for (i=0;i<T;i++){
-        if (i==0){
-	    simple+=rate_response[i]/2;
-	    simp13+=rate_response[i]/3;
-	} else if (i%2==0){
-	    simple+=rate_response[i];
-            simp13+=2*rate_response[i]/3;
-        } else {
-	     simple+=rate_response[i];
-            simp13+=4*rate_response[i]/3;
-        }
-    }
-
-    /* Check for difference between integration methods */
-    if (fabs(simple-simp13)/fabs(simple)>0.05){
-        printf("\n");
-        printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
-        printf(YELLOW "Simple integral value: %f\n Simpson 1/3: %f\n",simple,simp13);
-        printf(YELLOW "This difference is larger than 5%%.\n" RESET);
-	printf(YELLOW "The trapezium rule value is used.\n\n" RESET);
-    }
-
-    /* Check for difference between initial and final value */
-    if (fabs(rate_response[T-1])*50>rate_response[0]){
-	    printf("\n");
-            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100/fabs(rate_response[0]));
-	    printf("of the initial value. You may avearge over too\n");
-	    printf("few samples (decrease the value of Samplerate) or\n");
-	    printf("your chosen coherence time of %d steps, may\n",T);
-	    printf("be too short for the coherence to decay.\n." RESET);
-	    printf("\n");
-    }
-
-    /* Store results in variables for return */
-    *isimple=simple;
-    *is13=simp13;
-}
-
-/* Write a square matrix to a text file */
-void write_matrix_to_file(char fname[],float *matrix,int N){
-    FILE *file_handle;
-    int i,j;
-    file_handle=fopen(fname,"w");
-    for (i=0;i<N;i++){
-        for (j=0;j<N;j++){
-            fprintf(file_handle,"%10.14e ",matrix[i*N+j]);
-        }
-        fprintf(file_handle,"\n");
-    }
-    fclose(file_handle);
-}
-
-/* Read a square matrix from a text file */
-void read_matrix_from_file(char fname[],float *matrix,int N){
-    FILE *file_handle;
-    int i,j;
-    file_handle=fopen(fname,"r");
-    if (file_handle == NULL) {
-        printf("Error opening the file %s.\n",fname);
-        exit(0);
-    }
-    for (i=0;i<N;i++){
-        for (j=0;j<N;j++){
-            fscanf(file_handle,"%f",&matrix[i*N+j]);
-        }
-    }
-    fclose(file_handle);
-}
-
-/* Read a vector from a text file */
-void read_vector_from_file(char fname[],float *vector,int N){
-    FILE *file_handle;
-    int i;
-    file_handle=fopen(fname,"r");
-    if (file_handle == NULL) {
-        printf("Error opening the file %s.\n",fname);
-        exit(0);
-    }
-    for (i=0;i<N;i++){
-        fscanf(file_handle,"%f",&vector[i]);
-    }
-    fclose(file_handle);
-}
-
 
 /* Read the absorption/emission function from file */
 void read_response_from_file(char fname[],float *re_R,float *im_R,int N,int tmax){
