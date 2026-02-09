@@ -55,6 +55,13 @@ void luminescence(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
   printf("Temperature %f.\n",non->temperature);
+  
+  pro_dim=project_dim(non);
+  if (pro_dim>1){
+    printf("Multi segement projection is not implemented.\n");
+    exit(0);
+  }
+
 
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));

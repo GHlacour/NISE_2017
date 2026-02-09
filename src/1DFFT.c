@@ -249,7 +249,6 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
 }
 
   scaled_area = total_area*3.13618894e-16;  
-  area_full = area_full*2*c_v*non->deltat;
 
   if(strcmp(fname,"Luminescence.dat")==0){
     printf("Emission rate, measured in 1/ns, is: %f.\n",scaled_area);
