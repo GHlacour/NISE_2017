@@ -44,6 +44,7 @@ void luminescence(t_non *non){
   int x,ti,tj,i;
   int t1,fft;
   int elements;
+  int pro_dim;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
