@@ -229,7 +229,6 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
 
   if (string_in_array(non->technique,(char*[]){"Luminescence","PL","Fluorescence"},3))
   {
-
   float total_area, delta_freq = 1.0/non->deltat/c_v/fft; 
   float current_freq, upper_limit, lower_limit;
   float  scaled_area;
@@ -248,11 +247,15 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
     area_full+=spec_r[i]*delta_freq; 
 }
 
+  //conversion factor added due to change of units
+  //to 1/ns from cm^(-4) Debye^2
   scaled_area = total_area*3.13618894e-16;  
 
   if(strcmp(fname,"Luminescence.dat")==0){
-    printf("Emission rate, measured in 1/ns, is: %f.\n",scaled_area);
-    printf("The area under the graph is %f.\n", area_full);}
+    printf("\nCalculated emission rate: %f 1/ns.\n\n",scaled_area);}
+
+  if(non->printLevel ==1){
+  printf("The area under the graph is %f.\n", area_full);
 
   if(strcmp(fname,"Luminescence_x.dat")==0){ 
     printf("The area under the graph for the x axis component is %f.\n", area_full);}
@@ -263,7 +266,7 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
  if(strcmp(fname,"Luminescence_z.dat")==0){ 
     printf("The area under the graph for the z axis component is %f.\n", area_full);}
 
- }
+ }}
 
   fclose(outone);
 
