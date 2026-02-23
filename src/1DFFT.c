@@ -248,7 +248,7 @@ void do_1DFFT(t_non *non,char fname[],float *re_S_1,float *im_S_1,int samples){
 }
 
   //conversion factor added due to change of units
-  //to 1/ns from cm^(-4) Debye^2
+  //to 1/ns from cm^(-4)*Debye^2
   scaled_area = total_area*3.13618894e-16;  
 
   if(strcmp(fname,"Luminescence.dat")==0){
