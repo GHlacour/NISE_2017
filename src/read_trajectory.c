@@ -107,7 +107,8 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
     float q1,q2,J; // Charges for EDC coupling
     float Rx,Ry,Rz,dist,idist,idist3; // Variables for TDC
     float m1x,m1y,m1z,m2x,m2y,m2z; // Variables for TDC
-    float f1,f2; // Variables for TDC
+    float f1,f2,f3; // Variables for TDC
+    float l1, l2, l3, freq, k;
     FILE *pos_traj;
     FILE *dip_traj;
     float box[3];
@@ -127,7 +128,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         fclose(pbc_traj);
     }
     /* Read only diagonal part */
-    if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "TransitionDipole")) || (!strcmp(non->hamiltonian, "ExtendedDipole")) ) {
+    if ((!strcmp(non->hamiltonian, "Coupling") && pos >= 0) || (!strcmp(non->hamiltonian, "ShortTransitionDipole")) || (!strcmp(non->hamiltonian, "LongTransitionDipole")) || (!strcmp(non->hamiltonian, "ExtendedDipole")) ) {
         H = (float *)calloc(non->singles, sizeof(float));
         /* Find position */
         fseek(FH, pos * (sizeof(int) + sizeof(float) * (non->singles)),SEEK_SET);
@@ -172,8 +173,9 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         }
     }
     /* Find the couplings from the TDC 'on the fly' scheme  */
+    //-- calculations here + changes!!
     A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */
-    if ((!strcmp(non->hamiltonian, "TransitionDipole"))) {
+    if ((!strcmp(non->hamiltonian, "ShortTransitionDipole")) || (!strcmp(non->hamiltonian, "LongTransitionDipole"))) {
         R = (float *)calloc(3*non->singles, sizeof(float));
         mu = (float *)calloc(3*non->singles, sizeof(float));
         /* Read in positions */
@@ -182,6 +184,7 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
             printf(RED "Atom position file for TDC on the fly not found!\n" RESET);
             exit(1);
         }
+
         read_mue(non,R,pos_traj,pos,0);
         read_mue(non,R+non->singles,pos_traj,pos,1);
         read_mue(non,R+2*non->singles,pos_traj,pos,2);
@@ -190,24 +193,47 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         read_mue(non,mu,dip_traj,pos,0);
         read_mue(non,mu+non->singles,dip_traj,pos,1);
         read_mue(non,mu+2*non->singles,dip_traj,pos,2);
+
         /* Calculate the couplings according to TDC */
+
         for (i = 0; i < non->singles; i++) {
+
             m1x=mu[i];
             m1y=mu[non->singles+i];
             m1z=mu[2*non->singles+i];
+
             for (j = i+1; j < non->singles; j++) {
+
                 Rx=pbc1(R[i]-R[j],0,box);
                 Ry=pbc1(R[non->singles+i]-R[non->singles+j],1,box);
                 Rz=pbc1(R[2*non->singles+i]-R[2*non->singles+j],2,box);
+
                 m2x=mu[j];
                 m2y=mu[non->singles+j];
                 m2z=mu[2*non->singles+j];
+
                 dist=sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
                 idist=1.0/dist;
                 idist3=idist*idist*idist;
-                f1=m1x*m2x+m1y*m2y+m1z*m2z;
-                f2=-3*(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
-                He[Sindex(i,j,non->singles)] = A*(f1+f2)*idist3;
+
+                f1 = m1x*m2x+m1y*m2y+m1z*m2z;
+                f2 = -3*(m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz)*idist*idist;
+                f3 = (m1x*Rx+m1y*Ry+m1z*Rz)*(m2x*Rx+m2y*Ry+m2z*Rz);
+
+                if((!strcmp(non->hamiltonian, "ShortTransitionDipole"))) {
+                    He[Sindex(i,j,non->singles)] = A*(f1+f2)*idist3;
+                }
+
+                if((!strcmp(non->hamiltonian, "LongTransitionDipole"))) { 
+                    freq = (non->max1+non->min1)/2;
+                    k = 2*M_PI*freq/c_v;
+                    l1 = (cos(k*dist))*idist*k*k;
+                    l2 = (sin(k*dist))*idist*idist*k;
+                    l3 = (cos(k*dist))*idist3;
+                    He[Sindex(i,j,non->singles)] = A*((-(f1-f3)*l1)+(f1+f2)*(l2+l3)); 
+                }
+
+
             }
         }
        free(R);
@@ -215,6 +241,8 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
        fclose(pos_traj);
        fclose(dip_traj);
     }
+
+    
     /* Find the couplings from the EDC 'on the fly' scheme  */
     A=5034.11861687; /* Convert to cm-1 from Deb**2/Ang**3 */
     if ((!strcmp(non->hamiltonian, "ExtendedDipole"))) {
