@@ -427,10 +427,10 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
     for (a = 0; a < N; a++) {
 	indexa = Sindex(a, a, N);
         for (b = a; b < N; b++) {
-	    index = Sindex(a, b, N);
+	        index = Sindex(a, b, N);
             HD[index]=f*(Hamiltonian_i[indexa]
                 + Hamiltonian_i[Sindex(b, b, N)]);
-	    if (a == b) {
+	        if (a == b) {
                 if (non->anharmonicity == 0) {
                     HD[index] -= Anh[a]*f;
                 }
@@ -476,7 +476,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
 		    if (c==a) factor=sqrt2;
                     /* a < c < b */
                     /* c == b */
-		    if (b==a) factor=sqrt2;
+		    if (b==c) factor=sqrt2; // TLC 21/2-26 Fixed bug from b==a
                     /* c > a,b */
 		    k1r[index1]+=H0[k]*ci[index2]*factor;
 		    k1i[index1]-=H0[k]*cr[index2]*factor;
@@ -506,7 +506,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
                 if (c==a) factor=sqrt2;
                     /* a < c < b */
                     /* c == b */
-                if (b==a) factor=sqrt2;
+                if (b==c) factor=sqrt2; // TLC 21/2-26 Fixed bug from b==a
                     /* c > a,b */
                 k2r[index1]+=H0[k]*(ci[index2]+k1i[index2]*0.5)*factor;
                 k2i[index1]-=H0[k]*(cr[index2]+k1r[index2]*0.5)*factor;
@@ -536,7 +536,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
                 if (c==a) factor=sqrt2;
                     /* a < c < b */
                     /* c == b */
-                if (b==a) factor=sqrt2;
+                if (b==c) factor=sqrt2; // TLC 21/2-26 Fixed bug from b==a
                     /* c > a,b */
                 k3r[index1]+=H0[k]*(ci[index2]+k2i[index2]*0.5)*factor;
                 k3i[index1]-=H0[k]*(cr[index2]+k2r[index2]*0.5)*factor;
@@ -566,7 +566,7 @@ void propagate_vec_RK4_doubles(t_non *non,float *Hamiltonian_i,float *cr,float *
                 if (c==a) factor=sqrt2;
                     /* a < c < b */
                     /* c == b */
-                if (b==a) factor=sqrt2;
+                if (b==c) factor=sqrt2; // TLC 21/2-26 Fixed bug from b==a
                     /* c > a,b */
                 k4r[index1]+=H0[k]*(ci[index2]+k3i[index2])*factor;
                 k4i[index1]-=H0[k]*(cr[index2]+k3r[index2])*factor;
@@ -916,7 +916,7 @@ void propagate_vec_coupling_S_doubles(t_non* non, float* Hamiltonian_i, float* c
 
     /* Build Hamiltonians H0 (diagonal) and H1 (coupling) */
     for (int a = 0; a < N; a++) {
-        const int indexa = Sindex(a, a, N);
+        int indexa = Sindex(a, a, N);
         for (int b = a; b < N; b++) {
             int index = Sindex(a, b, N);
             /* Diagonal */
