@@ -19,7 +19,7 @@ add_executable(NISE
     project.c project.h types_MPI.h types_MPI.c mcfret.c mcfret.h
     calc_Redfield.c calc_Redfield.h CG_subs.c CG_subs.h
     sfg.c sfg.h calc_CG_2DES.c calc_CG_2DES.h eq_den.c eq_den.h
-    calc_FD_CG_2DES.c calc_FD_CG_2DES.h   
+    calc_FD_CG_2DES.c calc_FD_CG_2DES.h hamshift.c hamshift.h  
     $<TARGET_OBJECTS:random_lib>
 )
 
@@ -29,7 +29,7 @@ add_executable(2DFFT
 
 add_executable(translate
     translate.c translate.h NISE_subs.c NISE_subs.h types.h lapack.h
-    readinput.c readinput.h read_trajectory.c read_trajectory.h
+    readinput.c readinput.h read_trajectory.c read_trajectory.h hamshift.c hamshift.h
     $<TARGET_OBJECTS:random_lib>
 )
 

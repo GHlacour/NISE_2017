@@ -63,6 +63,7 @@ typedef struct {
   char positionFName[256];
   char anharFName[256];
   char overdipFName[256];
+  char singleShiftFName[256];
   char technique[256];
   char basis[256];
   char pdbFName[256];
@@ -81,8 +82,10 @@ typedef struct {
   float temperature;
   float anharmonicity;
   int Npsites;
-  int window; // 0 no window, 1 Hann window
   int *psites;
+  int window; // 0 no window, 1 Hann window
+  int SingleShiftSites,*SingleShiftSite;
+  float *SingleShift;
   int printLevel;
 } t_non;
 

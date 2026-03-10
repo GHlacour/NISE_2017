@@ -32,6 +32,7 @@
 #include "correlate.h"
 #include "omp.h"
 #include "1DFFT.h"
+#include "hamshift.h"
 
 
 
@@ -349,6 +350,7 @@ int main(int argc, char* argv[]) {
 
     // Clean up
     free(non->psites);
+    free_shift(non);
     free(non);
 
     MPI_Comm_free(&subComm);
