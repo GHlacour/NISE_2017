@@ -105,21 +105,25 @@ Some considerations and examples to achieve higher performance:
 
 \section{Changelog}
 \subsection{Version 3.4 in progress}
-{\small Work by Thomas Jansen, Carleen D. N. van Hengel, Hoang Long Nguyen, Kai Zhong, Vesna Eric, Gijsbert ten Hoven, Stephanie Gonzalez Migoni, Marick Manrho, Ana Cunha, and Kim van Adrichem}
+{\small Work by Thomas Jansen, Carleen D. N. van Hengel, Hoang Long Nguyen, Kai Zhong, Vesna Eric, Gijsbert ten Hoven,
+Stephanie Gonzalez Migoni, Marick Manrho, Ana Cunha, Adriana Armaczki, and Kim van Adrichem}
 \begin{itemize}
-\item Added the calculation of Redfield transfer matrices
-\item Added calculation of spectral densities, correlation functions and lineshape functions
+\item Added Runge Kutta 4 propagation scheme (Thomas Jansen)
+\item Added fluorescence detected 2D spectroscopy with coarse grained NISE (Stephanie Gonzalez Migoni)
+\item Added the calculation of radiatice rates from luminescence spectra (Adriana Armaczki)
+\item Added the calculation of Redfield transfer matrices (Thomas Jansen)
+\item Added calculation of spectral densities, correlation functions and lineshape functions (Thomas Jansen)
 \item Added CG-2DES (Kai Zhong, Stephanie Gonzalez Migoni)
 \item Added MCFRET (Hoang Long Nguyen, Kai Zhong, Vesna Eric, Gijsbert ten Hoven, Marick Manrho, and Kim van Adrichem)
 \item Improved manual for Windows 10 installation. (Hoang Long Nguyen)
-\item The 2DFFT code was cleaned up
+\item The 2DFFT code was cleaned up (Thomas Jansen)
 \item Raman and 2DIRraman techniques were added (Carleen D. N. van Hengel)
-\item openMP parallel CD and DOS were implemented
-\item Diffusion calculations were added
-\item On the fly transition-dipole and extended-dipole coupling schemes were impemented
-\item Added project file option to project on substructures - including multi segment options for linear techniques
-\item Added inhomogeneous and homogeneous apodization functions
-\item Added automatic check on Singles keyword providing warning to user if it may be incorrect
+\item openMP parallel CD and DOS were implemented (Thomas Jansen)
+\item Diffusion calculations were added (Thomas Jansen)
+\item On the fly transition-dipole and extended-dipole coupling schemes were impemented (Thomas Jansen)
+\item Added project file option to project on substructures - including multi segment options for linear techniques (Thomas Jansen)
+\item Added inhomogeneous and homogeneous apodization functions (Thomas Jansen)
+\item Added automatic check on Singles keyword providing warning to user if it may be incorrect (Thomas Jansen)
 \item Implemented speed-up (x2) of 2D calculations by removing if statements in propagation of double excited states (2DIR by Kim van Adrichem)
 \end{itemize}
 \subsection{Version 3.3}

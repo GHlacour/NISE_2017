@@ -116,18 +116,26 @@ The mean square displacement of excitons are calculated using the positions prov
 Two diffusion properties are calculated. The diffusion of the exciton center is calculated by calculating the center of the excitation given it started on a specific site $j$: $x_{\textrm{ex},i}(t)=\langle \sum_j (x_j(t)-x_i(0)) |U_{ji}(t,0)|^2$ and then determining the mean square displacement as $MSD_{\textrm{ex}}(t)=\langle \sum_i  x_{\textrm{ex},i}(t)^2\rangle$. The other measure is based on the probability of starting on one site and being detected on another site $MSD_{\textrm{site}}(t)=\langle \sum_{ji} (x_j(t)-x_i(0))|U_{ji}(t,0)|^2\rangle$. $MSD_{\textrm{site}}(t)$ is stored in the second column of the Dif.dat output file and $MSD_{\textrm{ex}}(t)$ is stored in the third column. The first column contain the time in femtoseconds. The unit for the mean square displacements is the distance unit provided on the position file (\AA ngstr\"{o}m recommended) squared per femtosecond. 
 \section{Ani (anisotropy)}
 Not implemented yet (check NISE\_2015)
+
 \section{DOS$^{+}$}
 The density of states is calculated using the response function:
 \begin{equation}
 	I(t)=\langle\textrm{Tr}U(t,0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain density of states, which is stored in the file DOS.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
+
 \section{Absorption}
 The linear absorption is calculated using the first-order response function \cite{Duan_2015}
 \begin{equation}
 	I(t)=\sum_{\alpha}^{x,y,z}\langle\mu_{\alpha}(t)U(t,0)\mu_{\alpha}(0)\rangle\exp(-t/2T_1).
 \end{equation}
 Both the real and imaginary parts are stored. The Fourier transform is the frequency domain absorption, which is stored in the file Absorption.dat. $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum. 
+
+\section{LD (linear dichroism)}
+The linear dichroism is calculated identically to the linear absorption except the average of
+the absorption in the x and y directions is subtracted from the absorption in the z direction.
+This corresponds to a perfect linear dichroism setup, where the molecules are aligned along the z-axis.
+
 \section{Luminescence}
 The luminescence is calculated using the first-order response function
 \begin{equation}
@@ -136,11 +144,25 @@ The luminescence is calculated using the first-order response function
 Both the real and imaginary parts are stored.
 The Fourier transform is the frequency domain luminescence, which is stored in the file \ilc{Luminescence.dat}.
 $T_1$ is the lifetime, which is often simply used as an appodization function to smoothen the spectrum.
-The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input) ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects of vibronic states.
-The spectrum is normalized with the partition function ($Z$). 
-\section{LD (linear dichroism)}
-The linear dichroism is calculated identically to the linear absorption except the average of the absorption in the x and y directions is subtracted from the absorption in the z direction.
-This corresponds to a perfect linear dichroism setup, where the molecules are aligned along the z-axis.
+The Boltzmann term containg the Hamiltonian at time zero ($H$) and the temperature (to be specified in the input)
+ensure the emission from a termalized population of the excited state ignoring a potential Stoke's shift and effects
+of vibronic states. The spectrum is normalized with the partition function ($Z$). 
+The \ilk{ImaginaryTimesteps} keyword can be used to speed up the calculation of the Boltzmann term by calculating the
+response function using imaginary time step propagation, which is equivalent to calculating the partition function
+and the thermal population of the excited states. If the keyword is not specified the Boltzmann term is calculated
+using the matrix exponential, which is computationally more expensive, but more accurate and more stable.
+
+The radiative rate is computed based on the luminescence spectra. The spontaneous
+emission rate, $k^{R}$, is obtained by integrating over the luminescence spectrum and
+converting to the units of $ns^{-1}$ applying the following relation:
+\begin{equation}
+k_R = \frac{8\pi^2 }{3\epsilon_0 c^3 \hbar} \int \nu^3 I(\nu) d\nu
+\end{equation}
+For this calculation the transition-dipoles have to be provided in units of Debye. The calculation does not account
+for local field effects and the prefeactor of the index of refraction ($n$), which in typical solvents environments
+can increase the radiative rate by a factor of 3-5.
+
+The multi-segment option cannot be used with this calculation yet.
 
 \section{CD (circular dichroism)$^{+}$}
 The circular dichroism is calculated using the first-order response function
