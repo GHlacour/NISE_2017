@@ -1,5 +1,12 @@
 #include "types_MPI.h"
 
+// The variable declation and initialization of the MPI datatype for t_non. This is used for sending and receiving
+// t_non structures in MPI communication. The first number denotes the number of elements in the structure,
+// the first array contains the number of elements for each type, the second array contains the MPI datatype
+// for each element, and the third array contains the byte offsets of each element in the structure. The order of
+//the elements in the arrays must match the order of the elements in the t_non structure defined in types.h.
+// The T_NON_TYPE variable is declared as const to prevent modification and ensure that it is only initialized once.
+
 const t_non_datatype T_NON_TYPE = {
     69,
     {
