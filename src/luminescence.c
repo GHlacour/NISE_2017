@@ -36,6 +36,7 @@ void luminescence(t_non *non){
   FILE *H_traj,*mu_traj;
   FILE *outone,*log;
   FILE *C_traj;
+  FILE *Cfile;
 
   /* Integers */
   int nn2;
@@ -44,6 +45,7 @@ void luminescence(t_non *non){
   int x,ti,tj,i;
   int t1,fft;
   int elements;
+  int pro_dim;
 
   /* Time parameters */
   time_t time_now,time_old,time_0;
@@ -55,6 +57,13 @@ void luminescence(t_non *non){
   printf("Frequency shift %f.\n",shift1);
   non->shifte=shift1;
   printf("Temperature %f.\n",non->temperature);
+  
+  pro_dim=project_dim(non);
+  if (pro_dim>1){
+    printf("Multi segement projection is not implemented.\n");
+    exit(0);
+  }
+
 
   // Allocate memory
   re_S_1=(float *)calloc(non->tmax,sizeof(float));
@@ -69,19 +78,13 @@ void luminescence(t_non *non){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
 
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
-  }
+  /* Here we want to call the routine for checking the trajectory files */
+  /* before we start the calculation */
+  control(non);
 
-  // Here we want to call the routine for checking the trajectory files
+
 
   itime=0;
   // Do calculation
@@ -166,10 +169,10 @@ void luminescence(t_non *non){
             bltz_weight_itime(mu_eg,Hamil_i_e,non);
         }*/    
 	// Find response
-	calc_S1(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
-        if (x==0) calc_S1(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
-        if (x==1) calc_S1(re_S_1y,im_S_1y,t1,non,vecr,veci,mu_eg);
-        if (x==2) calc_S1(re_S_1z,im_S_1z,t1,non,vecr,veci,mu_eg);
+	calc_LUM(re_S_1,im_S_1,t1,non,vecr,veci,mu_eg);
+        if (x==0) calc_LUM(re_S_1x,im_S_1x,t1,non,vecr,veci,mu_eg);
+        if (x==1) calc_LUM(re_S_1y,im_S_1y,t1,non,vecr,veci,mu_eg);
+        if (x==2) calc_LUM(re_S_1z,im_S_1z,t1,non,vecr,veci,mu_eg);
 
 	/* Probagate vector */
         propagate_vector(non,Hamil_i_e,vecr,veci,1,samples,t1*x);
@@ -183,6 +186,9 @@ void luminescence(t_non *non){
     time_now=log_time(time_now,log);
     fclose(log);
   }
+
+  // Print values of the last transtion-dipoles so user can easily see if they were in Debye units or not
+  print_average_dipole(non,mu_traj,mu_eg,mu_xyz);
 
   free(vecr);
   free(veci);
@@ -199,6 +205,12 @@ void luminescence(t_non *non){
   fclose(log);
 
   fclose(mu_traj),fclose(H_traj);
+  /* Print information on number of realizations included belonging to the selected */
+  /* cluster and close the cluster file. (Only to be done if cluster option is active.) */
+  if (non->cluster!=-1){
+    printf("Cluster calculation not yet implemented for luminescence.\n");
+    fclose(Cfile);
+  }
 
   outone=fopen("TD_Lum.dat","w");
   for (t1=0;t1<non->tmax1;t1+=non->dt1){
@@ -395,4 +407,33 @@ void bltz_weight_itime(float *cr,float *Hamiltonian_i,t_non *non){
     free(ocr), free(re_U), free(H1), free(H0);
     free(col), free(row);
          
+}
+
+// Print average dipoles to user from last snapshot, so they can easily see if they were in Debye units or not
+void print_average_dipole(t_non *non,FILE *mu_traj,float* mu_eg,float* mu_xyz){
+  int a,x;
+  float mu;
+  float *muvec;
+  muvec=(float *)calloc(non->singles,sizeof(float));
+  
+  // Read dipole components in and save the squared values
+  for (x=0;x<3;x++){
+     read_dipole(non,mu_traj,mu_eg,mu_xyz,x,0);
+     for (a=0;a<non->singles;a++){
+        muvec[a]+=mu_eg[a]*mu_eg[a];
+     }
+  }
+
+  // Find the average transition-dipole magnitude 
+  mu=0;
+  for (a=0;a<non->singles;a++){
+     mu+=sqrt(muvec[a]);
+  }
+  mu=mu/non->singles;
+
+  printf("\nThe average transition-dipole magnitude (of first snapshot read) is %f.\n",mu);
+  printf("This should match your expectation in Debye units for the predicted radiative rate to be correct.\n");
+
+  free(muvec);
+  return;
 }
