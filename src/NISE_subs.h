@@ -47,6 +47,10 @@ float distance3(float *rf,float *ri,int a,int b,int N,float *box);
 float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x);
 float pbc1(float r, int x, float *box);
 void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N);
+void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple);
+void write_matrix_to_file(char fname[],float *matrix,int N);
+void read_vector_from_file(char fname[],float *vector,int N);
+void read_matrix_from_file(char fname[],float *matrix,int N);
 
 
 // Index triangular matrix

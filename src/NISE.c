@@ -32,6 +32,7 @@
 #include "correlate.h"
 #include "omp.h"
 #include "1DFFT.h"
+#include "hamshift.h"
 
 
 
@@ -216,7 +217,7 @@ int main(int argc, char* argv[]) {
     if (string_in_array(non->technique,(char*[]){"MCFRET",
 	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
-	   "MCFRET-Density"},8)){
+	   "MCFRET-Density","MCFRET-4th"},9)){
         /* Does not support MPI */
         if (parentRank == 0) {
             mcfret(non);
@@ -349,6 +350,7 @@ int main(int argc, char* argv[]) {
 
     // Clean up
     free(non->psites);
+    free_shift(non);
     free(non);
 
     MPI_Comm_free(&subComm);
