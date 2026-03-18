@@ -99,6 +99,9 @@ void readInput(int argc, char* argv[], t_non* non) {
         // PBC file keyword
         if (keyWordS("PBCfile", Buffer, non->pbcFName, LabelLength) == 1) continue;
 
+        // SingleShift file keyword
+        if (keyWordS("SingleShiftfile", Buffer, non->singleShiftFName, LabelLength) == 1) continue;
+
         // Read Trajectory length
         if (keyWordI("Length", Buffer, &non->length, LabelLength) == 1) continue;
 

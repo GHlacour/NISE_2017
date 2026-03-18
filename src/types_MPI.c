@@ -1,7 +1,14 @@
 #include "types_MPI.h"
 
+// The variable declation and initialization of the MPI datatype for t_non. This is used for sending and receiving
+// t_non structures in MPI communication. The first number denotes the number of elements in the structure,
+// the first array contains the number of elements for each type, the second array contains the MPI datatype
+// for each element, and the third array contains the byte offsets of each element in the structure. The order of
+//the elements in the arrays must match the order of the elements in the t_non structure defined in types.h.
+// The T_NON_TYPE variable is declared as const to prevent modification and ensure that it is only initialized once.
+
 const t_non_datatype T_NON_TYPE = {
-    63,
+    69,
     {
         1, 1, 1,
         1, 1, 1,
@@ -14,7 +21,7 @@ const t_non_datatype T_NON_TYPE = {
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1,
         1, 1, 1, 
-        256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+        256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
         1,
         1,
         1, 1,
@@ -23,6 +30,8 @@ const t_non_datatype T_NON_TYPE = {
         1, 1, 1,
         1,
         1, 1, 1, 1,
+        1, 1, 1,
+        1, 1,
         1,
         1
     },
@@ -38,7 +47,7 @@ const t_non_datatype T_NON_TYPE = {
         MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT,
         MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
         MPI_INT, MPI_INT, MPI_INT,
-        MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR,
+        MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR, MPI_CHAR,
         MPI_INT,
         MPI_INT,
         MPI_FLOAT, MPI_FLOAT,
@@ -47,7 +56,9 @@ const t_non_datatype T_NON_TYPE = {
         MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
         MPI_INT,
         MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
-        MPI_INT,
+        MPI_INT, MPI_INT, MPI_INT,
+        MPI_INT, MPI_INT,
+        MPI_FLOAT,
         MPI_INT
     },
 {
@@ -60,13 +71,14 @@ const t_non_datatype T_NON_TYPE = {
         offsetof(t_non, min3), offsetof(t_non, max3),
         offsetof(t_non, k),
         offsetof(t_non, length), offsetof(t_non, sample), offsetof(t_non, fft), offsetof(t_non, begin),
-            offsetof(t_non, end), offsetof(t_non, is), offsetof(t_non, ts), offsetof(t_non, interpol), offsetof(t_non, propagation),
+        offsetof(t_non, end), offsetof(t_non, is), offsetof(t_non, ts), offsetof(t_non, interpol), offsetof(t_non, propagation),
         offsetof(t_non, lifetime), offsetof(t_non, homogen), offsetof(t_non, inhomogen), offsetof(t_non, deltat),
         offsetof(t_non, buffer), offsetof(t_non, singles), offsetof(t_non, doubles),
         offsetof(t_non, energyFName), offsetof(t_non, dipoleFName), offsetof(t_non, alphaFName),
-            offsetof(t_non, positionFName), offsetof(t_non, anharFName), offsetof(t_non, overdipFName),
-            offsetof(t_non, technique), offsetof(t_non, pdbFName), offsetof(t_non, basis),
-            offsetof(t_non, hamiltonian), offsetof(t_non, couplingFName), offsetof(t_non, pbcFName),
+        offsetof(t_non, positionFName), offsetof(t_non, anharFName), offsetof(t_non, overdipFName),
+        offsetof(t_non, singleShiftFName),
+        offsetof(t_non, technique), offsetof(t_non, pdbFName), offsetof(t_non, basis),
+        offsetof(t_non, hamiltonian), offsetof(t_non, couplingFName), offsetof(t_non, pbcFName),
         offsetof(t_non, tmax),
         offsetof(t_non, cluster),
         offsetof(t_non, shifte), offsetof(t_non, shiftf),
@@ -75,7 +87,9 @@ const t_non_datatype T_NON_TYPE = {
         offsetof(t_non, statstart), offsetof(t_non, statend), offsetof(t_non, statstep),
         offsetof(t_non, statsteps),
         offsetof(t_non, thres), offsetof(t_non, couplingcut), offsetof(t_non, temperature), offsetof(t_non, anharmonicity),
-        offsetof(t_non, Npsites),
+        offsetof(t_non, Npsites), offsetof(t_non, psites), offsetof(t_non, window),
+        offsetof(t_non, SingleShiftSites), offsetof(t_non, SingleShiftSite),
+        offsetof(t_non, SingleShift),
         offsetof(t_non, printLevel)
     }
 };

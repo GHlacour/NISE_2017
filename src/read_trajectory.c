@@ -7,6 +7,7 @@
 #include "types.h"
 #include "NISE_subs.h"
 #include "read_trajectory.h"
+#include "hamshift.h"
 #include "randomlib.h"
 #include "util/asprintf.h"
 
@@ -24,6 +25,9 @@ void open_files(t_non *non,FILE **H_traj,FILE **mu_traj,FILE **Cfile){
     printf("Dipole file %s not found!\n",non->dipoleFName);
     exit(1);
   }
+
+  /* Open and read Single Shift file if present */
+  read_shift(non);
 
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
@@ -78,6 +82,7 @@ void read_Hamiltonian(t_non *non,float *Hamil_i_e,FILE *H_traj,int pos){
            exit(1);
         }
     }
+    apply_singleshift(non,Hamil_i_e);
     return;
 }
 
