@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
     if (string_in_array(non->technique,(char*[]){"MCFRET",
 	   "MCFRET-Autodetect","MCFRET-Absorption","MCFRET-Emission",
 	   "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
-	   "MCFRET-Density"},8)){
+	   "MCFRET-Density","MCFRET-4th"},9)){
         /* Does not support MPI */
         if (parentRank == 0) {
             mcfret(non);
