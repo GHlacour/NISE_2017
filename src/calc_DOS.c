@@ -11,6 +11,7 @@
 #include "calc_DOS.h"
 #include "1DFFT.h"
 #include "project.h"
+#include "read_trajectory.h"
 
 void calc_DOS(t_non *non){
   // Initialize variables
@@ -56,24 +57,10 @@ void calc_DOS(t_non *non){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
-
-  //printf("A\n");
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
+  fclose(mu_traj); // We will not need the dipole trajectory for this calculation
+  Ncl=0; // Counter for snapshots calculated
+  
 
   // Here we want to call the routine for checking the trajectory files
   control(non);

@@ -13,7 +13,7 @@
     MPI_Aint offsets[LEN];\
 }
 
-typedef CUSTOM_MPI_DATATYPE(69) t_non_datatype;
+typedef CUSTOM_MPI_DATATYPE(70) t_non_datatype;
 extern const t_non_datatype T_NON_TYPE;
 
 #endif

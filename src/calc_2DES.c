@@ -18,6 +18,8 @@
 #include "mpi.h"
 #include "MPI_subs.h"
 #include "project.h"
+#include "read_trajectory.h"
+#include "hamshift.h"
 
 void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subSize, MPI_Comm subComm, MPI_Comm rootComm) {
     // Start by determining the work to be done, make an array of samples/poldir to simulate
@@ -79,6 +81,7 @@ void calc_2DES(t_non* non, int parentRank, int parentSize, int subRank, int subS
     if(parentRank == 0) printf("Rotating Wave Frequency shift %f.\n", shift1);
     non->shifte = shift1;
     non->shiftf = 2 * shift1;
+
 
     // Arrays where the result is stored, these will be reduced (summed) at the end!
 

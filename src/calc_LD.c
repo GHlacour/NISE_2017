@@ -11,6 +11,7 @@
 #include "calc_LD.h"
 #include "1DFFT.h"
 #include "project.h"
+#include "read_trajectory.h"
 
 void LD(t_non *non){
   // Initialize variables
@@ -31,7 +32,7 @@ void LD(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj;
   FILE *C_traj;
-  FILE *outone,*log;
+  FILE *log;
   FILE *Cfile;
 
   /* Integers */
@@ -62,30 +63,10 @@ void LD(t_non *non){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
-
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
-  }
-
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
-
+  open_files(non,&H_traj,&mu_traj,&Cfile);
+  
+  Ncl=0; // Counter for snapshots calculated
+  
   // Here we want to call the routine for checking the trajectory files
   control(non);
 
@@ -257,16 +238,7 @@ void LD(t_non *non){
   }
 
   /* Save time domain response */
-  outone=fopen("TD_LD.dat","w");
-  for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    /* fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples); */
-      fprintf(outone,"%f ",t1*non->deltat);
-      for (ip=0;ip<pro_dim;ip++){
-         fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
-      }
-      fprintf(outone,"\n");
-  }
-  fclose(outone);
+  save_time_domain_response(non,"TD_LD.dat",re_S_1,im_S_1,pro_dim,samples);
 
   /* Do Forier transform and save */
   do_1DFFT(non,"LD.dat",re_S_1,im_S_1,samples);

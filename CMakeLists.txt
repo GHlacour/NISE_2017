@@ -16,6 +16,34 @@ endif()
 
 # Project definitions
 project(NISE VERSION 3.1 LANGUAGES C)
+
+
+
+
+# ---------------------------
+# Build type defaults
+# ---------------------------
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+# ---------------------------
+# Find OpenBLAS (via BLAS)
+# ---------------------------
+find_package(BLAS REQUIRED)
+
+if(NOT BLAS_FOUND)
+    message(FATAL_ERROR "BLAS library not found. Please install OpenBLAS.")
+endif()
+
+message(STATUS "BLAS libraries: ${BLAS_LIBRARIES}")
+
+
+
+
+
+
+
 # Run Git command to get the current commit hash (or other version details)
 execute_process(
     COMMAND git rev-parse --short HEAD

@@ -8,6 +8,7 @@
 #include "types.h"
 #include "readinput.h"
 #include "NISE_subs.h"
+#include "hamshift.h"
 
 /* Read the input file */
 void readInput(int argc, char* argv[], t_non* non) {
@@ -42,6 +43,7 @@ void readInput(int argc, char* argv[], t_non* non) {
     sprintf(non->basis, "Local");
     sprintf(non->hamiltonian, "Full");
     sprintf(non->pbcFName, "");
+    sprintf(non->outputformat, "Normal");
 
     if (argc < 2) {
         printf(RED "Specify input file name on command line!\n");
@@ -98,6 +100,9 @@ void readInput(int argc, char* argv[], t_non* non) {
 
         // PBC file keyword
         if (keyWordS("PBCfile", Buffer, non->pbcFName, LabelLength) == 1) continue;
+
+        // Output format keyword
+        if (keyWordS("Outputformat", Buffer, non->outputformat, LabelLength) == 1) continue;
 
         // SingleShift file keyword
         if (keyWordS("SingleShiftfile", Buffer, non->singleShiftFName, LabelLength) == 1) continue;
@@ -196,7 +201,12 @@ void readInput(int argc, char* argv[], t_non* non) {
         // Read double excited states
         if (keyWordI("PrintLevel", Buffer, &non->printLevel, LabelLength) == 1) continue;
 
-
+        // We reached the end without recognizing the keyword. Tell the user unless the
+        // first character is # to indicate a comment or this was an empty line
+        if (Buffer[0] != '\n' && Buffer[0] != '#'){
+            printf(YELLOW "The keyword: %swas not recognized! " RESET, Buffer);
+            printf(YELLOW "Add # infront for 'comment' if you do not want this warning.\n" RESET);
+        }
     }
     while (1 == 1);
     fclose(inputFile);
@@ -281,6 +291,9 @@ void readInput(int argc, char* argv[], t_non* non) {
      (!strcmp(non->technique, "2DIRraman1"))|| (!strcmp(non->technique, "2DIRraman2"))|| (!strcmp(non->technique, "2DIRraman3"))) {
         printf("\nThe waiting time will be %f fs.\n\n", non->tmax2 * non->deltat);
     }
+
+    // Read single shifts 
+    //read_shift(non);
 
     // Prepare static spec
     non->statsteps = rint(fabs((non->statend - non->statstart) / non->statstep));

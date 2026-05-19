@@ -8,12 +8,16 @@ void not_parallel();
 void copyvec(float *a,float *b,int N);
 void clearvec(float *a,int N);
 void clearvec_double(double* a, int N);
+void clearvec_int(int *a, int N);
 void unitmat(float *a,int N);
 void vector_on_vector(float *rr,float *ir,float *vr,float *vi,int N);
 void matrix_on_vector(float *c,float *vr,float *vi,int N);
 void trans_matrix_on_vector(float *c,float *vr,float *vi,int N);
+float matrix_mul_traced_DA(float *A, float *B, int N_i, int N_i3);
+void complex_matrix_product(float *A_re, float *A_im, float *B_re, float *B_im, float *C_re, float *C_im,int N1,int N2,int N3);
 float find_norm(float *phi_r,float *phi_i,int N);
 void re_normalize(float *phi_r,float *phi_i,int N,float norm);
+float matrix_sum(float *matrix,int N);
 void log_item(char* msgFormat, ...);
 time_t set_time(time_t t0);
 time_t log_time(time_t t0,FILE *log);
@@ -47,7 +51,16 @@ float distance3(float *rf,float *ri,int a,int b,int N,float *box);
 float distance3_x(float *rf,float *ri,int a,int b,int N,float *box,int x);
 float pbc1(float r, int x, float *box);
 void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evecL, float* evecR, float* ivecL, float* ivecR, int N);
-
+void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple);
+void write_matrix_to_file(char fname[],float *matrix,int N);
+void read_vector_from_file(char fname[],float *vector,int N);
+void read_matrix_from_file(char fname[],float *matrix,int N);
+char *replace_ext(const char *filename,
+                  const char *old_ext,
+                  const char *new_ext);
+int strcmp_nocase(const char *s1, const char *s2);
+int save_time_domain_response(t_non *non,const char *filename,float *re_S_1,
+    float *im_S_1,int prodim,int samples);
 
 // Index triangular matrix
 // Put in the .h file to allow external referencing

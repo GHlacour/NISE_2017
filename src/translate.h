@@ -65,5 +65,6 @@ void freeHam(t_ham *ham);
 int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_modify *modify,FILE *inputFile,int N,t_trans *tdat);
 void modifyHam(t_trans *tdat,t_modify *modify,t_ham *ham);
 void revMod(t_trans *tdat,t_modify *modify);
+int sfscanf(FILE *stream, const char *format, ...);
 
 #endif // _TRANSLATE_

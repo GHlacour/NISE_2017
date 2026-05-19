@@ -11,6 +11,7 @@
 #include "raman.h"
 #include "1DFFT.h"
 #include "project.h"
+#include "read_trajectory.h"
 
 // This subroutine is for calculating the Linear Raman
 void raman(t_non *non){
@@ -30,7 +31,7 @@ void raman(t_non *non){
   /* File handles */
   FILE *H_traj,*alpha_traj;
   FILE *C_traj;
-  FILE *outone,*log;
+  FILE *log;
   FILE *Cfile;
 
   /* Integers */
@@ -65,11 +66,8 @@ void raman(t_non *non){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&alpha_traj,&Cfile);
+  fclose(alpha_traj); // We will read alpha below
 
   alpha_traj=fopen(non->alphaFName,"rb");
   if (alpha_traj==NULL){
@@ -77,17 +75,9 @@ void raman(t_non *non){
     exit(1);
   }
 
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
+
+  Ncl=0; // Counter for snapshots calculated
+  
 
   // Here we want to call the routine for checking the trajectory files
   control(non);
@@ -255,27 +245,9 @@ void raman(t_non *non){
   }
 
   /* Save time domain response */
-  outone=fopen("TD_Raman_VV.dat","w");
-  for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    //fprintf(outone,"%f %e %e\n",t1*non->deltat,VV_re_S_1[t1]/samples,VV_im_S_1[t1]/samples);
-     fprintf(outone,"%f ",t1*non->deltat);
-     for (ip=0;ip<pro_dim;ip++){
-        fprintf(outone,"%e %e ",VV_re_S_1[t1+ip*non->tmax]/samples,VV_im_S_1[t1+ip*non->tmax]/samples);
-     }
-     fprintf(outone,"\n");
-  }
-  fclose(outone);
+  save_time_domain_response(non,"TD_Raman_VV.dat",VV_re_S_1,VV_im_S_1,pro_dim,samples);
 
-    outone=fopen("TD_Raman_VH.dat","w");
-  for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    //fprintf(outone,"%f %e %e\n",t1*non->deltat,2*VH_re_S_1[t1]/samples,2*VH_im_S_1[t1]/samples);
-     fprintf(outone,"%f ",t1*non->deltat);
-     for (ip=0;ip<pro_dim;ip++){
-        fprintf(outone,"%e %e ",VH_re_S_1[t1+ip*non->tmax]/samples,VH_im_S_1[t1+ip*non->tmax]/samples);
-     }
-     fprintf(outone,"\n");
-  }
-  fclose(outone);
+  save_time_domain_response(non,"TD_Raman_VH.dat",VH_re_S_1,VH_im_S_1,pro_dim,samples);
 
   /* Do Forier transform and save */
   do_1DFFT(non,"Raman_VV.dat",VV_re_S_1,VV_im_S_1,samples);

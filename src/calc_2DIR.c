@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include "mpi.h"
 #include "MPI_subs.h"
+#include "read_trajectory.h"
+#include "hamshift.h"
 #include "project.h"
 
 void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subSize, MPI_Comm subComm, MPI_Comm rootComm) {
@@ -78,6 +80,7 @@ void calc_2DIR(t_non* non, int parentRank, int parentSize, int subRank, int subS
     if(parentRank == 0) printf("Rotating Wave Frequency shift %f.\n", shift1);
     non->shifte = shift1;
     non->shiftf = 2 * shift1;
+    
 
     // Arrays where the result is stored, these will be reduced (summed) at the end!
 

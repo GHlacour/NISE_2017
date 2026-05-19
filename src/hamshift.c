@@ -37,9 +37,36 @@ void read_shift(t_non *non){
     non->SingleShiftSite=(int *)calloc(non->SingleShiftSites,sizeof(int));
     non->SingleShift=(float *)calloc(2*non->SingleShiftSites,sizeof(float));
 
+    // If there are shifts difined read them and check if they are valid
+    if (non->SingleShiftSites>0){
+        printf("\nApplying single shifts to %d sites.\n",non->SingleShiftSites);
+    } else {
+        printf("No single shifts defined.\n");
+    }
     // Read shifts
     for (i=0;i<non->SingleShiftSites;i++){
         fscanf(shiftFile,"%d %f %f",&non->SingleShiftSite[i],&non->SingleShift[i*2],&non->SingleShift[i*2+1]);
+        // Check if site number exists
+        if (non->SingleShiftSite[i]<0 || non->SingleShiftSite[i]>=non->singles){
+            printf(RED "Invalid site index for single shift: %d. Must be between 0 and %d.\n" RESET,non->SingleShiftSite[i],non->singles-1);
+            exit(-1);
+        }
+        // Check if scaling factor is valid
+        if (non->SingleShift[i*2]<=0){
+            printf(RED "Invalid scaling factor for single shift: %f. Must be positive.\n" RESET,non->SingleShift[i*2]);
+            exit(-1);
+        }
+        // Check if offset is valid
+        if (fabs(non->SingleShift[i*2+1])>non->max1-non->min1){
+            printf(YELLOW "Invalid offset for single shift: %f. Must be within the range +-%f.\n" RESET,non->SingleShift[i*2+1],non->max1-non->min1);
+        }
+        if (non->printLevel<2){
+            printf("Applying single shift to site %d: multiply by %f and add %f.\n",non->SingleShiftSite[i],non->SingleShift[i*2],non->SingleShift[i*2+1]);
+        }
+    }
+    // Add an extra line for better readability if single shifts are applied
+    if (non->SingleShiftSites>0){
+        printf("\n");
     }
 
     fclose(shiftFile);

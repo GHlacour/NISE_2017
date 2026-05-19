@@ -3,13 +3,16 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <cblas.h>
 #include "omp.h"
 #include "types.h"
 #include "NISE_subs.h"
 #include "mcfret.h"
 #include "project.h"
 #include "propagate.h"
+#include "propagate_segment.h"
 #include "read_trajectory.h"
+#include "mcfret4.h"
 
 /* Main MCFRET routine only calling and combining the other subroutines */ 
 void mcfret(t_non *non){
@@ -52,7 +55,7 @@ void mcfret(t_non *non){
     if (string_in_array(non->technique,(char*[]){"MCFRET",
         "MCFRET-Autodetect","MCFRET-Absorption","ECFRET-Emission",
         "MCFRET-Coupling","MCFRET-Rate","MCFRET-Analyse",
-        "MCFRET-Density"},8)){
+        "MCFRET-Density","MCFRET-4th-approx", "MCFRET-4th-full" },10)){
         printf("Performing MCFRET calculation.\n");
     }
 
@@ -66,19 +69,19 @@ void mcfret(t_non *non){
     /* Call the absorption routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Absorption"))){
 	printf("Starting calculation of the MCFRET absorption matrix.\n");
-        mcfret_response_function(re_Abs,im_Abs,non,0,ave_vecr);
+        mcfret_propagation_segmented(re_Abs,im_Abs,non);
     }
    
-/* Call the emission routine */
-    if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
-        printf("Starting calculation of the MCFRET emission matrix.\n");
-	/* Read precalculated average density matrix */ 
-	if (!strcmp(non->technique, "MCFRET-Emission")){
-            printf("Using precalculated average density matrix from file Average_Density.dat.\n");
-	    read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles);
-	}
-        mcfret_response_function(re_Emi,im_Emi,non,1,ave_vecr);
-    }
+    // /* Call the emission routine */
+    // if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Emission"))){
+    //     printf("Starting calculation of the MCFRET emission matrix.\n");
+    // 	/* Read precalculated average density matrix */ 
+    // 	if (!strcmp(non->technique, "MCFRET-Emission")){
+    //        printf("Using precalculated average density matrix from file Average_Density.dat.\n");
+    //	    read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles);
+    // 	}
+    //    mcfret_response_function(re_Emi,im_Emi,non,1,ave_vecr);
+    // }
     
     /* Call the coupling routine */
     if (!strcmp(non->technique, "MCFRET") || (!strcmp(non->technique, "MCFRET-Coupling"))){
@@ -91,19 +94,50 @@ void mcfret(t_non *non){
         printf("Starting calculation of the rate response function.\n");
         if ((!strcmp(non->technique, "MCFRET-Rate"))){
             /* Read in absorption, emission and coupling from file if needed */
-	    printf("Calculating rate from precalculated absorption, emission\n");
-	    printf("and coupling!\n");
+	    printf("Calculating rate from precalculated absorption and coupling!\n");
 	    read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
+	    read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles); 
 	    read_response_from_file("TD_absorption_matrix.dat",re_Abs,im_Abs,non->singles,non->tmax1);
-	    read_response_from_file("TD_emission_matrix.dat",re_Emi,im_Emi,non->singles,non->tmax1);
+	    // read_response_from_file("TD_emission_matrix.dat",re_Emi,im_Emi,non->singles,non->tmax1);
             printf("Completed reading pre-calculated data.\n");
         }
-        mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
+        // mcfret_rate(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,re_Emi,im_Emi,J,non);
+        mcfret_rate_from_abs(rate_matrix,coherence_matrix,segments,re_Abs,im_Abs,ave_vecr,J,non);
 
         /* Write the calculated ratematrix to file */
         write_matrix_to_file("RateMatrix.dat",rate_matrix,segments);
         /* Write the calculated coherence matrix to file */
         write_matrix_to_file("CoherenceMatrix.dat",coherence_matrix,segments);
+    }
+
+    /* Call the 4th order approximation routine */
+    if (!strcmp(non->technique, "MCFRET-4th-approx")){
+        printf("Starting calculation of the 4th order approximation: traces.\n");
+	    printf("Calculating 4th order apprpximation from precalculated coupling and density\n");
+	
+	    read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
+	    read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles);
+        printf("Completed reading pre-calculated data.\n");
+        
+	    // ave_vecr is average density matrix, J is full average intersegment coupling
+   	    compute_all_traces_4th_order(ave_vecr, J, non); 
+        
+	printf("Done with computing the 4th order traces.\n");
+    }
+
+    /* Call the full 4th order routine */
+    if (!strcmp(non->technique, "MCFRET-4th-full")){
+        printf("Starting calculation of the full 4th order rates.\n");
+        printf("Calculating 4th order from precalculated coupling and density\n");
+
+        read_matrix_from_file("CouplingMCFRET.dat",J,non->singles);
+        read_matrix_from_file("Average_Density.dat",ave_vecr,non->singles);
+        printf("Completed reading pre-calculated data.\n");
+
+        // ave_vecr is average density matrix, J is full average intersegment coupling
+        full_4th_order_main(ave_vecr,J,non);
+
+        printf("Done with computing the full 4th order rates.\n");
     }
 
     /* Call the MCFRET Analyse routine */
@@ -142,6 +176,199 @@ void mcfret(t_non *non){
     return;
 }
 
+// Segmented Hamiltonian propagation
+/* Calculate Absorption matrix */
+void mcfret_propagation_segmented(float *re_S_1,float *im_S_1,t_non *non){
+    /* Define variables and arrays */
+    /* Integers */
+    int nn2;
+    int itime,N_samples;
+    int samples;
+    int x,ti,tj,i,j;
+    int t1;
+    int elements;
+    int cl,Ncl;
+    int N_segments;
+
+    /* Hamiltonian of the whole system - all donors and acceptors included */
+    float *Hamil_i_e;
+    /* Vectors representing time dependent states: real and imaginary part */
+    float *vecr, *veci;
+    /* Transition dipoles for coupling on the fly */
+    float *mu_xyz;
+    float shift1; 
+
+    /* Time parameters */
+    time_t time_now,time_old,time_0;
+    /* Initialize time */
+    time(&time_now);
+    time(&time_0);
+    shift1=(non->max1+non->min1)/2;
+    printf("Frequency shift %f.\n",shift1);
+    non->shifte=shift1;
+    
+    /* File handles */
+    FILE *H_traj;
+    FILE *C_traj;
+    FILE *mu_traj;
+    FILE *log;
+    FILE *Cfile;
+    FILE *absorption_matrix; 
+
+    /* Allocate memory for all the variables */
+    mu_xyz=(float *)calloc(non->singles*3,sizeof(float));
+    Hamil_i_e=(float *)calloc((non->singles+1)*non->singles/2,sizeof(float));
+    /* Open Trajectory files */
+    open_files(non,&H_traj,&mu_traj,&Cfile);
+
+    /* Here we want to call the routine for checking the trajectory files */ 
+    control(non);
+
+    itime=0;
+
+    /* Initialize sample numbers */
+    N_samples=determine_samples(non);
+    N_segments=project_dim(non);
+    log=fopen("NISE.log","a");
+    fprintf(log,"Begin sample: %d, End sample: %d.\n",non->begin,non->end);
+    fclose(log);
+
+    /* Read coupling, this is done if the coupling and transition-dipoles are */
+    /* time-independent and only one snapshot is stored */
+    read_coupling(non,C_traj,mu_traj,Hamil_i_e,mu_xyz);
+
+    clearvec(re_S_1,non->singles*non->singles*non->tmax1);
+    
+    int N_i, N, si;
+    int *H_indices_si;
+    N = non->singles;
+    H_indices_si = (int *)calloc(N,sizeof(int));
+    
+    for (si=0;si<N_segments;si++){
+            // find the full matrix indices for this segment
+	    N_i = find_H_indices_segment(non->psites, H_indices_si, si, non);
+	    printf("Segment size: %d\n",N_i); 
+	    /* Allocating memory for the real and imaginary part of the wave function that we need to propagate */
+        float *U_re, *U_im;
+        float *U_re_snap, *U_im_snap;
+	    U_re=(float *)calloc(N_i*N_i,sizeof(float));	
+	    U_im=(float *)calloc(N_i*N_i,sizeof(float));
+	    U_re_snap=(float *)calloc(N_i*N_i,sizeof(float));	
+	    U_im_snap=(float *)calloc(N_i*N_i,sizeof(float));
+        float *work_re_si, *work_im_si;
+        work_re_si =(float *)calloc(N_i*N_i,sizeof(float));
+        work_im_si =(float *)calloc(N_i*N_i,sizeof(float));
+ 
+	    /* The segment si hamiltonian in upper triangle format */
+            float *Hamiltonian_segment_triu;
+	    Hamiltonian_segment_triu = (float *)calloc((N_i+1)*N_i/2,sizeof(float));
+
+            /* Looping over samples: Each sample represents a different starting point on the Hamiltonian trajectory */
+	    for (samples=non->begin;samples<non->end;samples++){
+		ti=samples*non->sample;
+		if (non->cluster!=-1){
+		    if (read_cluster(non,ti,&cl,Cfile)!=1){
+			    printf("Cluster trajectory file to short, could not fill buffer!!!\n");
+			    printf("ITIME %d\n",ti);
+			    exit(1);
+		    }
+		    /* Configuration belong to cluster */ 
+		    if (non->cluster==cl){
+			    Ncl++;
+		    }
+		}
+		unitmat(U_re,N_i);
+		clearvec(U_im,N_i*N_i);
+		
+		/* Loop over delay */ 
+	        for (t1=0;t1<non->tmax1;t1++){
+      		    tj=ti+t1;
+		        /* Read Hamiltonian */
+		        read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+	
+	            // isolate segment Hamiltonian
+		        isolate_segment_Hamiltonian_triu(Hamil_i_e, Hamiltonian_segment_triu, H_indices_si, N_i, non);
+			
+		        /* Update the MCFRET 'absorpion matrix' or propagator */
+		        mcfret_response_function_sub_segments(re_S_1, im_S_1,t1,non,U_re,U_im,H_indices_si, N_i);
+
+           	    // segmented 'coupling' propagation scheme
+                if (non->propagation==1){
+		            propagate_matrix_segments(non,Hamiltonian_segment_triu,U_re,U_im,-1,samples,tj*x, N_i);
+                }
+                else{
+            	    // Full diagonal propagation routine
+                    if (t1==0 && si==0 && samples==non->begin){
+                        printf("Using full propagation scheme, with MKL & OPENBLAS.\n");
+                    }
+                    time_evolution_mat_non_sparse(non, Hamiltonian_segment_triu, U_re_snap, U_im_snap, N_i);
+            	    propagate_snapshot(U_re_snap, U_im_snap, &U_re, &U_im, &work_re_si, &work_im_si, N_i);
+                }
+	       } /* We are closing the loop over time delays - t1 times */
+
+	    /* Update NISE log file */ 
+	    log=fopen("NISE.log","a");
+	    fprintf(log,"Finished sample %d\n",samples);
+		  
+	    time_now=log_time(time_now,log);
+	    fclose(log);
+	    }/* Closing the loop over samples */
+    	free(U_re);
+	    free(U_im);
+    	free(U_re_snap);
+	    free(U_im_snap);
+    	free(work_re_si);
+	    free(work_im_si);
+        free(Hamiltonian_segment_triu);
+    }
+
+    /* The calculation is finished, lets write output */
+    log=fopen("NISE.log","a");
+    fprintf(log,"Finished Calculating MCFRET segmented propagators!\n");
+    fprintf(log,"Writing to file!\n");  
+    fclose(log);
+
+    if (non->cluster!=-1){
+        printf("Of %d samples %d belonged to cluster %d.\n",samples,Ncl,non->cluster);
+        if (samples==0){ /* Avoid dividing by zero */ 
+            samples=1;
+        }
+    }
+
+    /* Normalize response */
+    for (t1=0;t1<non->tmax1*non->singles*non->singles;t1++){
+        re_S_1[t1]=re_S_1[t1]/samples;
+        im_S_1[t1]=im_S_1[t1]/samples;
+    }
+
+    fclose(H_traj);
+    if (non->cluster!=-1){
+        fclose(Cfile);
+    }
+
+    /* Save time domain response */
+    absorption_matrix=fopen("TD_absorption_matrix.dat","w");
+    fprintf(absorption_matrix,"Samples %d\n",samples);
+    fprintf(absorption_matrix,"Dimension %d\n",non->singles*non->singles*non->tmax1);
+    for (t1=0;t1<non->tmax1;t1++){
+        fprintf(absorption_matrix,"%f ",t1*non->deltat);
+	    for (i=0;i<non->singles;i++){
+	        for (j=0;j<non->singles;j++){
+	            fprintf(absorption_matrix,"%e %e ",re_S_1[t1*non->singles*non->singles+i*non->singles+j],im_S_1[t1*non->singles*non->singles+i*non->singles+j]);
+	        }
+	    }
+	    fprintf(absorption_matrix,"\n");
+    }
+    fclose(absorption_matrix);
+    
+    /*Free the memory*/
+    free(Hamil_i_e);
+    free(mu_xyz);
+    free(H_indices_si);
+}
+
+
+// full Hamiltonian propagation
 /* Calculate Absorption/Emission matrix (depending on emission variable 0/1) */
 void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emission,float *ave_vecr){
     /* Define variables and arrays */
@@ -318,6 +545,31 @@ void mcfret_response_function(float *re_S_1,float *im_S_1,t_non *non,int emissio
     free(mu_xyz);
 }
 
+
+/* Sub routine for adding up the calculated response in the response function */
+void mcfret_response_function_sub_segments(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci, int *H_indices_si,int N_i){
+    int i1,i2;
+    int N,nn2;
+    int Ni,tnn;
+    int H_a, H_b, N_ref;
+    N=non->singles;
+    nn2=N*N;
+    tnn=t1*nn2;
+    /* Update response matrix */
+    for (i1=0;i1<N_i;i1++){
+        H_a = H_indices_si[i1];
+	    N_ref = N * H_a;
+        for (i2=0; i2<N_i; i2++){
+            H_b = H_indices_si[i2];
+
+            /* We store response function so we can do matrix multiplication */ 
+	        re_S_1[tnn+(N_ref+H_b)]+=cr[i1 * N_i + i2];
+            im_S_1[tnn+(N_ref+H_b)]+=ci[i1 * N_i + i2];
+        }
+    }
+    return;
+}
+
 /* Sub routine for adding up the calculated response in the response function */
 void mcfret_response_function_sub(float *re_S_1,float *im_S_1,int t1,t_non *non,float *cr,float *ci){
     int i,k;
@@ -467,10 +719,137 @@ void mcfret_coupling(float *J,t_non *non){
 
 }
 
-
 /* Find MCFRET segments using an automatic scheme */
 void mcfret_autodetect(t_non *non, float treshold){
     printf("Use the analyse technique for auto detection.\n");
+    return;
+}
+
+/* Calculate actual rate matrix */
+void mcfret_rate_from_abs(float *rate_matrix,float *coherence_matrix,int segments,float *re_Abs,float *im_Abs, float *rho_0,float *J,t_non *non){
+    
+    int nn2,N;
+    int si,sj;
+    int i,j,k;
+    int *ns; /* Segment dimensions */
+    int t1;
+    float *rate_response, *rate_response_imag, *abs_rate_response;
+    float rate;
+    float isimple,is13; /* Variables for integrals */
+    float *re_Abs_hermi,*im_Abs_hermi;
+    float *re_aux_mat,*im_aux_mat;
+    float *re_aux_mat2,*im_aux_mat2;
+    float *Zeros;
+    float twoPi2;
+    float trace_reaux, trace_imaux;
+    FILE *ratefile, *ratefile_imag;
+    FILE *log;
+
+    N=non->singles;
+    nn2=non->singles*non->singles;
+    twoPi2=twoPi*twoPi;
+
+    rate_response=(float *)calloc(non->tmax,sizeof(float));
+    rate_response_imag=(float *)calloc(non->tmax,sizeof(float));
+    abs_rate_response=(float *)calloc(non->tmax,sizeof(float));
+    re_Abs_hermi=(float *)calloc(nn2,sizeof(float));
+    im_Abs_hermi=(float *)calloc(nn2,sizeof(float)); 
+    re_aux_mat=(float *)calloc(nn2,sizeof(float));
+    im_aux_mat=(float *)calloc(nn2,sizeof(float));
+    re_aux_mat2=(float *)calloc(nn2,sizeof(float));
+    im_aux_mat2=(float *)calloc(nn2,sizeof(float));
+    Zeros=(float *)calloc(nn2,sizeof(float));
+  
+    ratefile=fopen("RateFile.dat","w");
+    ratefile_imag=fopen("RateFile_imag.dat","w");
+    /* Do one rate at a time - so first we loop over segments */
+    /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
+    for (si=0;si<segments;si++){
+        for (sj=0;sj<segments;sj++){
+            /* Exclude rate between same segments */
+            if (sj!=si){
+                /* Loop over time delay */
+                for (t1=0;t1<non->tmax;t1++){   
+                    log=fopen("NISE.log","a");
+                    fprintf(log,"Between segments %d and %d, computing response at t = %d \n",si, sj, t1);
+                    fclose(log);
+
+                    /* compute the hermitian conjugate of the absorption matrix */
+                    hermitian_conjugate(re_Abs+nn2*t1,im_Abs+nn2*t1,re_Abs_hermi,im_Abs_hermi,N,N);
+
+                    /* Matrix multiplication - J Abs_hermi */
+                    segment_matrix_mul(J,Zeros,re_Abs_hermi,im_Abs_hermi,
+                    re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
+
+                    /* Matrix multiplication - (J Abs_hermi) rho_0 */
+                    segment_matrix_mul(re_aux_mat,im_aux_mat,rho_0,Zeros,
+                    re_aux_mat2,im_aux_mat2,non->psites,segments,si,sj,sj,N);
+
+
+                    // printf("matrix check  %f\n",matrix_sum(J,N));
+                    // /* Matrix multiplication - J Emi */
+                    // segment_matrix_mul(J,Zeros,re_Emi+nn2*t1,im_Emi+nn2*t1,
+                    // re_aux_mat,im_aux_mat,non->psites,segments,si,sj,sj,N);
+
+                    /* Matrix multiplication - Abs (J Abs_hermi rho_0) */
+                    segment_matrix_mul(re_Abs+nn2*t1,im_Abs+nn2*t1,re_aux_mat2,im_aux_mat2,
+                    re_aux_mat,im_aux_mat,non->psites,segments,si,si,sj,N);
+                    /* Matrix multiplication - J  (Abs J Abs_hermi rho_0) */
+                    segment_matrix_mul(J,Zeros,re_aux_mat,im_aux_mat,
+                    re_aux_mat2,im_aux_mat2,non->psites,segments,sj,si,sj,N);
+                    /* Take the trace */
+                    trace_reaux=trace_rate(re_aux_mat2,N);
+                    trace_imaux=trace_rate(im_aux_mat2,N);
+
+
+	                rate_response[t1]=trace_reaux*twoPi2;
+	                rate_response_imag[t1] = trace_imaux * twoPi2;
+		            abs_rate_response[t1]=sqrt(trace_reaux*trace_reaux
+                                    +trace_imaux*trace_imaux)*twoPi2;
+                    fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
+                    fprintf(ratefile_imag,"%f %f\n",t1*non->deltat,rate_response_imag[t1]);
+                }
+                /* Update rate matrix */
+	            integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
+		        /* We use the Trapezium, which is most accurate in most cases */
+                rate=2*isimple*non->deltat*icm2ifs*icm2ifs*1000;
+                rate_matrix[si*segments+sj]=rate;
+                rate_matrix[sj*segments+sj]-=rate;
+	            /* Calculate the rate of coherence decay in ps-1 */
+	            integrate_rate_response(abs_rate_response,non->tmax,&is13,&isimple);
+	            coherence_matrix[si*segments+sj]=1000*abs_rate_response[0]/isimple/non->deltat;
+            }
+        }
+    }
+    fclose(ratefile);
+    fclose(ratefile_imag);
+
+    free(rate_response);
+    free(rate_response_imag);
+    free(abs_rate_response);
+    free(re_Abs_hermi);
+    free(im_Abs_hermi);
+    free(re_aux_mat);
+    free(im_aux_mat);
+    free(re_aux_mat2);
+    free(im_aux_mat2);
+    free(Zeros);
+    free(ns);
+    return;
+}
+
+/* Find Hermitian conjugate of square NxN matrix */
+void hermitian_conjugate(float *A_re, float *A_im, float *hermi_re, float *hermi_im, int N1, int N2){
+    int a,b;
+    clearvec(hermi_re,N1*N2);
+    clearvec(hermi_im,N1*N2);
+
+    for (a=0;a<N1;a++){
+        for (b=0;b<N2;b++){
+            hermi_re[a+b*N1] = A_re[b+a*N2];
+            hermi_im[a+b*N1] = -A_im[b+a*N2];
+        }
+    }
     return;
 }
 
@@ -483,7 +862,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     int i,j,k;
     int *ns; /* Segment dimensions */
     int t1;
-    float *rate_response,*abs_rate_response;
+    float *rate_response, *rate_response_imag, *abs_rate_response;
     float rate;
     float isimple,is13; /* Variables for integrals */
     float *re_aux_mat,*im_aux_mat;
@@ -491,12 +870,13 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     float *Zeros;
     float twoPi2;
     float trace_reaux, trace_imaux;
-    FILE *ratefile;
+    FILE *ratefile, *ratefile_imag;
     N=non->singles;
     nn2=non->singles*non->singles;
     twoPi2=twoPi*twoPi;
 
     rate_response=(float *)calloc(non->tmax,sizeof(float));
+    rate_response_imag=(float *)calloc(non->tmax,sizeof(float));
     abs_rate_response=(float *)calloc(non->tmax,sizeof(float));
     re_aux_mat=(float *)calloc(nn2,sizeof(float));
     im_aux_mat=(float *)calloc(nn2,sizeof(float));
@@ -505,6 +885,7 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
     Zeros=(float *)calloc(nn2,sizeof(float));
   
     ratefile=fopen("RateFile.dat","w");
+    ratefile_imag=fopen("RateFile_imag.dat","w");
     /* Do one rate at a time - so first we loop over segments */
     /* Tr [ J * Abs(t1) * J * Emi(t1) ] */
     for (si=0;si<segments;si++){
@@ -526,9 +907,11 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
                     trace_reaux=trace_rate(re_aux_mat,N);
                     trace_imaux=trace_rate(im_aux_mat,N);
                     rate_response[t1]=trace_reaux*twoPi2;
-	            abs_rate_response[t1]=sqrt(trace_reaux*trace_reaux
+	            rate_response_imag[t1] = trace_imaux * twoPi2;
+		    abs_rate_response[t1]=sqrt(trace_reaux*trace_reaux
                                     +trace_imaux*trace_imaux)*twoPi2;
                     fprintf(ratefile,"%f %f\n",t1*non->deltat,rate_response[t1]);
+                    fprintf(ratefile_imag,"%f %f\n",t1*non->deltat,rate_response_imag[t1]);
                 }
                 /* Update rate matrix */
 	        integrate_rate_response(rate_response,non->tmax,&is13,&isimple);
@@ -543,8 +926,10 @@ void mcfret_rate(float *rate_matrix,float *coherence_matrix,int segments,float *
         }
     }
     fclose(ratefile);
+    fclose(ratefile_imag);
 
     free(rate_response);
+    free(rate_response_imag);
     free(abs_rate_response);
     free(re_aux_mat);
     free(im_aux_mat);
@@ -635,7 +1020,7 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
 	/* Skip adjusting quantum correction in the high-temperature limit */
 	if (non->temperature<100000){
 	    energy_cor[i]=-non->temperature*k_B*logf(vl[i+segments*imax]/popnorm/degen[i]);
-	}
+    }
     }
     fclose(Efile);
 
@@ -650,33 +1035,60 @@ void mcfret_eigen(t_non *non,float *rate_matrix,float *re_e,float *im_e,float *v
 /* Analyse rate matrix and find thermal correction */
 void mcfret_analyse(float *E,float *rate_matrix,t_non *non,int segments){
       float *qc_rate_matrix,*qc;
+      /* Thermal correction */
+      float *tc_rate_matrix;
+      float *partition_functions;
+      float partition_function_i, partition_function_j, equilibration_rate;
       float C;
+      float column;
       int i,j;
       float kBT=non->temperature*k_B; /* Kelvin to cm-1 */                     
   
+      /* Allocate memory for the partition functions and rate matrices */
       qc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
-      qc=(float *)calloc(segments*segments,sizeof(float));                     
+      qc=(float *)calloc(segments*segments,sizeof(float)); 
+      tc_rate_matrix=(float *)calloc(segments*segments,sizeof(float));
+      partition_functions = (float *)calloc(segments,sizeof(float));        
+      
+      /* load the segment ensemble avg partition functions */
+      read_vector_from_file("Segment_Partition_Functions.dat",partition_functions,segments); 
+
       /* Find quantum correction factors */                                    
       for (i=0;i<segments;i++){
+          partition_function_i = partition_functions[i];
+	  column = 0;
           for (j=0;j<segments;j++){                                            
               if (i!=j){
-                      /* Quantum correction factor from D.W. Oxtoby. */
-                      /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
-                      C=2/(1+exp((E[i]-E[j])/kBT));                            
-                      qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
-                      qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
+                  /* Quantum correction factor from D.W. Oxtoby. */
+                  /* Annu. Rev. Phys. Chem., 32(1):77–101, (1981).*/       
+                  C=2/(1+exp((E[i]-E[j])/kBT));                            
+                  qc_rate_matrix[i*segments+j]=rate_matrix[i*segments+j]*C;
+                  qc_rate_matrix[j*segments+j]-=rate_matrix[i*segments+j]*C;
                   qc[i*segments+j]=C;
-              }       
-              else{   
+		  /* Partition Function Based Thermal Correction */
+		  equilibration_rate = rate_matrix[i*segments+j] + rate_matrix[j*segments+i];
+		  partition_function_j = partition_functions[j];
+		  /* rate from segment i to segment j */
+		  tc_rate_matrix[i+segments*j] = equilibration_rate * partition_function_j / (partition_function_i + partition_function_j);
+                  column += tc_rate_matrix[i+segments*j];
+	      }       
+              else{ 
                   qc[i*segments+j]=0;
               }       
           }
+	  /* Ensure population conservation in the TC_rate_matrix */
+	  tc_rate_matrix[i+segments*i] = -column;
       }
   
       /* Write the quantum corrected rate matrix. */
       write_matrix_to_file("QC_RateMatrix.dat",qc_rate_matrix,segments);
+      /* Write the thermal corrected rate matrix. */
+      write_matrix_to_file("TC_RateMatrix.dat",tc_rate_matrix,segments);
       /* Write the applied quantum correction factors. */
       write_matrix_to_file("QC.dat",qc,segments);                              
+      free(qc_rate_matrix);
+      free(tc_rate_matrix);
+      free(qc);
       return;                                                                  
   }
 
@@ -813,7 +1225,7 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *ener
 }
 
 /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments){
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments, float *partition_functions){
     int index,N;
     float *H,*e;
     double *c2;
@@ -827,7 +1239,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
     cnr=(double *)calloc(N*N,sizeof(double));
     matrix=(double *)calloc(N*N,sizeof(double));
 
-    int a,b,c;
+    int a,b,c,s;
     double kBT=(double) non->temperature*k_B; /* Kelvin to cm-1 */
     double *Q,iQ;
  
@@ -866,6 +1278,8 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
             cnr[b+a*N]+=((double) H[b+a*N])*c2[b];
         }
     }  
+
+// #pragma omp parallel for
     for (a=0;a<N;a++){
         for (b=0;b<N;b++){
             for (c=0;c<N;c++){
@@ -885,6 +1299,11 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int s
         }
     }      
 
+    /* Update the ensemble average partition function for each segment*/
+    for(s=0;s<segments;s++){
+       partition_functions[s] += Q[s];
+    }
+
     free(H);
     free(c2);
     free(e);
@@ -897,7 +1316,7 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
 /* Define variables and arrays */
    /* Integers */
     int ti;
-    int segments;
+    int segments,s;
     int samples;
     int ele;
     int my_samples;
@@ -906,10 +1325,13 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     /* Vectors representing time dependent states: real and imaginary part */
     float *vecr;
     float *Hamiltonian_i;
+    /* Vector representing the ensemble average partition function for each segment */
+    float *partition_functions;
     /* File handles */
     FILE *H_traj;
     FILE *mu_traj;
     FILE *Cfile;
+    FILE *avg_partition_functions;
     /* Open Trajectory files */
     open_files(non,&H_traj,&mu_traj,&Cfile);
 
@@ -921,6 +1343,9 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     segments=project_dim(non);
     N=non->singles;
   
+    /* Allocate memory for the partition function vector */
+    partition_functions = (float *)calloc(segments,sizeof(float));
+    
     clearvec(ave_den_mat,N*N);
     /* Initialize sample numbers */
     my_samples=determine_samples(non);
@@ -928,11 +1353,12 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     if (non->end-non->begin<my_samples){
       my_samples=non->end-non->begin;
     }
+// #pragma omp parallel for
     for (samples=non->begin;samples<non->end;samples++){
       ti=samples*non->sample; 
       read_Hamiltonian(non,Hamiltonian_i,H_traj,ti);
       /* Use the thermal equilibrium as initial state */
-      density_matrix(vecr,Hamiltonian_i,non,segments);
+      density_matrix(vecr,Hamiltonian_i,non,segments,partition_functions);
 
       for (ele=0; ele<non->singles*non->singles; ele++){
           ave_den_mat[ele] +=vecr[ele]; 
@@ -950,6 +1376,20 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
             } 
         }
     }
+
+    /* Normalise the segments' partition funcions */
+    for (s=0;s<segments;s++){
+        partition_functions[s] *= i_samples;
+    }
+
+    /* Write partition function vector to a file */
+    avg_partition_functions = fopen("Segment_Partition_Functions.dat","w");
+    for (s=0;s<segments;s++){
+        fprintf(avg_partition_functions,"%f\n",partition_functions[s]);
+    }
+    fclose(avg_partition_functions);
+
+    free(partition_functions);
     free(vecr); 
     free(Hamiltonian_i); 
     return;
@@ -1027,82 +1467,6 @@ float trace_rate(float *matrix,int N){
         trace=trace+matrix[N*i+i];
     }
     return trace;
-}
-
-/* Integrate the rate response */
-void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
-    int i;
-    float simple; /* Variable for trapezium integral */
-    float simp13; /* Variable for Simpsons 1/3 rule integral */
-    simple=0;
-    simp13=0;
-    for (i=0;i<T;i++){
-        if (i==0){
-	    simple+=rate_response[i]/2;
-	    simp13+=rate_response[i]/3;
-	} else if (i%2==0){
-	    simple+=rate_response[i];
-            simp13+=2*rate_response[i]/3;
-        } else {
-	     simple+=rate_response[i];
-            simp13+=4*rate_response[i]/3;
-        }
-    }
-
-    /* Check for difference between integration methods */
-    if (fabs(simple-simp13)/fabs(simple)>0.05){
-        printf("\n");
-        printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
-        printf(YELLOW "Simple integral value: %f\n Simpson 1/3: %f\n",simple,simp13);
-        printf(YELLOW "This difference is larger than 5%%.\n" RESET);
-	printf(YELLOW "The trapezium rule value is used.\n\n" RESET);
-    }
-
-    /* Check for difference between initial and final value */
-    if (fabs(rate_response[T-1])*50>rate_response[0]){
-	    printf("\n");
-            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100/fabs(rate_response[0]));
-	    printf("of the initial value. You may avearge over too\n");
-	    printf("few samples (decrease the value of Samplerate) or\n");
-	    printf("your chosen coherence time of %d steps, may\n",T);
-	    printf("be too short for the coherence to decay.\n." RESET);
-	    printf("\n");
-    }
-
-    /* Store results in variables for return */
-    *isimple=simple;
-    *is13=simp13;
-}
-
-/* Write a square matrix to a text file */
-void write_matrix_to_file(char fname[],float *matrix,int N){
-    FILE *file_handle;
-    int i,j;
-    file_handle=fopen(fname,"w");
-    for (i=0;i<N;i++){
-        for (j=0;j<N;j++){
-            fprintf(file_handle,"%10.14e ",matrix[i*N+j]);
-        }
-        fprintf(file_handle,"\n");
-    }
-    fclose(file_handle);
-}
-
-/* Read a square matrix from a text file */
-void read_matrix_from_file(char fname[],float *matrix,int N){
-    FILE *file_handle;
-    int i,j;
-    file_handle=fopen(fname,"r");
-    if (file_handle == NULL) {
-        printf("Error opening the file %s.\n",fname);
-        exit(0);
-    }
-    for (i=0;i<N;i++){
-        for (j=0;j<N;j++){
-            fscanf(file_handle,"%f",&matrix[i*N+j]);
-        }
-    }
-    fclose(file_handle);
 }
 
 /* Read the absorption/emission function from file */

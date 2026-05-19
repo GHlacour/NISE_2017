@@ -84,7 +84,7 @@ void calc_FD_CG_2DES(t_non *non){
       CG_window_EA(non, re_window_EA, im_window_EA); 
     }
 
-  /* Call the rate routine routine */
+  /* Call the rate routine */
   if (string_in_array(non->technique,(char*[]){"FD_CG_2DES","FD_CG_2DES_combine"},2)){
     
       printf("Starting calculation of the FD-2DES\n");
@@ -238,8 +238,6 @@ void FD_CG_full_2DES_segments(t_non *non,float *re_doorway,float *im_doorway,
     im_2DES_NR_sum = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     im_2DES_R_sum  = (float **)calloc2D(non->tmax3,non->tmax1,sizeof(float),sizeof(float*));
     
-    /* We repeat everyting for each waiting time t2 */
-    t2 = non->tmax2-1;
     /* We repeat everyting for each labframe polarization */
     for (pol=0;pol<3;pol++){
       /* Loop over the 21 microscopic polarizations */

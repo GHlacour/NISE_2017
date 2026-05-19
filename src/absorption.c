@@ -33,7 +33,7 @@ void absorption(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj;
   FILE *C_traj;
-  FILE *outone,*log;
+  FILE *log;
   FILE *Cfile;
 
   /* Integers */
@@ -178,16 +178,8 @@ void absorption(t_non *non){
   fclose(mu_traj),fclose(H_traj);
 
   /* Save time domain response */
-  outone=fopen("TD_Absorption.dat","w");
-  for (t1=0;t1<non->tmax1;t1+=non->dt1){
-    fprintf(outone,"%f ",t1*non->deltat);
-    for (ip=0;ip<pro_dim;ip++){
-      fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
-    }
-    fprintf(outone,"\n");
-  }
-  fclose(outone);
-
+  save_time_domain_response(non,"TD_Absorption.dat",re_S_1,im_S_1,pro_dim,samples);
+  
   /* Do Forier transform and save */
   do_1DFFT(non,"Absorption.dat",re_S_1,im_S_1,samples);
 

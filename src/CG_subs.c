@@ -136,28 +136,9 @@ void CG_doorway(t_non *non,float *re_doorway,float *im_doorway){
   Hamil_i_e=(float *)calloc(nn2,sizeof(float));
   
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
   
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
-  }
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; /* Counter for snapshots calculated*/
-  } 
+  Ncl=0; /* Counter for snapshots calculated*/ 
   
   vecr=(float *)calloc(non->singles,sizeof(float));	
   veci=(float *)calloc(non->singles,sizeof(float));
@@ -223,7 +204,7 @@ void CG_doorway(t_non *non,float *re_doorway,float *im_doorway){
         for (t1=0;t1<non->tmax;t1++){
           tj=ti+t1;
           /* Read Hamiltonian */
-            read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
+          read_Hamiltonian(non,Hamil_i_e,H_traj,tj);
   
           for (beta=0;beta<3;beta++){
               /* Read mu(tj) */
@@ -238,9 +219,9 @@ void CG_doorway(t_non *non,float *re_doorway,float *im_doorway){
               for (site_num=0;site_num<non->singles;site_num++){
                   seg_num=non->psites[site_num];
                   /* This equation is make sure the calculated data in the right
-                     * position */
+                   * position */
                    //index=seg_num*9*non->tmax+alpha*3*non->tmax+beta*non->tmax+t1;
-                      index=CG_index(non,seg_num,alpha,beta,t1);
+                  index=CG_index(non,seg_num,alpha,beta,t1);
                   re_doorway[index]+=mu_eg[site_num]*vecr[site_num];
                   im_doorway[index]+=mu_eg[site_num]*veci[site_num]; 
               }
@@ -337,15 +318,16 @@ void CG_P_DA(t_non *non,float *P_DA,int N){
     exit(1);
   }
   /* Read rate matrix */
-  printf("\nUsing the Rate matrix:\n");
+  if (non->printLevel>0 || nt2==0)
+    printf("\nUsing the Rate matrix:\n");
   for (a=0;a<N*N;a++){
     if (fscanf(Rate,"%f",&K[a])!=1){
       printf("Error in reading in rate matrix!\n");
       exit(0);
     }
-    printf("%f ",K[a]);
+    if (non->printLevel>0 || nt2==0) printf("%f ",K[a]);
   }
-  printf("\n\nCompleted reading the rate matrix.\n");
+  if (non->printLevel>0 || nt2==0) printf("\n\nCompleted reading the rate matrix.\n");
   
   /* Diagonalize K matrix */
   diagonalize_real_nonsym(K, eigK_re, eigK_im, evecL, evecR, ivecL, ivecR, N);

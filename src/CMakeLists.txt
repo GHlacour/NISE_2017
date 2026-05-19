@@ -15,8 +15,10 @@ add_executable(NISE
     luminescence.c calc_Diffusion.h calc_Diffusion.c anisotropy.c
     anisotropy.h calc_CD.c calc_CD.h calc_LD.c calc_LD.h analyse.c
     analyse.h readinput.c readinput.h propagate.c propagate.h
+    propagate_segment.c propagate_segment.h
     read_trajectory.c read_trajectory.h correlate.h correlate.c
     project.c project.h types_MPI.h types_MPI.c mcfret.c mcfret.h
+    mcfret4.c mcfret4.h
     calc_Redfield.c calc_Redfield.h CG_subs.c CG_subs.h
     sfg.c sfg.h calc_CG_2DES.c calc_CG_2DES.h eq_den.c eq_den.h
     calc_FD_CG_2DES.c calc_FD_CG_2DES.h hamshift.c hamshift.h  
@@ -38,6 +40,7 @@ add_executable(translate
 find_package(LAPACK REQUIRED)
 target_link_libraries(NISE ${LAPACK_LIBRARIES})
 target_link_libraries(translate ${LAPACK_LIBRARIES})
+target_link_libraries(NISE ${BLAS_LIBRARIES})
 
 # FFTW
 # Not using the FFTW3 script, since FFTW3 installed using ./configure && make && make install

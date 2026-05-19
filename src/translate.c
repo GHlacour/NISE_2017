@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <math.h>
 #include <string.h>
 #include <time.h>
@@ -173,29 +174,29 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
     fscanf(FH->IE,"%d",&t);
     for (k=0;k<tdat->singles;k++){
       for (l=k;l<tdat->singles;l++){
-	fscanf(FH->IE,"%f",&f);
-	if (k<=l){
-	  index=l+tdat->singles*k-(k*(k+1)/2);
-	  ham->He[index]=f;
-	}
+	      sfscanf(FH->IE,"%f",&f);
+	      if (k<=l){
+	        index=l+tdat->singles*k-(k*(k+1)/2);
+	        ham->He[index]=f;
+	      }
       }
     }
     fscanf(FH->ID,"%d",&t);
     for (x=0;x<3;x++){
       for (k=0;k<tdat->singles;k++){
-	fscanf(FH->ID,"%f",&f);
-	index=x*tdat->singles+k;
-	ham->mu_ge[index]=f;
+	      sfscanf(FH->ID,"%f",&f);
+	      index=x*tdat->singles+k;
+	      ham->mu_ge[index]=f;
       }
     }
     if (FH->IALP!=NULL){
-      fscanf(FH->IALP,"%d",&t);
+      sfscanf(FH->IALP,"%d",&t);
       for (x=0;x<6;x++){ // Raman x from 3 to 6
-	for (k=0;k<tdat->singles;k++){
-	  fscanf(FH->IALP,"%f",&f);
-	  index=x*tdat->singles+k;
-	  ham->alpha[index]=f;
-	}
+	      for (k=0;k<tdat->singles;k++){
+	        sfscanf(FH->IALP,"%f",&f);
+	        index=x*tdat->singles+k;
+	        ham->alpha[index]=f;
+	      }
       }
     }
   }
@@ -204,40 +205,40 @@ void readInp(t_trans *tdat,t_ham *ham,t_files *FH){
   if (strcmp(tdat->inputFormat,"MITTXT")==0){
     for (k=0;k<tdat->singles;k++){
       for (l=0;l<tdat->singles;l++){
-	fscanf(FH->IE,"%f",&f);
-	if (k<=l){
-	  index=l+tdat->singles*k-(k*(k+1)/2);
-	  ham->He[index]=f;
-	}
+	      sfscanf(FH->IE,"%f",&f);
+	      if (k<=l){
+	        index=l+tdat->singles*k-(k*(k+1)/2);
+	        ham->He[index]=f;
+	      }
       }
     }
     for (k=0;k<tdat->singles;k++){
       for (x=0;x<3;x++){
-	fscanf(FH->ID,"%f",&f);
-	index=x*tdat->singles+k;
-	ham->mu_ge[index]=f;
+	      sfscanf(FH->ID,"%f",&f);
+	      index=x*tdat->singles+k;
+	      ham->mu_ge[index]=f;
       }
     }
   }
 
   // Read SPECTRON
   if (strcmp(tdat->inputFormat,"SPECTRON")==0){
-    fscanf(FH->IE,"%s %d",dum,&t);
+    sfscanf(FH->IE,"%s %d",dum,&t);
     for (k=0;k<tdat->singles;k++){
       for (l=0;l<=k;l++){
-	fscanf(FH->IE,"%f",&f);
-	if (k>=l){
-	  index=k+tdat->singles*l-(l*(l+1)/2);
-	  ham->He[index]=f;
-	}
+	      sfscanf(FH->IE,"%f",&f);
+	      if (k>=l){
+	        index=k+tdat->singles*l-(l*(l+1)/2);
+	        ham->He[index]=f;
+	      }
       }
     }
-    fscanf(FH->ID,"%s %d",dum,&t);
+    sfscanf(FH->ID,"%s %d",dum,&t);
     for (k=0;k<tdat->singles;k++){
       for (x=0;x<3;x++){
-	fscanf(FH->ID,"%f",&f);
-	index=x*tdat->singles+k;
-	ham->mu_ge[index]=f;
+	      sfscanf(FH->ID,"%f",&f);
+	      index=x*tdat->singles+k;
+	      ham->mu_ge[index]=f;
       }
     }
   }
@@ -305,8 +306,8 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     //    printf("x\n");
     for (k=0;k<tdat->singles;k++){
       for (l=0;l<tdat->singles;l++){
-	index=Sindex(k,l,tdat->singles);
-	fprintf(FH->OE,"%f\t",ham->He[index]);
+	      index=Sindex(k,l,tdat->singles);
+	      fprintf(FH->OE,"%f\t",ham->He[index]);
       }
     }
     fprintf(FH->OE,"\n");
@@ -324,8 +325,8 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fprintf(FH->OE,"%d ",0);
     for (k=0;k<tdat->singles;k++){
       for (l=k;l<tdat->singles;l++){
-	index=Sindex(k,l,tdat->singles);
-	fprintf(FH->OE,"%f ",ham->He[index]);
+	      index=Sindex(k,l,tdat->singles);
+	      fprintf(FH->OE,"%f ",ham->He[index]);
 	//	if (k==l) printf("%d %d %d %f\n",k,l,index,ham->He[index]);
       }
     }
@@ -333,7 +334,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fprintf(FH->OD,"%d ",0);
     for (x=0;x<3;x++){
       for (k=0;k<tdat->singles;k++){
-	fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
+	      fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
       }
     }
     fprintf(FH->OD,"\n");
@@ -341,9 +342,9 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     if (FH->IALP!=NULL){
       fprintf(FH->OALP,"%d ",0);
       for (x=0;x<6;x++){ //Raman x changed from 3 to 6 polarizations
-	for (k=0;k<tdat->singles;k++){
-	  fprintf(FH->OALP,"%f ",ham->alpha[x*tdat->singles+k]);
-	}
+	      for (k=0;k<tdat->singles;k++){
+	        fprintf(FH->OALP,"%f ",ham->alpha[x*tdat->singles+k]);
+	      }
       }
       fprintf(FH->OALP,"\n");
     }
@@ -353,8 +354,8 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
   if (strcmp(tdat->outputFormat,"MITTXT")==0){
     for (k=0;k<tdat->singles;k++){
       for (l=0;l<tdat->singles;l++){
-	index=Sindex(k,l,tdat->singles);
-	fprintf(FH->OE,"%f ",ham->He[index]);
+	      index=Sindex(k,l,tdat->singles);
+	      fprintf(FH->OE,"%f ",ham->He[index]);
 	//	if (k==l) printf("%d %d %d %f\n",k,l,index,ham->He[index]);
       }
       fprintf(FH->OE,"\n");
@@ -362,7 +363,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fprintf(FH->OE,"\n");
     for (k=0;k<tdat->singles;k++){
       for (x=0;x<3;x++){
-	fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
+	      fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
       }
       fprintf(FH->OD,"\n");
     }
@@ -374,8 +375,8 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fprintf(FH->OE,"SNAPSHOT %d\n",snapshot+1);
     for (k=0;k<tdat->singles;k++){
       for (l=0;l<=k;l++){
-	index=Sindex(k,l,tdat->singles);
-	fprintf(FH->OE,"%f ",ham->He[index]);
+	      index=Sindex(k,l,tdat->singles);
+	      fprintf(FH->OE,"%f ",ham->He[index]);
 	//	if (k==l) printf("%d %d %d %f\n",k,l,index,ham->He[index]);
       }
       fprintf(FH->OE,"\n");
@@ -385,7 +386,7 @@ void writeOut(t_trans *tdat,t_ham *ham,t_files *FH,int snapshot){
     fprintf(FH->OD,"SNAPSHOT %d\n",snapshot+1);
     for (k=0;k<tdat->singles;k++){
       for (x=0;x<3;x++){
-	fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
+	      fprintf(FH->OD,"%f ",ham->mu_ge[x*tdat->singles+k]);
       }
       fprintf(FH->OD,"\n");
     }
@@ -415,13 +416,7 @@ void constructHf(t_trans *tdat,t_ham *ham){
       iA[k]=i,iB[k]=j;
       k++;
     }
-  }// 9/1-2007 debug
-  /*  for (i=0;i<Ne;i++){
-    for (j=i;j<Ne;j++){
-      k=i+j*Ne-j*(j+1)/2;
-      iA[k]=i,iB[k]=j;
-    }
-    }*/
+  }
 
 
   // Construct doubly excited Hamiltonian
@@ -430,13 +425,13 @@ void constructHf(t_trans *tdat,t_ham *ham){
       w=0;
       // Set diagonal values
       if (i==j){
-	if (iA[i]==iB[i]){
-	  w=2*ham->He[Sindex(iA[i],iA[i],Ne)]-A;
+	      if (iA[i]==iB[i]){
+	        w=2*ham->He[Sindex(iA[i],iA[i],Ne)]-A;
 	  //	  printf("%d %d %f\n",iA[i],iB[i],w);
-	} else {
-	  w=ham->He[Sindex(iA[i],iA[i],Ne)]+ham->He[Sindex(iB[i],iB[i],Ne)];
+	      } else {
+	        w=ham->He[Sindex(iA[i],iA[i],Ne)]+ham->He[Sindex(iB[i],iB[i],Ne)];
 	  //	  printf("%d %d %f\n",iA[i],iB[i],w);
-	}
+	      }
       } else {
 	// Set offdiagonal values
 	// AA-AB or AA-BA
@@ -770,27 +765,6 @@ void freeHam(t_ham *ham){
   free(ham->alpha);
 }
 
-/*int Sindex(int a,int b,int N){
-  int ind;
-  if (a>b){
-    ind=a+N*b-(b*(b+1)/2);
-  } else {
-    ind=b+N*a-(a*(a+1)/2);
-  }
-  return ind;
-}
-// Index routine
-//int Sindex(int a,int b,int N){
-//  int ind;
-//    if (a>b){
-//    ind=a+N*b-(b*(b+1)/2);
-//  } else {
-//    ind=b+N*a-(a*(a+1)/2);
-//    }
-//  ind=a+N*b;
-//  return ind;
-//}
-*/
 
 // Read shift input
 int keyWordModify(char *keyWord,char *Buffer,int *ivalue,size_t LabelLength,t_modify *modify,FILE *inputFile,int N,t_trans *tdat){
@@ -964,4 +938,22 @@ void revMod(t_trans *tdat,t_modify *modify){
   swap=tdat->doubles;
   tdat->doubles=modify->doubles;
   modify->doubles=swap;
+}
+
+// Secure fscanf
+int sfscanf(FILE *stream, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int nread = vfscanf(stream, format, args);
+    va_end(args);
+
+    if (nread == EOF) {
+        printf("\n");
+        printf("Error: Unexpected end of file.\n");
+        printf("Please, check that the length of your input trajectory\n");
+        printf("matches the length given with the Length keyword!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return nread;
 }

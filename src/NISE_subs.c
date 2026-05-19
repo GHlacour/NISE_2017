@@ -10,6 +10,8 @@
 #include "read_trajectory.h"
 #include "randomlib.h"
 #include "util/asprintf.h"
+#include <ctype.h>
+#include <cblas.h>
 
 // Subroutines for nonadiabatic code
 
@@ -55,6 +57,13 @@ void clearvec_double(double* a, int N) {
     int i;
     for (i = 0; i < N; i++) a[i] = 0;
 }
+
+// Set all elements of a vector to zero, here for integers
+void clearvec_int(int *a, int N) {
+    int i;
+    for (i = 0; i < N; i++) a[i] = 0;
+}
+
 
 // Construct unit matrix
 void unitmat(float *a,int N){
@@ -120,6 +129,113 @@ void trans_matrix_on_vector(float *c,float *vr,float *vi,int N){
     free(xr);
     free(xi);
 }
+/* Find the trace of a matrix product */
+float matrix_mul_traced_DA(float *A, float *B, int N_i, int N_i3){
+    /* Calculate the trace of the product of two differently shaped matrices of dimension N_i * Ni_3 */
+    /* Directly computing the trace greatly reduces the number of operations needed */
+    /* from N^3 to N^2 */
+    // N_i3 is the shared dimension of the matrices A & B
+    // N_i is the dimension of the resulting square matrix
+    int i,i3;
+    float the_trace;
+
+    the_trace = 0;
+
+    for (i=0;i<N_i;i++){
+   	    for (i3=0;i3<N_i3;i3++){
+            the_trace += A[i*N_i3+i3] * B[i3*N_i+i];
+	    }
+    }
+    return the_trace;
+}
+
+// void complex_matrix_product(float *A_re, float *A_im, float *B_re, float *B_im, float *C_re, float *C_im,int N_1,int N_2,int N_3){
+
+//     int i1, i2, i3;
+//     float Aim_i1i3, Are_i1i3;
+//     clearvec(C_re,N_1*N_2);
+//     clearvec(C_im,N_1*N_2);
+
+// // can make paralllel but check for loop order: warnings recieved
+// #pragma omp parallel for private(i2,i3,Aim_i1i3,Are_i1i3)
+// for (i1=0;i1<N_1;i1++){
+//     for (i3=0;i3<N_3;i3++){
+// 	    Aim_i1i3 = A_im[i1*N_3+i3];
+// 	    Are_i1i3 = A_re[i1*N_3+i3];
+//             for (i2=0;i2<N_2;i2++){
+//                     C_re[i1*N_2+i2] += Are_i1i3 * B_re[i3*N_2+i2] - Aim_i1i3 * B_im[i3*N_2+i2];
+//                     C_im[i1*N_2+i2] += Are_i1i3 * B_im[i3*N_2+i2] + Aim_i1i3 * B_re[i3*N_2+i2];
+//                 }
+//             }
+//         }
+// }
+
+/* Computes the complex matrix product of two matrices, */
+/* After converting to complex arrays */
+/* Only recommended for large matrices (i.e. N >1000) */
+void complex_matrix_product(float *A_re, float *A_im,
+                            float *B_re, float *B_im,
+                            float *C_re, float *C_im,
+                            int N_1, int N_2, int N_3)
+{
+    // Row-major matrices:
+    // A: N_1 x N_3
+    // B: N_3 x N_2
+    // C: N_1 x N_2
+
+    const int sizeA = N_1 * N_3;
+    const int sizeB = N_3 * N_2;
+    const int sizeC = N_1 * N_2;
+
+    // Allocate interleaved complex buffers
+    float *A = (float*) malloc(sizeof(float) * 2 * sizeA);
+    float *B = (float*) malloc(sizeof(float) * 2 * sizeB);
+    float *C = (float*) malloc(sizeof(float) * 2 * sizeC);
+
+    if (!A || !B || !C) {
+        free(A);
+        free(B);
+        free(C);
+        return; // allocation failed
+    }
+
+    // Convert A to interleaved complex
+    for (int i = 0; i < sizeA; i++) {
+        A[2*i]     = A_re[i];
+        A[2*i + 1] = A_im[i];
+    }
+
+    // Convert B
+    for (int i = 0; i < sizeB; i++) {
+        B[2*i]     = B_re[i];
+        B[2*i + 1] = B_im[i];
+    }
+
+    // Zero C
+    memset(C, 0, sizeof(float) * 2 * sizeC);
+
+    const float alpha[2] = {1.0f, 0.0f};
+    const float beta[2]  = {0.0f, 0.0f};
+
+    cblas_cgemm(CblasRowMajor,
+                CblasNoTrans, CblasNoTrans,
+                N_1, N_2, N_3,
+                alpha,
+                A, N_3,
+                B, N_2,
+                beta,
+                C, N_2);
+
+    // Convert result back to split format
+    for (int i = 0; i < sizeC; i++) {
+        C_re[i] = C[2*i];
+        C_im[i] = C[2*i + 1];
+    }
+
+    free(A);
+    free(B);
+    free(C);
+}
 
 /* Find the norm for a complex vector */
 float find_norm(float *phi_r,float *phi_i,int N){
@@ -146,6 +262,23 @@ void re_normalize(float *phi_r,float *phi_i,int N,float norm){
         }
     }
 }
+
+/* For testing purposes */
+/* Find the sum of all matrix elements */
+float matrix_sum(float *matrix,int N){
+    int i,j;
+    float sum;
+    sum=0;
+    for (i=0;i<N;i++){
+        for (j=0;j<N;j++){
+            sum=sum+matrix[N*i+j];
+            // printf("element %f\n",matrix[N*i+j]);
+        }
+    }
+    return sum;
+}
+/* For testing purposes */
+
 
 /**
  * Method that logs a message, in which the message can be formatted like printf accepts.
@@ -184,13 +317,14 @@ time_t log_time(time_t t0, FILE* log) {
 }
 
 /* Compare a string to an array of options */
+/* The comparizon is not case sensitive */
 int string_in_array(char* string_to_compare, char* string_array[], int array_size) {
     for (int i = 0; i < array_size; i++) {
-        if (!strcmp(string_to_compare, string_array[i])) {
+        if (!strcmp_nocase(string_to_compare, string_array[i])) {
             return i+1; // return the index of the matched string
 	    }
     }
-    return 0; // if no match is found, return -1
+    return 0; // if no match is found, return 0
 }
 
 /* Determine number of samples to use and write to log file */
@@ -686,4 +820,187 @@ void diagonalize_real_nonsym(float* K, float* eig_re, float* eig_im, float* evec
         }
     }
     return;
+}
+
+
+/* Integrate the rate response */
+void integrate_rate_response(float *rate_response,int T,float *is13,float *isimple){
+    int i;
+    float simple; /* Variable for trapezium integral */
+    float simp13; /* Variable for Simpsons 1/3 rule integral */
+    simple=0;
+    simp13=0;
+    for (i=0;i<T;i++){
+        if (i==0){
+	    simple+=rate_response[i]/2;
+	    simp13+=rate_response[i]/3;
+	} else if (i%2==0){
+	    simple+=rate_response[i];
+            simp13+=2*rate_response[i]/3;
+        } else {
+	     simple+=rate_response[i];
+            simp13+=4*rate_response[i]/3;
+        }
+    }
+
+    /* Check for difference between integration methods */
+    if (fabs(simple-simp13)/fabs(simple)>0.05){
+        printf("\n");
+        printf(YELLOW "Warning the timesteps may be to large for integration!\n" RESET);
+        printf(YELLOW "Simple integral value: %f\n Simpson 1/3: %f\n",simple,simp13);
+        printf(YELLOW "This difference is larger than 5%%.\n" RESET);
+	printf(YELLOW "The trapezium rule value is used.\n\n" RESET);
+    }
+
+    /* Check for difference between initial and final value */
+    if (fabs(rate_response[T-1])*50>rate_response[0]){
+	    printf("\n");
+            printf(YELLOW "Final value of rate response is %f %%\n",fabs(rate_response[T-1])*100/fabs(rate_response[0]));
+	    printf("of the initial value. You may avearge over too\n");
+	    printf("few samples (decrease the value of Samplerate) or\n");
+	    printf("your chosen coherence time of %d steps, may\n",T);
+	    printf("be too short for the coherence to decay.\n." RESET);
+	    printf("\n");
+    }
+
+    /* Store results in variables for return */
+    *isimple=simple;
+    *is13=simp13;
+}
+
+/* Write a square matrix to a text file */
+void write_matrix_to_file(char fname[],float *matrix,int N){
+    FILE *file_handle;
+    int i,j;
+        file_handle=fopen(fname,"w");
+    for (i=0;i<N;i++){
+        for (j=0;j<N;j++){
+            fprintf(file_handle,"%10.14e ",matrix[i*N+j]);
+        }
+        fprintf(file_handle,"\n");
+    }
+    fclose(file_handle);
+}
+
+/* Read a square matrix from a text file */
+void read_matrix_from_file(char fname[],float *matrix,int N){
+    FILE *file_handle;
+    int i,j;
+    file_handle=fopen(fname,"r");
+    if (file_handle == NULL) {
+        printf("Error opening the file %s.\n",fname);
+        exit(0);
+    }
+    for (i=0;i<N;i++){
+        for (j=0;j<N;j++){
+            fscanf(file_handle,"%f",&matrix[i*N+j]);
+        }
+    }
+    fclose(file_handle);
+}
+
+/* Read a vector from a text file */
+void read_vector_from_file(char fname[],float *vector,int N){
+    FILE *file_handle;
+    int i;
+    file_handle=fopen(fname,"r");
+    if (file_handle == NULL) {
+        printf("Error opening the file %s.\n",fname);
+        exit(0);
+    }
+    for (i=0;i<N;i++){
+        fscanf(file_handle,"%f",&vector[i]);
+    }
+    fclose(file_handle);
+}
+
+// Replace the extension of a filename if it matches the old extension, otherwise return NULL
+char *replace_ext(const char *filename,
+                  const char *old_ext,
+                  const char *new_ext)
+{
+    size_t len = strlen(filename);
+    size_t old_len = strlen(old_ext);
+    size_t new_len = strlen(new_ext);
+
+    if (len < old_len) return NULL;
+
+    // check if filename ends with old_ext
+    if (strcmp(filename + len - old_len, old_ext) != 0)
+        return NULL;
+
+    // allocate new string
+    size_t new_size = len - old_len + new_len + 1;
+    char *result = malloc(new_size);
+    if (!result) return NULL;
+
+    // copy base part
+    memcpy(result, filename, len - old_len);
+
+    // append new extension
+    memcpy(result + (len - old_len), new_ext, new_len);
+
+    // null terminate
+    result[new_size - 1] = '\0';
+
+    return result;
+}
+
+// Compare two strings ignoring case
+int strcmp_nocase(const char *s1, const char *s2)
+{
+    while (*s1 && *s2) {
+        unsigned char c1 = (unsigned char)*s1;
+        unsigned char c2 = (unsigned char)*s2;
+
+        c1 = (unsigned char)tolower(c1);
+        c2 = (unsigned char)tolower(c2);
+
+        if (c1 != c2)
+            return c1 - c2;
+
+        s1++;
+        s2++;
+    }
+
+    return (unsigned char)tolower((unsigned char)*s1)
+         - (unsigned char)tolower((unsigned char)*s2);
+}
+
+/* Save linear response function to file */
+int save_time_domain_response(t_non *non,const char *filename,float *re_S_1,float *im_S_1,int pro_dim,int samples){
+    int ip, t1;
+    float time,re,im;
+    FILE *outone;
+    if (strcmp_nocase(non->outputformat, "Normal")==0) {
+        outone=fopen(filename,"w");
+        for (t1=0;t1<non->tmax1;t1+=non->dt1){
+            fprintf(outone,"%f ",t1*non->deltat);
+            for (ip=0;ip<pro_dim;ip++){
+                fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
+            }
+            fprintf(outone,"\n");
+        }
+        fclose(outone);
+        return 0;
+    } else if (strcmp_nocase(non->outputformat, "Binary")==0) {
+        char *binary_fname = replace_ext(filename, ".dat", ".bin");
+        outone=fopen(binary_fname,"wb");
+        for (t1=0;t1<non->tmax1;t1+=non->dt1){
+            time=t1*non->deltat;
+            fwrite(&time,sizeof(float),1,outone);
+            for (ip=0;ip<pro_dim;ip++){
+                re=re_S_1[t1+ip*non->tmax]/samples;
+                im=im_S_1[t1+ip*non->tmax]/samples;
+                fwrite(&re,sizeof(float),1,outone);
+                fwrite(&im,sizeof(float),1,outone);
+            }
+        }
+        fclose(outone);
+        return 0;
+    } else {
+        printf("\n");
+        printf("To store response function use OutputFormat Normal or Binary.\n\n");
+    }
+    return 0;
 }

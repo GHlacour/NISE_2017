@@ -26,9 +26,6 @@ void open_files(t_non *non,FILE **H_traj,FILE **mu_traj,FILE **Cfile){
     exit(1);
   }
 
-  /* Open and read Single Shift file if present */
-  read_shift(non);
-
   /* Open file with cluster information if appicable */
   if (non->cluster!=-1){
     *Cfile=fopen("Cluster.bin","rb");
@@ -82,7 +79,7 @@ void read_Hamiltonian(t_non *non,float *Hamil_i_e,FILE *H_traj,int pos){
            exit(1);
         }
     }
-    apply_singleshift(non,Hamil_i_e);
+
     return;
 }
 
@@ -310,6 +307,9 @@ int read_He(t_non* non, float* He, FILE* FH, int pos) {
         }
     }
 
+    // Shift single excited states if needed
+    apply_singleshift(non,He);
+
     return control;
 }
 
@@ -337,6 +337,9 @@ int read_Dia(t_non* non, float* He, FILE* FH, int pos) {
         He[i * non->singles + i - (i * (i + 1)) / 2] = H[i] - non->shifte;
     }
     free(H);
+
+    // Shift single excited states if needed
+    apply_singleshift(non,He);
     return control;
 }
 

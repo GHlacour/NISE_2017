@@ -11,6 +11,7 @@
 #include "calc_CD.h"
 #include "1DFFT.h"
 #include "project.h"
+#include "read_trajectory.h"
 
 void calc_CD(t_non *non){
   // Initialize variables
@@ -33,7 +34,7 @@ void calc_CD(t_non *non){
   /* File handles */
   FILE *H_traj,*mu_traj,*pos_traj;
   FILE *C_traj;
-  FILE *outone,*log;
+  FILE *log;
   FILE *Cfile;
 
   /* Integers */
@@ -71,17 +72,7 @@ void calc_CD(t_non *non){
   im_S_1j=(float *)calloc(non->tmax*N*pro_dim,sizeof(float));
 
   /* Open Trajectory files */
-  H_traj=fopen(non->energyFName,"rb");
-  if (H_traj==NULL){
-    printf("Hamiltonian file not found!\n");
-    exit(1);
-  }
-
-  mu_traj=fopen(non->dipoleFName,"rb");
-  if (mu_traj==NULL){
-    printf("Dipole file %s not found!\n",non->dipoleFName);
-    exit(1);
-  }
+  open_files(non,&H_traj,&mu_traj,&Cfile);
 
   pos_traj=fopen(non->positionFName,"rb");
   if (pos_traj==NULL){
@@ -89,18 +80,8 @@ void calc_CD(t_non *non){
     exit(1);
   }
 
-
-  /* Open file with cluster information if appicable */
-  if (non->cluster!=-1){
-    Cfile=fopen("Cluster.bin","rb");
-    if (Cfile==NULL){
-      printf("Cluster option was activated but no Cluster.bin file provided.\n");
-      printf("Please, provide cluster file or remove Cluster keyword from\n");
-      printf("input file.\n");
-      exit(0);
-    }
-    Ncl=0; // Counter for snapshots calculated
-  }
+ 
+  Ncl=0; // Counter for snapshots calculated
 
   // Here we want to call the routine for checking the trajectory files
   control(non);
@@ -136,7 +117,7 @@ void calc_CD(t_non *non){
   pos=(float *)calloc(non->singles,sizeof(float));
   pos_xyz=(float *)calloc(non->singles*3,sizeof(float));
 
-  printf("\n Note that the CD implementation assumes that the positions of\n");
+  printf("\nNote that the CD implementation assumes that the positions of\n");
   printf("the full system specified in the Position file is contained\n");
   printf("in a box as periodic boundary contitions are NOT applied.\n\n");
 
@@ -234,7 +215,7 @@ void calc_CD(t_non *non){
                     z=3-x-y;
 	      /* Read mu(tj) */
                     if (!strcmp(non->hamiltonian,"Coupling")){
-                        copyvec(mu_xyz+non->singles*x,mu_eg,non->singles);
+                        copyvec(mu_xyz+non->singles*y,mu_eg,non->singles);
                     } else {
 	                if (read_mue(non,mu_eg,mu_traj,tj,y)!=1){
 	                    printf("Dipole trajectory file to short, could not fill buffer!!!\n");
@@ -353,16 +334,8 @@ void calc_CD(t_non *non){
     fclose(Cfile);
   }
 
-  outone=fopen("TD_CD.dat","w");
-  for (t1=0;t1<non->tmax1;t1+=non->dt1){
-/*    fprintf(outone,"%f %e %e\n",t1*non->deltat,re_S_1[t1]/samples,im_S_1[t1]/samples); */
-      fprintf(outone,"%f ",t1*non->deltat);
-      for (ip=0;ip<pro_dim;ip++){
-         fprintf(outone,"%e %e ",re_S_1[t1+ip*non->tmax]/samples,im_S_1[t1+ip*non->tmax]/samples);
-      }
-      fprintf(outone,"\n");
-  }
-  fclose(outone);
+  // Save response function
+  save_time_domain_response(non,"TD_CD.dat",re_S_1,im_S_1,pro_dim,samples);
 
   /* Do Forier transform and save */
   do_1DFFT(non,"CD.dat",re_S_1,im_S_1,samples);
