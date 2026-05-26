@@ -1288,7 +1288,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N
     double segment_partition_func = 0;
 
     double reference_energy;
-    reference_energy = non->min1; // Simply use the first value of the maximum indicated frequencies as reference energy
+    reference_energy = non->min1; // Simply use the first value of the minimum indicated frequencies as reference energy
 
     for (si=0;si<N_segments;si++){
         float *Hamiltonian_segment_triu;
@@ -1317,14 +1317,14 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N
         }
         /* Find eigenvalues and eigenvectors */
         diagonalizeLPD(H,e,N_site_si);
-        if (non->printLevel>0){
+        if (non->printLevel>1){
             log=fopen("NISE.log","a");
             fprintf(log,"Boltzmann factors for segment %d: ", si);
         }
         /* Exponentiate [U=exp(-H/kBT)] */
         for (a=0;a<N_site_si;a++){
             if (non->temperature==0){
-                printf("Temperature is 0, the equilirbium density matrix will be nan,we suggestion to use a low non-zero temperature instead");
+                printf("Temperature is 0, the equilibrium density matrix will be nan, we suggest using a low non-zero temperature instead");
                 exit(0);
             }
 
@@ -1335,7 +1335,7 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N
             }
             c2[a] = Boltzmann;
             segment_partition_func += Boltzmann;
-            if (non->printLevel>0){
+            if (non->printLevel>1){
                 fprintf(log," %e ", Boltzmann);
             }
         }
@@ -1359,9 +1359,9 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N
         partition_functions[si] += (float) segment_partition_func;
         if (non->printLevel>0){
             printf("Partition function for segment %d =  %e \n",si,segment_partition_func);
-            log=fopen("NISE.log","a");
-            fprintf(log,"Partition function for segment %d =  %e \n",si,segment_partition_func);
-            fclose(log);
+            // log=fopen("NISE.log","a");
+            // fprintf(log,"Partition function for segment %d =  %e \n",si,segment_partition_func);
+            // fclose(log);
         }
     
     
@@ -1376,98 +1376,6 @@ void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N
 
     return;
 }
-
-// old: likely wrong, as the inter-segment density elements are nullified, however, the inter-segment couplings in the hamiltonian should be nullified instead.
-// /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
-// void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments, float *partition_functions){
-//     int index,N;
-//     float *H,*e;
-//     double *c2;
-//     double *cnr;
-//     double *matrix;
-
-//     FILE *log;
-
-//     N=non->singles;
-//     H=(float *)calloc(N*N,sizeof(float));
-//     e=(float *)calloc(N,sizeof(float));
-//     c2=(double *)calloc(N,sizeof(double));
-//     cnr=(double *)calloc(N*N,sizeof(double));
-//     matrix=(double *)calloc(N*N,sizeof(double));
-
-//     int a,b,c,s;
-//     double kBT=(double) non->temperature*k_B; /* Kelvin to cm-1 */
-//     double *Q,iQ;
- 
-//     clearvec(density_matrix,N*N);
-
-//     Q=(double *)calloc(segments,sizeof(double));  
-
-//     /* Build Hamiltonian */
-//     for (a=0;a<N;a++){
-//         H[a+N*a]=Hamiltonian_i[a+N*a-(a*(a+1))/2]; /* Diagonal */
-//         for (b=a+1;b<N;b++){
-
-//             //only write elements of the Hamiltonian within each segment (nullify the inter-segment couplings)
-//             if (non->psites[a] == non->psites[b]){
-//                 H[a+N*b]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
-//                 H[b+N*a]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
-//             }
-//         }
-//     }
-//     /* Find eigenvalues and eigenvectors */
-//     diagonalizeLPD(H,e,N);
-
-//     log=fopen("NISE.log","a");
-//     fprintf(log,"Boltzmann factors: " );
-//     /* Exponentiate [U=exp(-H/kBT)] */
-//     for (a=0;a<N;a++){
-//         if (non->temperature==0){
-//             printf("Temperature is 0, the equilirbium density matrix will be nan,we suggestion to use a low non-zero temperature instead");
-//             exit(0);
-//         }
-
-//         c2[a]=exp(-((double) (e[a]-e[N-1]))/kBT);
-
-//         fprintf(log," %e ", c2[a]);
-//         /* Apply strict high temperature limit when T>100000 */
-//         if (non->temperature>100000){
-// 	        c2[a]=1.0;
-//         }
-//     }
-//     fprintf(log,"\n" );
-//     fclose(log);
-
-//     /* Transform back to site basis */ 
-//     transform_back_to_site(N, H, c2, matrix);
-  
-//     /* Find the partition function for each segment */
-//     for (a=0;a<N;a++){
-//         Q[non->psites[a]]+=matrix[a+a*N];
-//     }
-//     /* Re-normalize */
-//     for (a=0;a<N;a++){
-//         for (b=0;b<N;b++){
-//     	    density_matrix[a+b*N]=(float) (matrix[a+b*N]/Q[non->psites[a]]);
-//         }
-//     }      
-
-//     /* Update the ensemble average partition function for each segment*/
-//     for(s=0;s<segments;s++){
-//         partition_functions[s] += Q[s];
-//         printf("Partition function for segment %d =  %e \n",s,Q[s]);
-//         log=fopen("NISE.log","a");
-//         fprintf(log,"Partition function for segment %d =  %e \n",s,Q[s]);
-//         fclose(log);
-//     }
-
-//     free(H);
-//     free(c2);
-//     free(e);
-//     free(cnr);
-//     free(Q);
-//     return;
-// }
 
 void average_density_matrix(float *ave_den_mat,t_non *non){
 /* Define variables and arrays */
