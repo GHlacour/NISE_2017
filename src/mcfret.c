@@ -1224,91 +1224,156 @@ void mcfret_energy(float *E,t_non *non,int segments, float *ave_vecr,float *ener
     return;
 }
 
+void transform_back_to_site(int N,
+                           const float *A_float,
+                           const double *c2,
+                           double *matrix)
+{
+    int i, j;
+    // Perform: matrix_site = H * matrix_eigen * H.T
+    // Convert A -> double (BLAS uses double here)
+    double *A = (double*) malloc(N*N*sizeof(double));
+    double *temp = (double*) calloc(N*N,sizeof(double));
+
+    for (i = 0; i < N*N; i++)
+        A[i] = (double) A_float[i];
+
+    // temp = A * diag(c2)
+    // scale each column j by c2[i]
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            temp[i * N + j] = A[i * N + j] * c2[j];
+        }
+    }
+
+    // matrix =  temp * A^T =  (A * D) * A^T 
+    cblas_dgemm(
+        CblasRowMajor,
+        CblasNoTrans,    
+        CblasTrans,
+        N, N, N,
+        1.0,
+        temp, N,
+        A, N,
+        0.0,
+        matrix, N);
+
+    free(A);
+    free(temp);
+}
+
 /* This function will create a density matrix where every term is weighted with a Boltzmann weight */
-void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int segments, float *partition_functions){
+void density_matrix(float *density_matrix, float *Hamiltonian_i,t_non *non,int N_segments, float *partition_functions){
     int index,N;
     float *H,*e;
     double *c2;
-    double *cnr;
     double *matrix;
 
-    N=non->singles;
-    H=(float *)calloc(N*N,sizeof(float));
-    e=(float *)calloc(N,sizeof(float));
-    c2=(double *)calloc(N,sizeof(double));
-    cnr=(double *)calloc(N*N,sizeof(double));
-    matrix=(double *)calloc(N*N,sizeof(double));
+    FILE *log;
 
-    int a,b,c,s;
+    N=non->singles;
+
+    int a,b,c;
+    int si;
+    int N_site_si;
+    int *H_indices_si;
+    H_indices_si = (int *)calloc(N,sizeof(int));
+    int seg_ref_idx = 0;
+
     double kBT=(double) non->temperature*k_B; /* Kelvin to cm-1 */
-    double *Q,iQ;
  
     clearvec(density_matrix,N*N);
 
-    Q=(double *)calloc(segments,sizeof(double));  
+    double Boltzmann;
+    double segment_partition_func = 0;
 
-    /* Build Hamiltonian */
-    for (a=0;a<N;a++){
-        H[a+N*a]=Hamiltonian_i[a+N*a-(a*(a+1))/2]; /* Diagonal */
-        for (b=a+1;b<N;b++){
-            H[a+N*b]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
-            H[b+N*a]=Hamiltonian_i[b+N*a-(a*(a+1))/2];
-        }
-    }
-    /* Find eigenvalues and eigenvectors */
-    diagonalizeLPD(H,e,N); 
- 
-    /* Exponentiate [U=exp(-H/kBT)] */
-    for (a=0;a<N;a++){
-        if (non->temperature==0){
-            printf("Temperature is 0, the equilirbium density matrix will be nan,we suggestion to use a low non-zero temperature instead");
-            exit(0);
-        }
+    double reference_energy;
+    reference_energy = non->min1; // Simply use the first value of the minimum indicated frequencies as reference energy
 
-        c2[a]=exp(-((double) (e[a]-e[N-1]))/kBT);
-        /* Apply strict high temperature limit when T>100000 */
-        if (non->temperature>100000){
-	        c2[a]=1.0;
-        }
-    }
+    for (si=0;si<N_segments;si++){
+        float *Hamiltonian_segment_triu;
+        N_site_si = find_H_indices_segment(non->psites, H_indices_si, si, non);
+        Hamiltonian_segment_triu = (float *)calloc((N_site_si+1)*N_site_si/2,sizeof(float));
+        H=(float *)calloc(N_site_si*N_site_si,sizeof(float));
+        e=(float *)calloc(N_site_si,sizeof(float));
+        c2=(double *)calloc(N_site_si,sizeof(double));
+        matrix=(double *)calloc(N_site_si*N_site_si,sizeof(double));
 
-    /* Transform back to site basis */ 
-    for (a=0;a<N;a++){
-        for (b=0;b<N;b++){
-            cnr[b+a*N]+=((double) H[b+a*N])*c2[b];
-        }
-    }  
+        // clear the partition function for each segment
+        segment_partition_func = 0;
 
-// #pragma omp parallel for
-    for (a=0;a<N;a++){
-        for (b=0;b<N;b++){
-            for (c=0;c<N;c++){
-                matrix[a+c*N]+=H[b+a*N]*cnr[b+c*N];
+
+        // isolate the segment i with projection routine to obtain smaller matrix
+        isolate_segment_Hamiltonian_triu(Hamiltonian_i, Hamiltonian_segment_triu, H_indices_si, N_site_si, non);
+
+        /* Build segment Hamiltonian */
+        for (a=0;a<N_site_si;a++){
+            H[a+N_site_si*a]=Hamiltonian_segment_triu[a+N_site_si*a-(a*(a+1))/2]; /* Diagonal */
+            for (b=a+1;b<N_site_si;b++){
+                H[a+N_site_si*b]=Hamiltonian_segment_triu[b+N_site_si*a-(a*(a+1))/2];
+                H[b+N_site_si*a]=Hamiltonian_segment_triu[b+N_site_si*a-(a*(a+1))/2];
+
             }
         }
-    }
-  
-    /* Find the partition function for each segment */
-    for (a=0;a<N;a++){
-        Q[non->psites[a]]+=matrix[a+a*N];
-    }
-    /* Re-normalize */
-    for (a=0;a<N;a++){
-        for (b=0;b<N;b++){
-    	    density_matrix[a+b*N]=(float) (matrix[a+b*N]/Q[non->psites[a]]);
+        /* Find eigenvalues and eigenvectors */
+        diagonalizeLPD(H,e,N_site_si);
+        if (non->printLevel>1){
+            log=fopen("NISE.log","a");
+            fprintf(log,"Boltzmann factors for segment %d: ", si);
         }
-    }      
+        /* Exponentiate [U=exp(-H/kBT)] */
+        for (a=0;a<N_site_si;a++){
+            if (non->temperature==0){
+                printf("Temperature is 0, the equilibrium density matrix will be nan, we suggest using a low non-zero temperature instead");
+                exit(0);
+            }
 
-    /* Update the ensemble average partition function for each segment*/
-    for(s=0;s<segments;s++){
-       partition_functions[s] += Q[s];
-    }
+            Boltzmann = exp(-((double) (e[a]-reference_energy))/kBT);
+            /* Apply strict high temperature limit when T>100000 */
+            if (non->temperature>100000){
+                Boltzmann=1.0;
+            }
+            c2[a] = Boltzmann;
+            segment_partition_func += Boltzmann;
+            if (non->printLevel>1){
+                fprintf(log," %e ", Boltzmann);
+            }
+        }
+        if (non->printLevel>0){
+            fprintf(log,"\n" );
+            fclose(log);
+        }
 
-    free(H);
-    free(c2);
-    free(e);
-    free(cnr);
-    free(Q);
+        /* Transform back to site basis */ 
+        transform_back_to_site(N_site_si, H, c2, matrix);
+
+        /* Re-normalize and write to overarching density matrix */
+        
+        for (a=0;a<N_site_si;a++){
+            for (b=0;b<N_site_si;b++){
+                density_matrix[H_indices_si[a]+H_indices_si[b]*N]=(float) (matrix[a+b*N_site_si]/segment_partition_func);
+            }
+        }
+    
+        /* Update the ensemble average partition function for each segment*/
+        partition_functions[si] += (float) segment_partition_func;
+        if (non->printLevel>0){
+            printf("Partition function for segment %d =  %e \n",si,segment_partition_func);
+            // log=fopen("NISE.log","a");
+            // fprintf(log,"Partition function for segment %d =  %e \n",si,segment_partition_func);
+            // fclose(log);
+        }
+    
+    
+        free(Hamiltonian_segment_triu);
+        free(H);
+        free(c2);
+        free(e);
+        free(matrix);
+    } //close the segment loop
+    free(H_indices_si);
+
+
     return;
 }
 
@@ -1364,16 +1429,11 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
           ave_den_mat[ele] +=vecr[ele]; 
       }
     }
-    /* Zero the coupling between different segments for the averaged density *
-     * matrix and normalize */
+    /* Normalise the average density matrix */
     i_samples=1.0/my_samples;
     for (a=0;a<non->singles;a++){
         for (b=0;b<non->singles;b++){
 	    ave_den_mat[non->singles*b+a]*=i_samples;
-            if (non->psites[a] != non->psites[b]){
-               ave_den_mat[non->singles*a+b]=0.0;
-               /* ave_den_mat[non->singles*b+a]=0.0; */
-            } 
         }
     }
 
@@ -1395,68 +1455,142 @@ void average_density_matrix(float *ave_den_mat,t_non *non){
     return;
 }
 
-/* Matrix multiplication for different segments */
+// /* Matrix multiplication for different segments */
+// void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
+//     float *rC,float *iC,int *psites,int segments,int si,int sk,int sj,int N){
+//     int i,j,k;
+//     /* Set initial values of results matrix to zero to be sure */
+//     clearvec(rC,N*N);
+//     clearvec(iC,N*N);
+
+//     int Npsj, Npsk;
+//     int cj, ck;
+//     Npsj=0;
+//     Npsk=0;
+
+//     float *psj, *psk;
+//     psj=(float *)calloc(N,sizeof(float));
+//     psk=(float *)calloc(N,sizeof(float));
+
+//     for (i=0;i<N;i++){
+//         if (psites[i]==sj){
+//             psj[Npsj]=i;
+//             Npsj++;
+//         }
+//         if (psites[i]==sk){
+//             psk[Npsk]=i;
+//             Npsk++;
+//         }
+//     }
+
+// #pragma omp parallel for
+//     for (i=0;i<N;i++){
+//         if (psites[i]==si){
+//             for (cj=0;cj<Npsj;cj++){
+//                 j=psj[cj];
+//                 for (ck=0;ck<Npsk;ck++){
+//                     k=psk[ck];
+//                     rC[i*N+j]+=rA[i*N+k]*rB[k*N+j]-iA[i*N+k]*iB[k*N+j];
+//                     iC[i*N+j]+=rA[i*N+k]*iB[k*N+j]+iA[i*N+k]*rB[k*N+j];
+//                 }
+//             }
+//         }
+//     }
+
+//     /*
+//     for (i=0;i<N;i++){
+//         if (psites[i]==si){
+//             for (j=0;j<N;j++){
+//                 if (psites[j]==sj){
+//                     for (k=0;k<N;k++){
+//                         if (psites[k]==sk){
+//                             rC[i*N+j]+=rA[i*N+k]*rB[k*N+j]-iA[i*N+k]*iB[k*N+j];
+//                             iC[i*N+j]+=rA[i*N+k]*iB[k*N+j]+iA[i*N+k]*rB[k*N+j];
+//                         } 
+//                     } 
+//                 }
+//             }
+//         }
+//     }
+//     */
+//     free(psj);
+//     free(psk);
+//     return;
+// } 
+
+/*  Faster BLAS based matrix multiplication */
 void segment_matrix_mul(float *rA,float *iA,float *rB,float *iB,
     float *rC,float *iC,int *psites,int segments,int si,int sk,int sj,int N){
+
     int i,j,k;
-    /* Set initial values of results matrix to zero to be sure */
+
     clearvec(rC,N*N);
     clearvec(iC,N*N);
 
-    int Npsj, Npsk;
-    int cj, ck;
-    Npsj=0;
-    Npsk=0;
+    int Npsi=0, Npsj=0, Npsk=0;
 
-    float *psj, *psk;
-    psj=(float *)calloc(N,sizeof(float));
-    psk=(float *)calloc(N,sizeof(float));
+    int *psi = (int*)malloc(N*sizeof(int));
+    int *psj = (int*)malloc(N*sizeof(int));
+    int *psk = (int*)malloc(N*sizeof(int));
 
     for (i=0;i<N;i++){
-        if (psites[i]==sj){
-            psj[Npsj]=i;
-            Npsj++;
-        }
-        if (psites[i]==sk){
-            psk[Npsk]=i;
-            Npsk++;
-        }
+        if (psites[i]==si) psi[Npsi++] = i;
+        if (psites[i]==sj) psj[Npsj++] = i;
+        if (psites[i]==sk) psk[Npsk++] = i;
     }
 
-#pragma omp parallel for
-    for (i=0;i<N;i++){
-        if (psites[i]==si){
-            for (cj=0;cj<Npsj;cj++){
-                j=psj[cj];
-                for (ck=0;ck<Npsk;ck++){
-                    k=psk[ck];
-                    rC[i*N+j]+=rA[i*N+k]*rB[k*N+j]-iA[i*N+k]*iB[k*N+j];
-                    iC[i*N+j]+=rA[i*N+k]*iB[k*N+j]+iA[i*N+k]*rB[k*N+j];
-                }
-            }
-        }
-    }
+    /* Create submatrices based in the segment input */
+    float *Ar = (float*)malloc(Npsi*Npsk*sizeof(float));
+    float *Ai = (float*)malloc(Npsi*Npsk*sizeof(float));
+    float *Br = (float*)malloc(Npsk*Npsj*sizeof(float));
+    float *Bi = (float*)malloc(Npsk*Npsj*sizeof(float));
 
-    /*
-    for (i=0;i<N;i++){
-        if (psites[i]==si){
-            for (j=0;j<N;j++){
-                if (psites[j]==sj){
-                    for (k=0;k<N;k++){
-                        if (psites[k]==sk){
-                            rC[i*N+j]+=rA[i*N+k]*rB[k*N+j]-iA[i*N+k]*iB[k*N+j];
-                            iC[i*N+j]+=rA[i*N+k]*iB[k*N+j]+iA[i*N+k]*rB[k*N+j];
-                        } 
-                    } 
-                }
-            }
+    /* Do the segment projection */
+    for (i=0;i<Npsi;i++)
+        for (k=0;k<Npsk;k++){
+            Ar[i*Npsk+k] = rA[psi[i]*N + psk[k]];
+            Ai[i*Npsk+k] = iA[psi[i]*N + psk[k]];
         }
-    }
-    */
-    free(psj);
-    free(psk);
-    return;
-} 
+
+    for (k=0;k<Npsk;k++)
+        for (j=0;j<Npsj;j++){
+            Br[k*Npsj+j] = rB[psk[k]*N + psj[j]];
+            Bi[k*Npsj+j] = iB[psk[k]*N + psj[j]];
+        }
+
+    /* Allocate result blocks */
+    float *Cr = (float*)calloc(Npsi*Npsj,sizeof(float));
+    float *Ci = (float*)calloc(Npsi*Npsj,sizeof(float));
+
+    /* Complex GEMM via 4 real GEMMs */
+
+    // Cr += Ar*Br (with Cr presumed initialised at zero)
+    cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+        Npsi,Npsj,Npsk,1.0f,Ar,Npsk,Br,Npsj,1.0f,Cr,Npsj);
+
+    // Cr -= Ai*Bi
+    cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+        Npsi,Npsj,Npsk,-1.0f,Ai,Npsk,Bi,Npsj,1.0f,Cr,Npsj);
+
+    // Ci += Ar*Bi
+    cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+        Npsi,Npsj,Npsk,1.0f,Ar,Npsk,Bi,Npsj,1.0f,Ci,Npsj);
+
+    // Ci += Ai*Br
+    cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+        Npsi,Npsj,Npsk,1.0f,Ai,Npsk,Br,Npsj,1.0f,Ci,Npsj);
+
+    /* place submatrix back in original N*N matrix */
+    for (i=0;i<Npsi;i++)
+        for (j=0;j<Npsj;j++){
+            rC[psi[i]*N + psj[j]] = Cr[i*Npsj+j];
+            iC[psi[i]*N + psj[j]] = Ci[i*Npsj+j];
+        }
+
+    free(psi); free(psj); free(psk);
+    free(Ar); free(Ai); free(Br); free(Bi);
+    free(Cr); free(Ci);
+}
 
 /* Find the trace of the matrix */
 float trace_rate(float *matrix,int N){
