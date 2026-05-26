@@ -1300,66 +1300,83 @@ int time_evolution_mat(t_non* non, float* Hamiltonian_i, float* Ur, float* Ui, i
 }
 
 /* Create snapshot time-evolution operator for a single segment */
-void time_evolution_mat_non_sparse(t_non* non, float* Hamiltonian_i, float* Ur, float* Ui, int Ni) {
+void time_evolution_mat_non_sparse(t_non* non,
+                                   float* Hamiltonian_i,
+                                   float* Ur,
+                                   float* Ui,
+                                   int Ni)
+{
     int N = Ni;
     float f = non->deltat * icm2ifs * (float)twoPi;
     size_t sz = (size_t)N * N;
 
-    float *H    = (float *)calloc(sz, sizeof(float));
-    float *e    = (float *)calloc(N, sizeof(float));
+    float *H  = (float *)calloc(sz, sizeof(float)); // eigenvectors as rows (from diagonalizeLPD)
+    float *e  = (float *)calloc(N, sizeof(float));
     float *re_U = (float *)calloc(N, sizeof(float));
     float *im_U = (float *)calloc(N, sizeof(float));
-    float *cnr  = (float *)calloc(sz, sizeof(float));
-    float *cni  = (float *)calloc(sz, sizeof(float));
+    float *tmp_r = (float *)calloc(sz, sizeof(float));
+    float *tmp_i = (float *)calloc(sz, sizeof(float));
 
-    // BLAS sgemm with beta=0.0 overwrites Ur/Ui
-    // no need to memset Ui or Ur
+    float alpha = 1.0f;
+    float beta  = 0.0f;
 
-    /* 1. Build Hamiltonian */
+    /* 1. Build Hamiltonian (row-major layout) */
+    /* Build Hamiltonian */
     for (int a = 0; a < N; a++) {
-        int tri_offset = (a * (a + 1)) / 2;
-        H[a + N * a] = Hamiltonian_i[a + N * a - tri_offset];
+        H[a + N * a] = Hamiltonian_i[a + N * a - (a * (a + 1)) / 2]; // Diagonal
         for (int b = a + 1; b < N; b++) {
-            float val = Hamiltonian_i[b + N * a - tri_offset];
-            H[a + N * b] = val;
-            H[b + N * a] = val;
+            H[a + N * b] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
+            H[b + N * a] = Hamiltonian_i[b + N * a - (a * (a + 1)) / 2];
         }
-    }
+    } 
 
-    /* 2. Diagonalize */
+    /* 2. Diagonalize: H → eigenvectors in COLUMNS, row major layout */
     diagonalizeLPD(H, e, N);
 
-    /* 3. Exponentiate */
+    /* 3. Exponent of eigenvalues */
     for (int a = 0; a < N; a++) {
         re_U[a] = cosf(e[a] * f);
         im_U[a] = -sinf(e[a] * f);
     }
 
-    /* 4. Transform back to site basis. */
-    for (int a = 0; a < N; a++) {
-        for (int b = 0; b < N; b++) {
-            cnr[b + a * N] = H[b + a * N] * re_U[b];
-            cni[b + a * N] = H[b + a * N] * im_U[b];
+    /* 4. tmp_r = D * H (scale columns of H by real part of exponentials) */
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            tmp_r[i*N + j] = H[i*N + j] * re_U[j];
         }
     }
 
-    // Ur(a,c) = sum over b of [ H(b,a) * cnr(b,c) ]
-    // This is C = A^T * B
-    float alpha = 1.0f;
-    float beta  = 0.0f; // overwrite output matrices
+    /* 5. tmp_i = D * H (scale columns of H by imaginary part of exponentials) */
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            tmp_i[i*N + j] = H[i*N + j] *  im_U[j];
+        }
+    }
 
-    // Ur = H^T * cnr
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 
-                N, N, N, alpha, H, N, cnr, N, beta, Ur, N);
+    /* 6. Ur =  tmp_r @ H^T (row-major) */
+    cblas_sgemm(CblasRowMajor,
+                CblasNoTrans, CblasTrans,
+                N, N, N,
+                alpha,
+                tmp_r, N,
+                H, N,
+                beta,
+                Ur, N);
 
-    // Ui = H^T * cni
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, 
-                N, N, N, alpha, H, N, cni, N, beta, Ui, N);
+    /* 7. Ui =  tmp_i @ H^T  (row-major) */
+    cblas_sgemm(CblasRowMajor,
+                CblasNoTrans, CblasTrans,
+                N, N, N,
+                alpha,
+                tmp_i, N,
+                H, N,
+                beta,
+                Ui, N);
 
-    // Cleanup
-    free(H); free(e); free(re_U); free(im_U); free(cnr); free(cni);
+    free(H); free(e);
+    free(re_U); free(im_U);
+    free(tmp_r); free(tmp_i);
 }
-
 
 /* This function propagates the doubles for three level systems with the */
 /* sparse time-evolution operator algorithm. The singles time evolution */
